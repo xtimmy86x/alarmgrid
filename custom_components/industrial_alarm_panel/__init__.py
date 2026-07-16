@@ -15,7 +15,6 @@ from .const import (
     CONF_ALARM_FLOOD_THRESHOLD,
     CONF_ALARM_FLOOD_WINDOW_SECONDS,
     CONF_AUTO_SHELVE_FLAPPING,
-    CONF_HISTORY_RETENTION_DAYS,
     CONF_MEDIA_PLAYERS,
     CONF_REPEAT_INTERVAL_SECONDS,
     CONF_SOUND_MODE,
@@ -27,7 +26,6 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,6 +62,7 @@ async def async_setup_entry(
 
     from .alarm_panel import async_register_panel
     from .frontend_events import attach_alarm_update_event_listener
+    from .frontend_resource import async_register_lovelace_resource
     from .services import async_setup_services
     from .websocket_api import async_register_websocket_api
 
@@ -183,6 +182,7 @@ async def async_setup_entry(
     await async_setup_services(hass)
     async_register_websocket_api(hass)
     runtime.remove_panel = await async_register_panel(hass, entry)
+    await async_register_lovelace_resource(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

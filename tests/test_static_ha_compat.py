@@ -51,6 +51,23 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         panel_option_index = source.index("if not options.get(CONF_ENABLE_PANEL, True)")
         self.assertLess(static_path_index, panel_option_index)
 
+    def test_integration_auto_registers_lovelace_resource(self) -> None:
+        init_source = Path("custom_components/industrial_alarm_panel/__init__.py").read_text()
+        resource_source = Path(
+            "custom_components/industrial_alarm_panel/frontend_resource.py"
+        ).read_text()
+        manifest = json.loads(
+            Path("custom_components/industrial_alarm_panel/manifest.json").read_text()
+        )
+
+        self.assertIn("async_register_lovelace_resource", init_source)
+        self.assertIn("resources.async_create_item", resource_source)
+        self.assertIn("resources.async_update_item", resource_source)
+        self.assertIn("FRONTEND_MODULE", resource_source)
+        self.assertIn("frontend", manifest["dependencies"])
+        self.assertIn("http", manifest["dependencies"])
+        self.assertIn("lovelace", manifest["dependencies"])
+
     def test_panel_registration_uses_home_assistant_panel_custom_api(self) -> None:
         source = Path("custom_components/industrial_alarm_panel/alarm_panel.py").read_text()
 

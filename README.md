@@ -91,6 +91,35 @@ This repository includes local Home Assistant brand assets in `custom_components
 
 Home Assistant 2026.3 and newer can serve local brand assets for custom integrations. Older Home Assistant versions still run the integration, but may not show the local icon/logo in all UI surfaces.
 
+## Lovelace Card
+
+You can embed the same Industrial Alarm Panel frontend in a Lovelace dashboard as a custom card. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
+
+```yaml
+url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.13
+type: module
+```
+
+If you use Lovelace YAML mode, add the resource above to `ui-lovelace.yaml` manually. Then add the card to a dashboard:
+
+```yaml
+type: custom:industrial-alarm-panel-card
+title: Industrial Alarms
+tab: active
+hide_tabs: false
+```
+
+Card options:
+
+- `title`: card heading shown above metrics and actions.
+- `tab`: initial view (`active`, `unacknowledged`, `history`, `shelved`, `disabled`, `rules`, or `settings`).
+- `hide_tabs`: set to `true` to lock the card to the selected tab.
+- `hide_header`: set to `true` to hide the title, metrics, and action buttons.
+- `min_height`: optional CSS height such as `420px`; defaults to dashboard card sizing instead of the full sidebar height.
+
+The integration registers the static frontend path even when the sidebar panel option is disabled, and it persists the Lovelace resource in storage-mode dashboards so the card is still loaded after a browser refresh.
+
+
 ## Entities
 
 Global entities include:
