@@ -45,14 +45,18 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("getStubConfig()", source)
 
     def test_frontend_assets_register_even_when_sidebar_panel_disabled(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/alarm_panel.py").read_text()
+        source = Path(
+            "custom_components/industrial_alarm_panel/alarm_panel.py"
+        ).read_text()
 
         static_path_index = source.index("async_register_static_paths")
         panel_option_index = source.index("if not options.get(CONF_ENABLE_PANEL, True)")
         self.assertLess(static_path_index, panel_option_index)
 
     def test_integration_auto_registers_lovelace_resource(self) -> None:
-        init_source = Path("custom_components/industrial_alarm_panel/__init__.py").read_text()
+        init_source = Path(
+            "custom_components/industrial_alarm_panel/__init__.py"
+        ).read_text()
         resource_source = Path(
             "custom_components/industrial_alarm_panel/frontend_resource.py"
         ).read_text()

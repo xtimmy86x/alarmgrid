@@ -28,7 +28,7 @@ def _schedule_lovelace_resource_retry(hass: HomeAssistant) -> None:
     async_call_later(
         hass,
         5,
-        lambda _now: hass.async_create_task(async_register_lovelace_resource(hass)),
+        lambda _now: hass.add_job(async_register_lovelace_resource, hass),
     )
 
 
