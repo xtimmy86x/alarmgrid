@@ -104,7 +104,7 @@ class IndustrialAlarmPanel extends HTMLElement {
   }
 
   _handleAlarmUpdateEvent(event) {
-    const entryId = this._panel?.config?.entry_id;
+    const entryId = this._panel?.config?.entry_id || this._cardConfig?.entry_id;
     if (entryId && event?.data?.entry_id && event.data.entry_id !== entryId) return;
     this._load();
   }
@@ -225,23 +225,8 @@ class IndustrialAlarmPanel extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
       <main class="panel">
-        <header class="topbar">
-          ${this._narrow ? `<button class="secondary menu-button" data-action="toggle-menu" aria-label="Open sidebar">Menu</button>` : ""}
-          <div>
-            <h1>Industrial Alarms</h1>
-            <div class="metrics">
-              <span>${this._alarms.filter((a) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(a.lifecycle_state)).length} active</span>
-              <span>${this._alarms.filter((a) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(a.lifecycle_state)).length} unack</span>
-              <span class="${this._sound.horn_active ? "horn on" : "horn"}">${this._sound.horn_active ? "Horn active" : "Horn idle"}</span>
-            </div>
-          </div>
-          <div class="actions">
-            ${!this._audioEnabled ? `<button class="secondary" data-action="enable-audio">Enable Alarm Sound</button>` : ""}
-            <button class="danger" data-action="silence">Silence</button>
-            <button class="primary" data-action="ack-all">Ack All</button>
-          </div>
-        </header>
-        <nav class="tabs">${this._tabs()}</nav>
+        ${this._headerView()}
+        ${this._tabsView()}
         ${this._error ? `<div class="error">${this._escape(this._error)}</div>` : ""}
         ${this._tab === "history" ? this._historyView() : ""}
         ${this._tab === "rules" ? this._rulesView() : ""}
@@ -252,6 +237,33 @@ class IndustrialAlarmPanel extends HTMLElement {
     this._wire();
     this._restoreTableScroll();
     this._rendered = true;
+  }
+
+  _headerView() {
+    if (this._hideHeader) return "";
+    return `
+      <header class="topbar">
+        ${this._narrow ? `<button class="secondary menu-button" data-action="toggle-menu" aria-label="Open sidebar">Menu</button>` : ""}
+        <div>
+          <h1>${this._escape(this._title || "Industrial Alarms")}</h1>
+          <div class="metrics">
+            <span>${this._alarms.filter((a) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(a.lifecycle_state)).length} active</span>
+            <span>${this._alarms.filter((a) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(a.lifecycle_state)).length} unack</span>
+            <span class="${this._sound.horn_active ? "horn on" : "horn"}">${this._sound.horn_active ? "Horn active" : "Horn idle"}</span>
+          </div>
+        </div>
+        <div class="actions">
+          ${!this._audioEnabled ? `<button class="secondary" data-action="enable-audio">Enable Alarm Sound</button>` : ""}
+          <button class="danger" data-action="silence">Silence</button>
+          <button class="primary" data-action="ack-all">Ack All</button>
+        </div>
+      </header>
+    `;
+  }
+
+  _tabsView() {
+    if (this._hideTabs) return "";
+    return `<nav class="tabs">${this._tabs()}</nav>`;
   }
 
   _tabs() {
@@ -778,8 +790,8 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   _styles() {
     return `
-      :host { display: block; color: #e6edf3; background: #101316; min-height: 100vh; font-family: Arial, sans-serif; }
-      .panel { min-height: 100vh; }
+      :host { display: block; color: #e6edf3; background: #101316; min-height: var(--iap-min-height, 100vh); font-family: Arial, sans-serif; }
+      .panel { min-height: var(--iap-min-height, 100vh); }
       .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 18px; background: #181d22; border-bottom: 1px solid #303942; }
       .menu-button { display: none; flex: 0 0 auto; }
       h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0; }
@@ -854,6 +866,52 @@ class IndustrialAlarmPanel extends HTMLElement {
   }
 }
 
+class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
+  constructor() {
+    super();
+    this._title = "Industrial Alarms";
+    this._hideTabs = false;
+    this._hideHeader = false;
+  }
+
+  setConfig(config = {}) {
+    const validTabs = new Set(["active", "unacknowledged", "history", "shelved", "disabled", "rules", "settings"]);
+    this._cardConfig = config;
+    this._title = config.title || "Industrial Alarms";
+    this._tab = validTabs.has(config.tab) ? config.tab : "active";
+    this._hideTabs = Boolean(config.hide_tabs);
+    this._hideHeader = Boolean(config.hide_header);
+    this.style.setProperty("--iap-min-height", config.min_height || "0");
+    if (this._rendered) this._render();
+  }
+
+  getCardSize() {
+    return this._hideTabs ? 6 : 8;
+  }
+
+  static getStubConfig() {
+    return {
+      title: "Industrial Alarms",
+      tab: "active",
+      hide_tabs: false,
+    };
+  }
+}
+
 if (!customElements.get("industrial-alarm-panel")) {
   customElements.define("industrial-alarm-panel", IndustrialAlarmPanel);
+}
+
+if (!customElements.get("industrial-alarm-panel-card")) {
+  customElements.define("industrial-alarm-panel-card", IndustrialAlarmPanelCard);
+}
+
+window.customCards = window.customCards || [];
+if (!window.customCards.some((card) => card.type === "industrial-alarm-panel-card")) {
+  window.customCards.push({
+    type: "industrial-alarm-panel-card",
+    name: "Industrial Alarm Panel",
+    description: "Industrial Alarm Panel alarms, history, rules, and sound controls as a Lovelace card.",
+    preview: true,
+  });
 }

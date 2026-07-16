@@ -27,11 +27,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> Any | None:
-    """Register the custom sidebar panel and static frontend asset path."""
+    """Register the frontend assets and optional custom sidebar panel."""
 
     options = {**DEFAULT_OPTIONS, **entry.data, **entry.options}
-    if not options.get(CONF_ENABLE_PANEL, True):
-        return None
 
     dist_path = Path(__file__).parent / "frontend" / "dist"
     await hass.http.async_register_static_paths(
@@ -44,6 +42,9 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> Any |
         ]
     )
 
+    if not options.get(CONF_ENABLE_PANEL, True):
+        return None
+    
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL,

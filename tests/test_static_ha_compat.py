@@ -34,6 +34,23 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
         self.assertIn('customElements.get("industrial-alarm-panel")', source)
 
+    def test_frontend_registers_lovelace_card(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+
+        self.assertIn('customElements.define("industrial-alarm-panel-card"', source)
+        self.assertIn("window.customCards", source)
+        self.assertIn("setConfig(config = {})", source)
+        self.assertIn("getStubConfig()", source)
+
+    def test_frontend_assets_register_even_when_sidebar_panel_disabled(self) -> None:
+        source = Path("custom_components/industrial_alarm_panel/alarm_panel.py").read_text()
+
+        static_path_index = source.index("async_register_static_paths")
+        panel_option_index = source.index("if not options.get(CONF_ENABLE_PANEL, True)")
+        self.assertLess(static_path_index, panel_option_index)
+
     def test_panel_registration_uses_home_assistant_panel_custom_api(self) -> None:
         source = Path("custom_components/industrial_alarm_panel/alarm_panel.py").read_text()
 
