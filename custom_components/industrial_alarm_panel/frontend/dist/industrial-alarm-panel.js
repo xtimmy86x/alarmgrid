@@ -28,6 +28,8 @@ class IndustrialAlarmPanel extends HTMLElement {
     this._suggestedRulesResult = null;
     this._sound = {};
     this._tab = "active";
+    this._themeMode = "auto";
+    this._effectiveTheme = "dark";
     this._search = "";
     this._priority = "all";
     this._shelveDurationMinutes = 60;
@@ -46,6 +48,7 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._syncTheme();
     this._subscribeUpdates();
     if (!this._rendered) {
       this._render();
@@ -220,11 +223,12 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot) return;
+    this._syncTheme();
     this._captureTableScroll();
     const visible = this._filteredAlarms();
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
-      <main class="panel">
+      <main class="panel theme-${this._effectiveTheme}">
         ${this._headerView()}
         ${this._tabsView()}
         ${this._error ? `<div class="error">${this._escape(this._error)}</div>` : ""}
@@ -237,6 +241,16 @@ class IndustrialAlarmPanel extends HTMLElement {
     this._wire();
     this._restoreTableScroll();
     this._rendered = true;
+  }
+
+  _syncTheme() {
+    const previousTheme = this._effectiveTheme;
+    const mode = ["auto", "light", "dark"].includes(this._themeMode) ? this._themeMode : "auto";
+    const hassDarkMode = Boolean(this._hass?.themes?.darkMode);
+    this._effectiveTheme = mode === "auto" ? (hassDarkMode ? "dark" : "light") : mode;
+    if (this._rendered && previousTheme !== this._effectiveTheme) {
+      queueMicrotask(() => this._render());
+    }
   }
 
   _headerView() {
@@ -790,33 +804,39 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   _styles() {
     return `
-      :host { display: block; color: #e6edf3; background: #101316; min-height: var(--iap-min-height, 100vh); font-family: Arial, sans-serif; }
-      .panel { min-height: var(--iap-min-height, 100vh); }
-      .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 18px; background: #181d22; border-bottom: 1px solid #303942; }
+      :host { display: block; color: var(--iap-text); background: var(--iap-bg); min-height: var(--iap-min-height, 100vh); font-family: Arial, sans-serif; }
+      .panel { min-height: var(--iap-min-height, 100vh); background: var(--iap-bg); color: var(--iap-text); }
+      .theme-dark {
+        --iap-bg: #101316; --iap-surface: #11161b; --iap-surface-alt: #14191f; --iap-header: #181d22; --iap-control: #202832; --iap-control-hover: #2a3541; --iap-text: #e6edf3; --iap-muted: #9fb1c1; --iap-heading-muted: #b8c7d4; --iap-border: #303942; --iap-border-soft: #28323c; --iap-selected-bg: #d9e2ec; --iap-selected-text: #101316; --iap-row-neutral: #252c33; --iap-row-neutral-text: #aebdcc; --iap-row-pending: #202832; --iap-row-pending-text: #dbe4ec; --iap-notice: #dbeafe; --iap-error-bg: #5b1c1c; --iap-error-text: #ffd5d5; --iap-error-border: #a83737;
+      }
+      .theme-light {
+        --iap-bg: #f5f7fb; --iap-surface: #ffffff; --iap-surface-alt: #eef3f8; --iap-header: #ffffff; --iap-control: #ffffff; --iap-control-hover: #e8eef6; --iap-text: #1f2937; --iap-muted: #526170; --iap-heading-muted: #425466; --iap-border: #d7e0ea; --iap-border-soft: #e3e9f0; --iap-selected-bg: #1d4ed8; --iap-selected-text: #ffffff; --iap-row-neutral: #eef2f7; --iap-row-neutral-text: #526170; --iap-row-pending: #e7edf5; --iap-row-pending-text: #334155; --iap-notice: #1e40af; --iap-error-bg: #fee2e2; --iap-error-text: #7f1d1d; --iap-error-border: #fca5a5;
+      }
+      .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 18px; background: var(--iap-header); border-bottom: 1px solid var(--iap-border); }
       .menu-button { display: none; flex: 0 0 auto; }
       h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0; }
-      .metrics { display: flex; gap: 10px; margin-top: 6px; color: #9fb1c1; font-size: 13px; }
+      .metrics { display: flex; gap: 10px; margin-top: 6px; color: var(--iap-muted); font-size: 13px; }
       .horn.on { color: #ffcf33; font-weight: 700; }
       .actions, .toolbar, .tabs, .rule-form, .bulk-actions, .bulk-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      button, select, input { background: #202832; color: #e6edf3; border: 1px solid #3d4a57; min-height: 34px; border-radius: 4px; padding: 0 10px; font-size: 14px; }
+      button, select, input { background: var(--iap-control); color: var(--iap-text); border: 1px solid var(--iap-border); min-height: 34px; border-radius: 4px; padding: 0 10px; font-size: 14px; }
       input { min-width: 260px; }
       button { cursor: pointer; }
-      button:hover { background: #2a3541; }
+      button:hover { background: var(--iap-control-hover); }
       button:disabled { opacity: .45; cursor: default; }
       .primary { background: #2563eb; border-color: #3473ff; }
       .danger { background: #9f1d1d; border-color: #d23b3b; }
       .secondary { background: #30515d; border-color: #4b7b8c; }
-      .tabs { padding: 10px 18px; background: #14191f; border-bottom: 1px solid #26313b; }
-      .tabs button.selected { background: #d9e2ec; color: #101316; border-color: #d9e2ec; }
+      .tabs { padding: 10px 18px; background: var(--iap-surface-alt); border-bottom: 1px solid var(--iap-border-soft); }
+      .tabs button.selected { background: var(--iap-selected-bg); color: var(--iap-selected-text); border-color: var(--iap-selected-bg); }
       .toolbar { padding: 12px 18px; }
-      .shelve-duration { display: flex; gap: 6px; align-items: center; color: #b8c7d4; font-size: 13px; }
+      .shelve-duration { display: flex; gap: 6px; align-items: center; color: var(--iap-heading-muted); font-size: 13px; }
       .table-shell { overflow: auto; padding: 0 18px 18px; }
-      table { width: 100%; border-collapse: collapse; background: #11161b; table-layout: auto; }
-      th, td { border-bottom: 1px solid #28323c; padding: 8px 9px; text-align: left; font-size: 13px; white-space: nowrap; }
-      th { background: #202832; color: #b8c7d4; position: sticky; top: 0; z-index: 1; }
+      table { width: 100%; border-collapse: collapse; background: var(--iap-surface); table-layout: auto; }
+      th, td { border-bottom: 1px solid var(--iap-border-soft); padding: 8px 9px; text-align: left; font-size: 13px; white-space: nowrap; }
+      th { background: var(--iap-control); color: var(--iap-heading-muted); position: sticky; top: 0; z-index: 1; }
       td:nth-child(6), td:nth-child(12) { white-space: normal; min-width: 180px; }
       tr { border-left: 6px solid #4b5563; }
-      .alarm-row { background: #11161b; color: #e6edf3; }
+      .alarm-row { background: var(--iap-surface); color: var(--iap-text); }
       .alarm-row td { border-bottom-color: rgba(16, 19, 22, .35); }
       .alarm-row button { background: rgba(16, 19, 22, .22); color: inherit; border-color: rgba(16, 19, 22, .4); }
       .alarm-row button:hover { background: rgba(16, 19, 22, .34); }
@@ -826,29 +846,29 @@ class IndustrialAlarmPanel extends HTMLElement {
       .alarm-row.priority-low.state-active-unack { background: #58a6ff; color: #101316; border-left-color: #1d5fa8; }
       .alarm-row.priority-info.state-active-unack { background: #83d2e6; color: #101316; border-left-color: #34899f; }
       .alarm-row.priority-status.state-active-unack { background: #7ee787; color: #101316; border-left-color: #2f8a39; }
-      .alarm-row.state-pending-color { background: #202832; color: #dbe4ec; border-left-color: #687585; }
+      .alarm-row.state-pending-color { background: var(--iap-row-pending); color: var(--iap-row-pending-text); border-left-color: #687585; }
       .alarm-row.state-cleared-unack { background: #d85b9d; color: #101316; border-left-color: #8e2f63; }
       .alarm-row.state-active-ack, .alarm-row.state-cleared-ack { background: #f3f4f6; color: #1f2933; border-left-color: #9ca3af; }
-      .alarm-row.state-shelved, .alarm-row.state-disabled, .alarm-row.state-normal { background: #252c33; color: #aebdcc; border-left-color: #596675; }
+      .alarm-row.state-shelved, .alarm-row.state-disabled, .alarm-row.state-normal { background: var(--iap-row-neutral); color: var(--iap-row-neutral-text); border-left-color: #596675; }
       .badge { text-transform: uppercase; font-size: 12px; font-weight: 700; }
       .flash { animation: flashRow 1s step-end infinite; }
       @keyframes flashRow { 50% { filter: brightness(1.25); } }
-      .empty, .error { color: #9fb1c1; padding: 18px; }
-      .error { margin: 12px 18px; color: #ffd5d5; background: #5b1c1c; border: 1px solid #a83737; }
+      .empty, .error { color: var(--iap-muted); padding: 18px; }
+      .error { margin: 12px 18px; color: var(--iap-error-text); background: var(--iap-error-bg); border: 1px solid var(--iap-error-border); }
       .rules, .settings { padding: 12px 18px 18px; }
-      .suggested-rules { margin-bottom: 12px; padding: 10px; border: 1px solid #2e3944; background: #151b21; }
-      .suggested-rules h2 { margin: 0 0 8px; font-size: 15px; font-weight: 700; letter-spacing: 0; color: #e6edf3; }
+      .suggested-rules { margin-bottom: 12px; padding: 10px; border: 1px solid var(--iap-border); background: var(--iap-surface); }
+      .suggested-rules h2 { margin: 0 0 8px; font-size: 15px; font-weight: 700; letter-spacing: 0; color: var(--iap-text); }
       .suggested-rules-controls { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
-      .suggested-rules label { display: grid; gap: 4px; color: #b8c7d4; font-size: 12px; }
+      .suggested-rules label { display: grid; gap: 4px; color: var(--iap-heading-muted); font-size: 12px; }
       .suggested-rules input { min-width: 90px; width: 110px; }
-      .bulk-actions, .bulk-summary { margin-top: 8px; color: #b8c7d4; font-size: 13px; }
+      .bulk-actions, .bulk-summary { margin-top: 8px; color: var(--iap-heading-muted); font-size: 13px; }
       .bulk-actions { margin-bottom: 10px; }
       .suggested-preview { margin-top: 8px; padding: 0; }
       .row-select { min-width: 0; width: 16px; height: 16px; padding: 0; }
-      .notice { margin-top: 8px; color: #dbeafe; font-size: 13px; }
+      .notice { margin-top: 8px; color: var(--iap-notice); font-size: 13px; }
       .rule-form { margin-bottom: 12px; }
       .settings dl { display: grid; grid-template-columns: max-content minmax(120px, 1fr); gap: 10px 18px; max-width: 560px; }
-      .settings dt { color: #9fb1c1; }
+      .settings dt { color: var(--iap-muted); }
       .settings dd { margin: 0; }
       .resizable-column { position: relative; min-width: 72px; padding-right: 16px; }
       .col-resizer { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; touch-action: none; user-select: none; }
@@ -872,6 +892,7 @@ class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
     this._title = "Industrial Alarms";
     this._hideTabs = false;
     this._hideHeader = false;
+    this._themeMode = "auto";
   }
 
   setConfig(config = {}) {
@@ -881,6 +902,7 @@ class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
     this._tab = validTabs.has(config.tab) ? config.tab : "active";
     this._hideTabs = Boolean(config.hide_tabs);
     this._hideHeader = Boolean(config.hide_header);
+    this._themeMode = ["auto", "light", "dark"].includes(config.theme) ? config.theme : "auto";
     this.style.setProperty("--iap-min-height", config.min_height || "0");
     if (this._rendered) this._render();
   }
@@ -894,6 +916,7 @@ class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
       title: "Industrial Alarms",
       tab: "active",
       hide_tabs: false,
+      heme: "auto",
     };
   }
 }

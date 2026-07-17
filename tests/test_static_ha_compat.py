@@ -115,6 +115,19 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("background: #f3f4f6", source)
         self.assertIn(".alarm-row.priority-critical.state-active-unack", source)
 
+    def test_frontend_supports_light_and_dark_themes_for_panel_and_card(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+        readme_source = Path("README.md").read_text()
+
+        self.assertIn("_syncTheme", source)
+        self.assertIn("theme-${this._effectiveTheme}", source)
+        self.assertIn(".theme-light", source)
+        self.assertIn(".theme-dark", source)
+        self.assertIn("config.theme", source)
+        self.assertIn("theme: auto", readme_source)
+        
     def test_frontend_can_create_suggested_alarm_rules(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"

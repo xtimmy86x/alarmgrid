@@ -107,6 +107,7 @@ type: custom:industrial-alarm-panel-card
 title: Industrial Alarms
 tab: active
 hide_tabs: false
+theme: auto
 ```
 
 Card options:
@@ -114,6 +115,7 @@ Card options:
 - `title`: card heading shown above metrics and actions.
 - `tab`: initial view (`active`, `unacknowledged`, `history`, `shelved`, `disabled`, `rules`, or `settings`).
 - `hide_tabs`: set to `true` to lock the card to the selected tab.
+- `theme`: `auto`, `light`, or `dark`; `auto` follows the active Home Assistant light/dark theme. The sidebar panel also follows Home Assistant automatically.
 - `hide_header`: set to `true` to hide the title, metrics, and action buttons.
 - `min_height`: optional CSS height such as `420px`; defaults to dashboard card sizing instead of the full sidebar height.
 
