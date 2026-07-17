@@ -1,5 +1,224 @@
 const ALARMS_UPDATED_EVENT = "industrial_alarm_panel_alarms_updated";
 
+const TRANSLATIONS = {
+  en: {
+    default_title: "Industrial Alarms",
+    menu: "Menu",
+    open_sidebar: "Open sidebar",
+    metric_active: "{count} active",
+    metric_unack: "{count} unack",
+    horn_active: "Horn active",
+    horn_idle: "Horn idle",
+    enable_alarm_sound: "Enable Alarm Sound",
+    silence: "Silence",
+    ack_all: "Ack All",
+    tab_active: "Active Alarms",
+    tab_unacknowledged: "Unacknowledged",
+    tab_history: "History",
+    tab_shelved: "Shelved",
+    tab_disabled: "Disabled",
+    tab_rules: "Rules",
+    tab_settings: "Settings",
+    duration_1h: "1 hour",
+    duration_4h: "4 hours",
+    duration_8h: "8 hours",
+    duration_1d: "1 day",
+    duration_3d: "3 days",
+    duration_7d: "7 days",
+    search_placeholder: "Search tag, alarm, entity, area",
+    shelve_for: "Shelve for",
+    refresh: "Refresh",
+    priority_all: "all",
+    priority_critical: "critical",
+    priority_high: "high",
+    priority_medium: "medium",
+    priority_low: "low",
+    priority_info: "info",
+    priority_status: "status",
+    col_time: "Time",
+    col_priority: "Priority",
+    col_area: "Area",
+    col_system: "System",
+    col_tag: "Tag",
+    col_alarm: "Alarm",
+    col_source_value: "Source Value",
+    col_state: "State",
+    col_shelved_until: "Shelved Until",
+    col_ack: "Ack",
+    col_shelve: "Shelve",
+    col_instructions: "Instructions",
+    col_event: "Event",
+    col_from: "From",
+    col_to: "To",
+    col_operator: "Operator",
+    col_id: "ID",
+    col_entity: "Entity",
+    col_name: "Name",
+    col_condition: "Condition",
+    col_threshold: "Threshold",
+    col_enabled: "Enabled",
+    ack: "Ack",
+    shelve: "Shelve",
+    no_alarms: "No alarms in this view",
+    no_history: "No history rows",
+    no_rules: "No rules configured",
+    suggested_rules: "Suggested Rules",
+    label_high_w: "High W",
+    label_low_v: "Low V",
+    label_high_v: "High V",
+    label_solar_c: "Solar C",
+    preview_suggested: "Preview Suggested Rules",
+    select_all: "Select All",
+    deselect_all: "Deselect All",
+    create_selected: "Create Selected",
+    create_all: "Create All",
+    remove_auto: "Remove Auto-Generated Rules",
+    n_suggested: "{count} suggested",
+    n_selected: "{count} selected",
+    n_estimated_entities: "{count} estimated entities",
+    n_generated_estimated: "{count} generated estimated entities",
+    n_rules: "{count} rules",
+    n_auto_generated: "{count} auto-generated",
+    n_auto_generated_estimated: "{count} auto-generated estimated entities",
+    placeholder_rule_id: "Rule id",
+    placeholder_entity_id: "Entity id",
+    placeholder_name: "Name",
+    placeholder_threshold: "Threshold",
+    add_rule: "Add Rule",
+    delete_selected: "Delete Selected",
+    yes: "yes",
+    no: "no",
+    sound_mode: "Sound mode",
+    browser_sound: "Browser sound",
+    media_player_sound: "Media player sound",
+    active_audible: "Active audible alarms",
+    test_sound: "Test Sound",
+    enabled: "enabled",
+    disabled: "disabled",
+    previewing_suggested: "Previewing {count} suggested rules, {entities} estimated entities",
+    no_suggested_found: "No suggested rules found",
+    select_before_create: "Select suggested rules before creating them",
+    confirm_create_suggested: "Create {count} suggested rules and about {entities} entities?",
+    created_suggested: "Created {count} suggested rules, {entities} estimated entities",
+    skipped_suffix: ", skipped {count}",
+    no_new_suggested: "No new suggested alarm rules",
+    preview_again: "Preview suggested rules again after changing thresholds",
+    label_selected_rules: "selected rules",
+    label_auto_rules: "auto-generated rules",
+    no_items_to_delete: "No {label} to delete",
+    confirm_delete_rules: "Delete {count} {label} and about {entities} entities? Source entities will not be removed.",
+    deleted_rules: "Deleted {count} rules and {entities} entities",
+  },
+  it: {
+    default_title: "Allarmi Industriali",
+    menu: "Menu",
+    open_sidebar: "Apri barra laterale",
+    metric_active: "{count} attivi",
+    metric_unack: "{count} non riconosciuti",
+    horn_active: "Sirena attiva",
+    horn_idle: "Sirena a riposo",
+    enable_alarm_sound: "Abilita suono allarmi",
+    silence: "Silenzia",
+    ack_all: "Riconosci tutti",
+    tab_active: "Allarmi attivi",
+    tab_unacknowledged: "Non riconosciuti",
+    tab_history: "Storico",
+    tab_shelved: "Sospesi",
+    tab_disabled: "Disabilitati",
+    tab_rules: "Regole",
+    tab_settings: "Impostazioni",
+    duration_1h: "1 ora",
+    duration_4h: "4 ore",
+    duration_8h: "8 ore",
+    duration_1d: "1 giorno",
+    duration_3d: "3 giorni",
+    duration_7d: "7 giorni",
+    search_placeholder: "Cerca tag, allarme, entità, area",
+    shelve_for: "Sospendi per",
+    refresh: "Aggiorna",
+    priority_all: "tutte",
+    priority_critical: "critica",
+    priority_high: "alta",
+    priority_medium: "media",
+    priority_low: "bassa",
+    priority_info: "info",
+    priority_status: "stato",
+    col_time: "Ora",
+    col_priority: "Priorità",
+    col_area: "Area",
+    col_system: "Sistema",
+    col_tag: "Tag",
+    col_alarm: "Allarme",
+    col_source_value: "Valore sorgente",
+    col_state: "Stato",
+    col_shelved_until: "Sospeso fino a",
+    col_ack: "Riconosci",
+    col_shelve: "Sospendi",
+    col_instructions: "Istruzioni",
+    col_event: "Evento",
+    col_from: "Da",
+    col_to: "A",
+    col_operator: "Operatore",
+    col_id: "ID",
+    col_entity: "Entità",
+    col_name: "Nome",
+    col_condition: "Condizione",
+    col_threshold: "Soglia",
+    col_enabled: "Abilitata",
+    ack: "Riconosci",
+    shelve: "Sospendi",
+    no_alarms: "Nessun allarme in questa vista",
+    no_history: "Nessun evento nello storico",
+    no_rules: "Nessuna regola configurata",
+    suggested_rules: "Regole suggerite",
+    label_high_w: "W max",
+    label_low_v: "V min",
+    label_high_v: "V max",
+    label_solar_c: "Solare °C",
+    preview_suggested: "Anteprima regole suggerite",
+    select_all: "Seleziona tutte",
+    deselect_all: "Deseleziona tutte",
+    create_selected: "Crea selezionate",
+    create_all: "Crea tutte",
+    remove_auto: "Rimuovi regole auto-generate",
+    n_suggested: "{count} suggerite",
+    n_selected: "{count} selezionate",
+    n_estimated_entities: "{count} entità stimate",
+    n_generated_estimated: "{count} entità stimate generate",
+    n_rules: "{count} regole",
+    n_auto_generated: "{count} auto-generate",
+    n_auto_generated_estimated: "{count} entità stimate auto-generate",
+    placeholder_rule_id: "ID regola",
+    placeholder_entity_id: "ID entità",
+    placeholder_name: "Nome",
+    placeholder_threshold: "Soglia",
+    add_rule: "Aggiungi regola",
+    delete_selected: "Elimina selezionate",
+    yes: "sì",
+    no: "no",
+    sound_mode: "Modalità suono",
+    browser_sound: "Suono browser",
+    media_player_sound: "Suono media player",
+    active_audible: "Allarmi udibili attivi",
+    test_sound: "Prova suono",
+    enabled: "abilitato",
+    disabled: "disabilitato",
+    previewing_suggested: "Anteprima di {count} regole suggerite, {entities} entità stimate",
+    no_suggested_found: "Nessuna regola suggerita trovata",
+    select_before_create: "Seleziona le regole suggerite prima di crearle",
+    confirm_create_suggested: "Creare {count} regole suggerite e circa {entities} entità?",
+    created_suggested: "Create {count} regole suggerite, {entities} entità stimate",
+    skipped_suffix: ", saltate {count}",
+    no_new_suggested: "Nessuna nuova regola di allarme suggerita",
+    preview_again: "Rigenera l'anteprima delle regole suggerite dopo aver cambiato le soglie",
+    label_selected_rules: "regole selezionate",
+    label_auto_rules: "regole auto-generate",
+    no_items_to_delete: "Nessuna {label} da eliminare",
+    confirm_delete_rules: "Eliminare {count} {label} e circa {entities} entità? Le entità sorgente non verranno rimosse.",
+    deleted_rules: "Eliminate {count} regole e {entities} entità",
+  },
+};
+
 class IndustrialAlarmPanel extends HTMLElement {
   constructor() {
     super();
@@ -89,6 +308,21 @@ class IndustrialAlarmPanel extends HTMLElement {
   async _callWS(payload) {
     if (!this._hass) return null;
     return this._hass.callWS(payload);
+  }
+
+  _language() {
+    const language = this._hass?.locale?.language || this._hass?.language || "en";
+    return String(language).toLowerCase().split("-")[0];
+  }
+
+  _t(key, replacements = {}) {
+    const language = this._language();
+    const table = TRANSLATIONS[language] || TRANSLATIONS.en;
+    let text = table[key] ?? TRANSLATIONS.en[key] ?? key;
+    Object.entries(replacements).forEach(([name, value]) => {
+      text = text.replaceAll(`{${name}}`, String(value));
+    });
+    return text;
   }
 
   _subscribeUpdates() {
@@ -278,19 +512,19 @@ class IndustrialAlarmPanel extends HTMLElement {
     if (this._hideHeader) return "";
     return `
       <header class="topbar">
-        ${this._narrow ? `<button class="secondary menu-button" data-action="toggle-menu" aria-label="Open sidebar">Menu</button>` : ""}
+        ${this._narrow ? `<button class="secondary menu-button" data-action="toggle-menu" aria-label="${this._t("open_sidebar")}">${this._t("menu")}</button>` : ""}
         <div>
-          <h1>${this._escape(this._title || "Industrial Alarms")}</h1>
+          <h1>${this._escape(this._title || this._t("default_title"))}</h1>
           <div class="metrics">
-            <span>${this._alarms.filter((a) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(a.lifecycle_state)).length} active</span>
-            <span>${this._alarms.filter((a) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(a.lifecycle_state)).length} unack</span>
-            <span class="${this._sound.horn_active ? "horn on" : "horn"}">${this._sound.horn_active ? "Horn active" : "Horn idle"}</span>
+            <span>${this._t("metric_active", { count: this._alarms.filter((a) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(a.lifecycle_state)).length })}</span>
+            <span>${this._t("metric_unack", { count: this._alarms.filter((a) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(a.lifecycle_state)).length })}</span>
+            <span class="${this._sound.horn_active ? "horn on" : "horn"}">${this._sound.horn_active ? this._t("horn_active") : this._t("horn_idle")}</span>
           </div>
         </div>
         <div class="actions">
-          ${!this._audioEnabled ? `<button class="secondary" data-action="enable-audio">Enable Alarm Sound</button>` : ""}
-          <button class="danger" data-action="silence">Silence</button>
-          <button class="primary" data-action="ack-all">Ack All</button>
+          ${!this._audioEnabled ? `<button class="secondary" data-action="enable-audio">${this._t("enable_alarm_sound")}</button>` : ""}
+          <button class="danger" data-action="silence">${this._t("silence")}</button>
+          <button class="primary" data-action="ack-all">${this._t("ack_all")}</button>
         </div>
       </header>
     `;
@@ -303,51 +537,51 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   _tabs() {
     const tabs = [
-      ["active", "Active Alarms"],
-      ["unacknowledged", "Unacknowledged"],
-      ["history", "History"],
-      ["shelved", "Shelved"],
-      ["disabled", "Disabled"],
-      ["rules", "Rules"],
-      ["settings", "Settings"],
+      ["active", this._t("tab_active")],
+      ["unacknowledged", this._t("tab_unacknowledged")],
+      ["history", this._t("tab_history")],
+      ["shelved", this._t("tab_shelved")],
+      ["disabled", this._t("tab_disabled")],
+      ["rules", this._t("tab_rules")],
+      ["settings", this._t("tab_settings")],
     ];
     return tabs.map(([id, label]) => `<button class="${this._tab === id ? "selected" : ""}" data-tab="${id}">${label}</button>`).join("");
   }
 
   _shelveDurationOptions() {
     return [
-      [60, "1 hour"],
-      [240, "4 hours"],
-      [480, "8 hours"],
-      [1440, "1 day"],
-      [4320, "3 days"],
-      [10080, "7 days"],
+      [60, this._t("duration_1h")],
+      [240, this._t("duration_4h")],
+      [480, this._t("duration_8h")],
+      [1440, this._t("duration_1d")],
+      [4320, this._t("duration_3d")],
+      [10080, this._t("duration_7d")],
     ];
   }
 
   _alarmView(alarms) {
     return `
       <section class="toolbar">
-        <input type="search" placeholder="Search tag, alarm, entity, area" value="${this._escape(this._search)}" data-field="search">
+        <input type="search" placeholder="${this._t("search_placeholder")}" value="${this._escape(this._search)}" data-field="search">
         <select data-field="priority">
-          ${["all", "critical", "high", "medium", "low", "info", "status"].map((priority) => `<option value="${priority}" ${this._priority === priority ? "selected" : ""}>${priority}</option>`).join("")}
+          ${["all", "critical", "high", "medium", "low", "info", "status"].map((priority) => `<option value="${priority}" ${this._priority === priority ? "selected" : ""}>${this._t(`priority_${priority}`)}</option>`).join("")}
         </select>
-        <label class="shelve-duration">Shelve for
+        <label class="shelve-duration">${this._t("shelve_for")}
           <select data-field="shelve-duration">
             ${this._shelveDurationOptions().map(([minutes, label]) => `<option value="${minutes}" ${this._shelveDurationMinutes === minutes ? "selected" : ""}>${label}</option>`).join("")}
           </select>
         </label>
-        <button data-action="refresh">Refresh</button>
+        <button data-action="refresh">${this._t("refresh")}</button>
       </section>
       <section class="table-shell">
         <table data-table-id="alarms">
           <thead>
             <tr>
-              <th>Time</th><th>Priority</th><th>Area</th><th>System</th><th>Tag</th><th>Alarm</th><th>Source Value</th><th>State</th><th>Shelved Until</th><th>Ack</th><th>Shelve</th><th>Instructions</th>
+              <th>${this._t("col_time")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_tag")}</th><th>${this._t("col_alarm")}</th><th>${this._t("col_source_value")}</th><th>${this._t("col_state")}</th><th>${this._t("col_shelved_until")}</th><th>${this._t("col_ack")}</th><th>${this._t("col_shelve")}</th><th>${this._t("col_instructions")}</th>
             </tr>
           </thead>
           <tbody>
-            ${alarms.length ? alarms.map((alarm) => this._alarmRow(alarm)).join("") : `<tr><td colspan="12" class="empty">No alarms in this view</td></tr>`}
+            ${alarms.length ? alarms.map((alarm) => this._alarmRow(alarm)).join("") : `<tr><td colspan="12" class="empty">${this._t("no_alarms")}</td></tr>`}
           </tbody>
         </table>
       </section>
@@ -368,8 +602,8 @@ class IndustrialAlarmPanel extends HTMLElement {
         <td>${this._escape(String(alarm.last_value ?? alarm.last_source_state ?? ""))}</td>
         <td>${this._escape(alarm.lifecycle_state)}</td>
         <td>${this._time(alarm.shelve_expiry)}</td>
-        <td><button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>Ack</button></td>
-        <td><button data-shelve="${this._escape(alarm.id)}" ${alarm.shelved || alarm.disabled ? "disabled" : ""}>Shelve</button></td>
+        <td><button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button></td>
+        <td><button data-shelve="${this._escape(alarm.id)}" ${alarm.shelved || alarm.disabled ? "disabled" : ""}>${this._t("shelve")}</button></td>
         <td>${this._escape(alarm.instructions || "")}</td>
       </tr>
     `;
@@ -379,7 +613,7 @@ class IndustrialAlarmPanel extends HTMLElement {
     return `
       <section class="table-shell">
         <table data-table-id="history">
-          <thead><tr><th>Time</th><th>Event</th><th>Priority</th><th>Area</th><th>Tag</th><th>Alarm</th><th>From</th><th>To</th><th>Operator</th></tr></thead>
+          <thead><tr><th>${this._t("col_time")}</th><th>${this._t("col_event")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_area")}</th><th>${this._t("col_tag")}</th><th>${this._t("col_alarm")}</th><th>${this._t("col_from")}</th><th>${this._t("col_to")}</th><th>${this._t("col_operator")}</th></tr></thead>
           <tbody>
             ${this._history.length ? this._history.map((event) => `
               <tr>
@@ -392,7 +626,7 @@ class IndustrialAlarmPanel extends HTMLElement {
                 <td>${this._escape(event.previous_state || "")}</td>
                 <td>${this._escape(event.new_state || "")}</td>
                 <td>${this._escape(event.operator || "")}</td>
-              </tr>`).join("") : `<tr><td colspan="9" class="empty">No history rows</td></tr>`}
+              </tr>`).join("") : `<tr><td colspan="9" class="empty">${this._t("no_history")}</td></tr>`}
           </tbody>
         </table>
       </section>
@@ -408,30 +642,30 @@ class IndustrialAlarmPanel extends HTMLElement {
     return `
       <section class="rules">
         <div class="suggested-rules">
-          <h2>Suggested Rules</h2>
+          <h2>${this._t("suggested_rules")}</h2>
           <div class="suggested-rules-controls">
-            <label>High W <input type="number" min="1" step="50" value="${this._escape(suggestionDraft.power_threshold_w)}" data-suggest="power_threshold_w"></label>
-            <label>Low V <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.low_voltage_v)}" data-suggest="low_voltage_v"></label>
-            <label>High V <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.high_voltage_v)}" data-suggest="high_voltage_v"></label>
-            <label>Solar C <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.high_solar_water_temp_c)}" data-suggest="high_solar_water_temp_c"></label>
-            <button class="secondary" data-action="preview-suggested-rules">Preview Suggested Rules</button>
-            <button class="secondary" data-action="select-all-suggested-rules" ${this._suggestedRules.length && selectedSuggestedCount !== this._suggestedRules.length ? "" : "disabled"}>Select All</button>
-            <button class="secondary" data-action="deselect-all-suggested-rules" ${selectedSuggestedCount ? "" : "disabled"}>Deselect All</button>
-            <button class="primary" data-action="create-selected-suggested-rules" ${selectedSuggestedCount ? "" : "disabled"}>Create Selected</button>
-            <button class="primary" data-action="create-all-suggested-rules" ${this._suggestedRules.length ? "" : "disabled"}>Create All</button>
-            <button class="danger" data-action="remove-auto-generated-rules" ${autoGeneratedCount ? "" : "disabled"}>Remove Auto-Generated Rules</button>
+            <label>${this._t("label_high_w")} <input type="number" min="1" step="50" value="${this._escape(suggestionDraft.power_threshold_w)}" data-suggest="power_threshold_w"></label>
+            <label>${this._t("label_low_v")} <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.low_voltage_v)}" data-suggest="low_voltage_v"></label>
+            <label>${this._t("label_high_v")} <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.high_voltage_v)}" data-suggest="high_voltage_v"></label>
+            <label>${this._t("label_solar_c")} <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.high_solar_water_temp_c)}" data-suggest="high_solar_water_temp_c"></label>
+            <button class="secondary" data-action="preview-suggested-rules">${this._t("preview_suggested")}</button>
+            <button class="secondary" data-action="select-all-suggested-rules" ${this._suggestedRules.length && selectedSuggestedCount !== this._suggestedRules.length ? "" : "disabled"}>${this._t("select_all")}</button>
+            <button class="secondary" data-action="deselect-all-suggested-rules" ${selectedSuggestedCount ? "" : "disabled"}>${this._t("deselect_all")}</button>
+            <button class="primary" data-action="create-selected-suggested-rules" ${selectedSuggestedCount ? "" : "disabled"}>${this._t("create_selected")}</button>
+            <button class="primary" data-action="create-all-suggested-rules" ${this._suggestedRules.length ? "" : "disabled"}>${this._t("create_all")}</button>
+            <button class="danger" data-action="remove-auto-generated-rules" ${autoGeneratedCount ? "" : "disabled"}>${this._t("remove_auto")}</button>
           </div>
           <div class="bulk-summary">
-            <span>${this._suggestedRules.length} suggested</span>
-            <span>${selectedSuggestedCount} selected</span>
-            <span>${selectedSuggestedCount * 4} estimated entities</span>
-            <span>${this._suggestedRules.length * 4} generated estimated entities</span>
+            <span>${this._t("n_suggested", { count: this._suggestedRules.length })}</span>
+            <span>${this._t("n_selected", { count: selectedSuggestedCount })}</span>
+            <span>${this._t("n_estimated_entities", { count: selectedSuggestedCount * 4 })}</span>
+            <span>${this._t("n_generated_estimated", { count: this._suggestedRules.length * 4 })}</span>
           </div>
           ${this._suggestedRulesResult ? `<div class="notice">${this._escape(this._suggestedRulesResult)}</div>` : ""}
           ${this._suggestedRules.length ? `
             <div class="table-shell suggested-preview">
               <table data-table-id="suggested-rules">
-                <thead><tr><th></th><th>ID</th><th>Entity</th><th>Name</th><th>Condition</th><th>Threshold</th><th>Priority</th></tr></thead>
+                <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_threshold")}</th><th>${this._t("col_priority")}</th></tr></thead>
                 <tbody>${this._suggestedRules.map((rule) => `
                   <tr>
                     <td><input class="row-select" type="checkbox" data-suggested-select="${this._escape(rule.id)}" ${this._selectedSuggestedRuleIds.has(rule.id) ? "checked" : ""}></td>
@@ -447,32 +681,32 @@ class IndustrialAlarmPanel extends HTMLElement {
           ` : ""}
         </div>
         <div class="rule-form">
-          <input placeholder="Rule id" value="${this._escape(ruleDraft.id)}" data-new="id">
-          <input placeholder="Entity id" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
+          <input placeholder="${this._t("placeholder_rule_id")}" value="${this._escape(ruleDraft.id)}" data-new="id">
+          <input placeholder="${this._t("placeholder_entity_id")}" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
           <datalist id="entity-id-options">${this._entityOptions()}</datalist>
-          <input placeholder="Name" value="${this._escape(ruleDraft.name)}" data-new="name">
+          <input placeholder="${this._t("placeholder_name")}" value="${this._escape(ruleDraft.name)}" data-new="name">
           <select data-new="condition">
             ${["above", "below", "equal", "not_equal", "contains", "is_on", "is_off", "state_changed", "unavailable", "unavailable_for", "unknown_for", "manual"].map((c) => `<option value="${c}" ${ruleDraft.condition === c ? "selected" : ""}>${c}</option>`).join("")}
           </select>
-          <input placeholder="Threshold" value="${this._escape(ruleDraft.threshold)}" data-new="threshold">
+          <input placeholder="${this._t("placeholder_threshold")}" value="${this._escape(ruleDraft.threshold)}" data-new="threshold">
           <select data-new="priority">
-            ${["critical", "high", "medium", "low", "info", "status"].map((p) => `<option value="${p}" ${ruleDraft.priority === p ? "selected" : ""}>${p}</option>`).join("")}
+            ${["critical", "high", "medium", "low", "info", "status"].map((p) => `<option value="${p}" ${ruleDraft.priority === p ? "selected" : ""}>${this._t(`priority_${p}`)}</option>`).join("")}
           </select>
-          <button class="primary" data-action="create-rule">Add Rule</button>
+          <button class="primary" data-action="create-rule">${this._t("add_rule")}</button>
         </div>
         ${this._rulesResult ? `<div class="notice">${this._escape(this._rulesResult)}</div>` : ""}
         <div class="bulk-actions">
-          <span>${this._rules.length} rules</span>
-          <span>${selectedRuleCount} selected</span>
-          <span>${autoGeneratedCount} auto-generated</span>
-          <span>${selectedRuleCount * 4} estimated entities</span>
-          <span>${autoGeneratedCount * 4} auto-generated estimated entities</span>
-          <button class="danger" data-action="delete-selected-rules" ${selectedRuleCount ? "" : "disabled"}>Delete Selected</button>
+          <span>${this._t("n_rules", { count: this._rules.length })}</span>
+          <span>${this._t("n_selected", { count: selectedRuleCount })}</span>
+          <span>${this._t("n_auto_generated", { count: autoGeneratedCount })}</span>
+          <span>${this._t("n_estimated_entities", { count: selectedRuleCount * 4 })}</span>
+          <span>${this._t("n_auto_generated_estimated", { count: autoGeneratedCount * 4 })}</span>
+          <button class="danger" data-action="delete-selected-rules" ${selectedRuleCount ? "" : "disabled"}>${this._t("delete_selected")}</button>
         </div>
         <div class="table-shell">
           <table data-table-id="rules">
-            <thead><tr><th></th><th>ID</th><th>Entity</th><th>Name</th><th>Condition</th><th>Priority</th><th>Enabled</th></tr></thead>
-            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.condition)}</td><td>${this._escape(rule.priority)}</td><td>${rule.enabled ? "yes" : "no"}</td></tr>`).join("") : `<tr><td colspan="7" class="empty">No rules configured</td></tr>`}</tbody>
+            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_enabled")}</th></tr></thead>
+            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td></tr>`).join("") : `<tr><td colspan="7" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
           </table>
         </div>
       </section>
@@ -495,12 +729,12 @@ class IndustrialAlarmPanel extends HTMLElement {
     return `
       <section class="settings">
         <dl>
-          <dt>Sound mode</dt><dd>${this._escape(this._sound.sound_mode || "browser_only")}</dd>
-          <dt>Browser sound</dt><dd>${this._sound.browser_enabled ? "enabled" : "disabled"}</dd>
-          <dt>Media player sound</dt><dd>${this._sound.media_player_enabled ? "enabled" : "disabled"}</dd>
-          <dt>Active audible alarms</dt><dd>${(this._sound.active_audible_alarms || []).length}</dd>
+          <dt>${this._t("sound_mode")}</dt><dd>${this._escape(this._sound.sound_mode || "browser_only")}</dd>
+          <dt>${this._t("browser_sound")}</dt><dd>${this._sound.browser_enabled ? this._t("enabled") : this._t("disabled")}</dd>
+          <dt>${this._t("media_player_sound")}</dt><dd>${this._sound.media_player_enabled ? this._t("enabled") : this._t("disabled")}</dd>
+          <dt>${this._t("active_audible")}</dt><dd>${(this._sound.active_audible_alarms || []).length}</dd>
         </dl>
-        <button data-action="test-sound">Test Sound</button>
+        <button data-action="test-sound">${this._t("test_sound")}</button>
       </section>
     `;
   }
@@ -606,8 +840,8 @@ class IndustrialAlarmPanel extends HTMLElement {
       this._suggestedRules = result?.suggested || [];
       this._selectedSuggestedRuleIds = new Set(this._suggestedRules.map((rule) => rule.id));
       this._suggestedRulesResult = this._suggestedRules.length
-        ? `Previewing ${this._suggestedRules.length} suggested rules, ${this._suggestedRules.length * 4} estimated entities`
-        : "No suggested rules found";
+        ? this._t("previewing_suggested", { count: this._suggestedRules.length, entities: this._suggestedRules.length * 4 })
+        : this._t("no_suggested_found");
     } catch (err) {
       this._suggestedRulesResult = err.message || String(err);
     }
@@ -635,12 +869,12 @@ class IndustrialAlarmPanel extends HTMLElement {
   async _createSuggestedRules(ruleIds) {
     const count = ruleIds.length;
     if (!count) {
-      this._suggestedRulesResult = "Select suggested rules before creating them";
+      this._suggestedRulesResult = this._t("select_before_create");
       this._render();
       return;
     }
     const estimatedEntities = count * 4;
-    if (!window.confirm(`Create ${count} suggested rules and about ${estimatedEntities} entities?`)) return;
+    if (!window.confirm(this._t("confirm_create_suggested", { count, entities: estimatedEntities }))) return;
     try {
       const result = await this._callWS({
         type: "industrial_alarm_panel/create_suggested_rules",
@@ -650,8 +884,8 @@ class IndustrialAlarmPanel extends HTMLElement {
       const createdCount = result?.created_count || 0;
       const skippedCount = result?.skipped_rule_ids?.length || 0;
       this._suggestedRulesResult = createdCount
-        ? `Created ${createdCount} suggested rules, ${createdCount * 4} estimated entities${skippedCount ? `, skipped ${skippedCount}` : ""}`
-        : "No new suggested alarm rules";
+        ? `${this._t("created_suggested", { count: createdCount, entities: createdCount * 4 })}${skippedCount ? this._t("skipped_suffix", { count: skippedCount }) : ""}`
+        : this._t("no_new_suggested");
       this._selectedSuggestedRuleIds = new Set();
       await this._load();
     } catch (err) {
@@ -662,22 +896,22 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   async _deleteSelectedRules() {
     const ruleIds = [...this._selectedRuleIds];
-    await this._deleteRules({ rule_ids: ruleIds }, ruleIds.length, "selected rules");
+    await this._deleteRules({ rule_ids: ruleIds }, ruleIds.length, this._t("label_selected_rules"));
   }
 
   async _removeAutoGeneratedRules() {
     const count = this._rules.filter((rule) => String(rule.id || "").startsWith("auto_")).length;
-    await this._deleteRules({ generated_only: true }, count, "auto-generated rules");
+    await this._deleteRules({ generated_only: true }, count, this._t("label_auto_rules"));
   }
 
   async _deleteRules(payload, count, label) {
     if (!count) {
-      this._rulesResult = `No ${label} to delete`;
+      this._rulesResult = this._t("no_items_to_delete", { label });
       this._render();
       return;
     }
     const estimatedEntities = count * 4;
-    if (!window.confirm(`Delete ${count} ${label} and about ${estimatedEntities} entities? Source entities will not be removed.`)) return;
+    if (!window.confirm(this._t("confirm_delete_rules", { count, label, entities: estimatedEntities }))) return;
     try {
       const result = await this._callWS({
         type: "industrial_alarm_panel/delete_rules",
@@ -686,7 +920,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       const deletedCount = result?.deleted_count || 0;
       const removedEntityCount = result?.removed_entity_count || 0;
       const skippedCount = result?.skipped_rule_ids?.length || 0;
-      this._rulesResult = `Deleted ${deletedCount} rules and ${removedEntityCount} entities${skippedCount ? `, skipped ${skippedCount}` : ""}`;
+      this._rulesResult = `${this._t("deleted_rules", { count: deletedCount, entities: removedEntityCount })}${skippedCount ? this._t("skipped_suffix", { count: skippedCount }) : ""}`;
       this._selectedRuleIds = new Set();
       await this._load();
     } catch (err) {
@@ -706,7 +940,7 @@ class IndustrialAlarmPanel extends HTMLElement {
   _clearSuggestedPreview() {
     this._suggestedRules = [];
     this._selectedSuggestedRuleIds = new Set();
-    this._suggestedRulesResult = "Preview suggested rules again after changing thresholds";
+    this._suggestedRulesResult = this._t("preview_again");
   }
 
   _setMembership(set, value, selected) {
@@ -926,7 +1160,7 @@ class IndustrialAlarmPanel extends HTMLElement {
 class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
   constructor() {
     super();
-    this._title = "Industrial Alarms";
+    this._title = "";
     this._hideTabs = false;
     this._hideHeader = false;
     this._themeMode = "auto";
@@ -935,7 +1169,7 @@ class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
   setConfig(config = {}) {
     const validTabs = new Set(["active", "unacknowledged", "history", "shelved", "disabled", "rules", "settings"]);
     this._cardConfig = config;
-    this._title = config.title || "Industrial Alarms";
+    this._title = config.title || "";
     this._tab = validTabs.has(config.tab) ? config.tab : "active";
     this._hideTabs = Boolean(config.hide_tabs);
     this._hideHeader = Boolean(config.hide_header);
