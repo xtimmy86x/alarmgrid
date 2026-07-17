@@ -29,7 +29,7 @@ class IndustrialAlarmPanel extends HTMLElement {
     this._sound = {};
     this._tab = "active";
     this._themeMode = "auto";
-    this._effectiveTheme = "dark";
+    this._effectiveTheme = "light";
     this._search = "";
     this._priority = "all";
     this._shelveDurationMinutes = 60;
@@ -246,11 +246,32 @@ class IndustrialAlarmPanel extends HTMLElement {
   _syncTheme() {
     const previousTheme = this._effectiveTheme;
     const mode = ["auto", "light", "dark"].includes(this._themeMode) ? this._themeMode : "auto";
-    const hassDarkMode = Boolean(this._hass?.themes?.darkMode);
+    const hassDarkMode = this._hassUsesDarkTheme();
     this._effectiveTheme = mode === "auto" ? (hassDarkMode ? "dark" : "light") : mode;
     if (this._rendered && previousTheme !== this._effectiveTheme) {
       queueMicrotask(() => this._render());
     }
+  }
+
+  _hassUsesDarkTheme() {
+    const darkMode = this._hass?.themes?.darkMode;
+    if (typeof darkMode === "boolean") return darkMode;
+    if (typeof darkMode === "string") {
+      const normalized = darkMode.trim().toLowerCase();
+      if (["dark", "true", "1", "yes", "on"].includes(normalized)) return true;
+      if (["light", "false", "0", "no", "off"].includes(normalized)) return false;
+    }
+    const colorScheme = this._hass?.selectedTheme?.theme?.colors?.["color-scheme"];
+    if (typeof colorScheme === "string") {
+      const normalized = colorScheme.trim().toLowerCase();
+      if (normalized.includes("dark")) return true;
+      if (normalized.includes("light")) return false;
+    }
+    const root = this.getRootNode?.();
+    const host = root?.host;
+    if (host?.classList?.contains("dark") || document.documentElement.classList.contains("dark")) return true;
+    if (host?.classList?.contains("light") || document.documentElement.classList.contains("light")) return false;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
   }
 
   _headerView() {
@@ -916,7 +937,7 @@ class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
       title: "Industrial Alarms",
       tab: "active",
       hide_tabs: false,
-      heme: "auto",
+      theme: "auto",
     };
   }
 }

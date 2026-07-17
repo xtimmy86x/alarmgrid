@@ -126,6 +126,12 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn(".theme-light", source)
         self.assertIn(".theme-dark", source)
         self.assertIn("config.theme", source)
+        self.assertIn("_hassUsesDarkTheme", source)
+        self.assertIn("typeof darkMode === \"boolean\"", source)
+        self.assertIn("typeof darkMode === \"string\"", source)
+        self.assertIn("prefers-color-scheme: dark", source)
+        self.assertIn("theme: \"auto\"", source)
+        self.assertNotIn("      heme: \"auto\"", source)
         self.assertIn("theme: auto", readme_source)
         
     def test_frontend_can_create_suggested_alarm_rules(self) -> None:
