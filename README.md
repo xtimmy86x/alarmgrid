@@ -27,6 +27,7 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 
 - Bumped the frontend cache-busting version so the light/dark theme bundle is reloaded by browsers and Lovelace instead of the cached pre-theme build.
 - Fixed unreadable `Silence`, `Ack All`, and secondary action buttons in the light theme by using white text and dedicated hover colors on colored buttons.
+- Added entity autocomplete to the rule form: the **Entity id** field now suggests all available Home Assistant entities (with friendly names) while typing.
 
 ## What's New in v1.0.13
 

@@ -448,7 +448,8 @@ class IndustrialAlarmPanel extends HTMLElement {
         </div>
         <div class="rule-form">
           <input placeholder="Rule id" value="${this._escape(ruleDraft.id)}" data-new="id">
-          <input placeholder="Entity id" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id">
+          <input placeholder="Entity id" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
+          <datalist id="entity-id-options">${this._entityOptions()}</datalist>
           <input placeholder="Name" value="${this._escape(ruleDraft.name)}" data-new="name">
           <select data-new="condition">
             ${["above", "below", "equal", "not_equal", "contains", "is_on", "is_off", "state_changed", "unavailable", "unavailable_for", "unknown_for", "manual"].map((c) => `<option value="${c}" ${ruleDraft.condition === c ? "selected" : ""}>${c}</option>`).join("")}
@@ -476,6 +477,18 @@ class IndustrialAlarmPanel extends HTMLElement {
         </div>
       </section>
     `;
+  }
+
+  _entityOptions() {
+    const states = this._hass?.states || {};
+    return Object.keys(states)
+      .sort()
+      .map((entityId) => {
+        const friendlyName = states[entityId]?.attributes?.friendly_name;
+        const label = friendlyName ? ` label="${this._escape(friendlyName)}"` : "";
+        return `<option value="${this._escape(entityId)}"${label}></option>`;
+      })
+      .join("");
   }
 
   _settingsView() {
