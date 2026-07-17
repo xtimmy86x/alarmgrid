@@ -844,9 +844,12 @@ class IndustrialAlarmPanel extends HTMLElement {
       button { cursor: pointer; }
       button:hover { background: var(--iap-control-hover); }
       button:disabled { opacity: .45; cursor: default; }
-      .primary { background: #2563eb; border-color: #3473ff; }
-      .danger { background: #9f1d1d; border-color: #d23b3b; }
-      .secondary { background: #30515d; border-color: #4b7b8c; }
+      .primary { background: #2563eb; border-color: #3473ff; color: #ffffff; }
+      .primary:hover { background: #1d4ed8; }
+      .danger { background: #9f1d1d; border-color: #d23b3b; color: #ffffff; }
+      .danger:hover { background: #831717; }
+      .secondary { background: #30515d; border-color: #4b7b8c; color: #ffffff; }
+      .secondary:hover { background: #3c6373; }
       .tabs { padding: 10px 18px; background: var(--iap-surface-alt); border-bottom: 1px solid var(--iap-border-soft); }
       .tabs button.selected { background: var(--iap-selected-bg); color: var(--iap-selected-text); border-color: var(--iap-selected-bg); }
       .toolbar { padding: 12px 18px; }
