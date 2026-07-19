@@ -35,6 +35,15 @@ const TRANSLATIONS = {
     priority_low: "low",
     priority_info: "info",
     priority_status: "status",
+    state_normal: "Normal",
+    state_active_unack: "Active, unacknowledged",
+    state_active_ack: "Active, acknowledged",
+    state_cleared_unack: "Cleared, unacknowledged",
+    state_cleared_ack: "Cleared, acknowledged",
+    state_shelved: "Shelved",
+    state_disabled: "Disabled",
+    state_suppressed: "Suppressed",
+    state_out_of_service: "Out of service",
     col_time: "Time",
     col_priority: "Priority",
     col_area: "Area",
@@ -148,6 +157,15 @@ const TRANSLATIONS = {
     priority_low: "bassa",
     priority_info: "info",
     priority_status: "stato",
+    state_normal: "Normale",
+    state_active_unack: "Attivo, non riconosciuto",
+    state_active_ack: "Attivo, riconosciuto",
+    state_cleared_unack: "Rientrato, non riconosciuto",
+    state_cleared_ack: "Rientrato, riconosciuto",
+    state_shelved: "Sospeso",
+    state_disabled: "Disabilitato",
+    state_suppressed: "Soppresso",
+    state_out_of_service: "Fuori servizio",
     col_time: "Ora",
     col_priority: "Priorità",
     col_area: "Area",
@@ -338,6 +356,13 @@ class IndustrialAlarmPanel extends HTMLElement {
       text = text.replaceAll(`{${name}}`, String(value));
     });
     return text;
+  }
+
+  _lifecycleLabel(state) {
+    const key = `state_${String(state || "NORMAL").toLowerCase()}`;
+    const table = TRANSLATIONS[this._language()] || TRANSLATIONS.en;
+    if (table[key] ?? TRANSLATIONS.en[key]) return this._t(key);
+    return this._escape(state);
   }
 
   _subscribeUpdates() {
@@ -624,13 +649,13 @@ class IndustrialAlarmPanel extends HTMLElement {
     return `
       <tr class="alarm-row priority-${alarm.priority} ${stateClass} ${flash ? "flash" : ""}">
         <td>${this._time(alarm.active_since || alarm.cleared_at)}</td>
-        <td><span class="badge">${alarm.priority}</span></td>
+        <td><span class="badge">${this._t(`priority_${alarm.priority}`)}</span></td>
         <td>${this._escape(alarm.area || "")}</td>
         <td>${this._escape(alarm.system || "")}</td>
         <td>${this._escape(alarm.tag || alarm.id)}</td>
         <td>${this._escape(alarm.name)}</td>
         <td>${this._escape(String(alarm.last_value ?? alarm.last_source_state ?? ""))}</td>
-        <td>${this._escape(alarm.lifecycle_state)}</td>
+        <td>${this._lifecycleLabel(alarm.lifecycle_state)}</td>
         <td>${this._time(alarm.shelve_expiry)}</td>
         <td><button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button></td>
         <td><button data-shelve="${this._escape(alarm.id)}" ${alarm.shelved || alarm.disabled ? "disabled" : ""}>${this._t("shelve")}</button></td>
@@ -649,12 +674,12 @@ class IndustrialAlarmPanel extends HTMLElement {
               <tr>
                 <td>${this._time(event.timestamp)}</td>
                 <td>${this._escape(event.event_type)}</td>
-                <td>${this._escape(event.priority || "")}</td>
+                <td>${event.priority ? this._t(`priority_${event.priority}`) : ""}</td>
                 <td>${this._escape(event.area || "")}</td>
                 <td>${this._escape(event.tag || event.rule_id || "")}</td>
                 <td>${this._escape(event.name || event.message || "")}</td>
-                <td>${this._escape(event.previous_state || "")}</td>
-                <td>${this._escape(event.new_state || "")}</td>
+                <td>${event.previous_state ? this._lifecycleLabel(event.previous_state) : ""}</td>
+                <td>${event.new_state ? this._lifecycleLabel(event.new_state) : ""}</td>
                 <td>${this._escape(event.operator || "")}</td>
               </tr>`).join("") : `<tr><td colspan="9" class="empty">${this._t("no_history")}</td></tr>`}
           </tbody>
