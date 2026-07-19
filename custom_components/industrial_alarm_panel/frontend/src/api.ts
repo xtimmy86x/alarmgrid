@@ -8,6 +8,8 @@ export const commands = {
   listSuggestedRules: `${DOMAIN}/list_suggested_rules`,
   createSuggestedRules: `${DOMAIN}/create_suggested_rules`,
   deleteRules: `${DOMAIN}/delete_rules`,
+  exportRules: `${DOMAIN}/export_rules`,
+  importRules: `${DOMAIN}/import_rules`,
   updateRule: `${DOMAIN}/update_rule`,
   deleteRule: `${DOMAIN}/delete_rule`,
   acknowledge: `${DOMAIN}/acknowledge`,

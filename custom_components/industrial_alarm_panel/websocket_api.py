@@ -15,6 +15,8 @@ from .alarm_models import AlarmPriority
 from .const import DOMAIN
 from .rule_management import (
     delete_rules,
+    export_rules_csv,
+    import_rules_csv,
     matching_per_rule_entity_entries,
     select_suggested_rules,
 )
@@ -51,6 +53,8 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_update_rule)
     websocket_api.async_register_command(hass, websocket_delete_rule)
     websocket_api.async_register_command(hass, websocket_delete_rules)
+    websocket_api.async_register_command(hass, websocket_export_rules)
+    websocket_api.async_register_command(hass, websocket_import_rules)
     websocket_api.async_register_command(hass, websocket_acknowledge)
     websocket_api.async_register_command(hass, websocket_acknowledge_all)
     websocket_api.async_register_command(hass, websocket_silence)
@@ -91,7 +95,9 @@ async def websocket_list_alarms(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "industrial_alarm_panel/list_history",
-        vol.Optional("limit", default=250): vol.All(vol.Coerce(int), vol.Range(min=1, max=5000)),
+        vol.Optional("limit", default=250): vol.All(
+            vol.Coerce(int), vol.Range(min=1, max=5000)
+        ),
         vol.Optional("start_time"): str,
         vol.Optional("end_time"): str,
         vol.Optional("priority"): str,
@@ -140,7 +146,66 @@ async def websocket_list_rules(
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "industrial_alarm_panel/create_rule", vol.Required("rule"): dict}
+    {vol.Required("type"): "industrial_alarm_panel/export_rules"}
+)
+@websocket_api.async_response
+async def websocket_export_rules(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Export every alarm rule as CSV."""
+
+    runtime = _runtime(hass)
+    connection.send_result(
+        msg["id"], {"csv": export_rules_csv(runtime.engine.rules.values())}
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "industrial_alarm_panel/import_rules",
+        vol.Required("csv"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_import_rules(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Import rules from CSV, updating rules whose IDs already exist."""
+
+    runtime = _runtime(hass)
+    rules = import_rules_csv(msg["csv"])
+    created_ids: list[str] = []
+    updated_ids: list[str] = []
+    for rule in rules:
+        rule_data = rule.to_dict()
+        if rule.id in runtime.engine.rules:
+            await runtime.engine.update_rule(rule.id, rule_data)
+            updated_ids.append(rule.id)
+        else:
+            await runtime.engine.create_rule(rule_data)
+            created_ids.append(rule.id)
+
+    await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
+    hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+    connection.send_result(
+        msg["id"],
+        {
+            "imported_count": len(rules),
+            "created_ids": created_ids,
+            "updated_ids": updated_ids,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "industrial_alarm_panel/create_rule",
+        vol.Required("rule"): dict,
+    }
 )
 @websocket_api.async_response
 async def websocket_create_rule(
@@ -208,9 +273,7 @@ async def websocket_create_suggested_rules(
         high_voltage_v=msg["high_voltage_v"],
         high_solar_water_temp_c=msg["high_solar_water_temp_c"],
     )
-    selected, skipped_rule_ids = select_suggested_rules(
-        suggested, msg.get("rule_ids")
-    )
+    selected, skipped_rule_ids = select_suggested_rules(suggested, msg.get("rule_ids"))
 
     created = []
     for rule_data in selected:

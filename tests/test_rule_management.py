@@ -8,6 +8,8 @@ from custom_components.industrial_alarm_panel.alarm_models import (
 from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
 from custom_components.industrial_alarm_panel.rule_management import (
     delete_rules,
+    export_rules_csv,
+    import_rules_csv,
     is_generated_rule_id,
     matching_per_rule_entity_entries,
     per_rule_entity_unique_ids,
@@ -46,11 +48,47 @@ def make_rule(rule_id: str, entity_id: str = "sensor.source") -> AlarmRule:
 
 
 class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
+    def test_rules_csv_round_trip_preserves_values_and_escaping(self) -> None:
+        rule = AlarmRule.from_dict(
+            {
+                "id": "temperature_high",
+                "entity_id": "sensor.temperature",
+                "name": 'Temperature, "high"',
+                "description": "Line one\nLine two",
+                "condition": "above",
+                "threshold": 42.5,
+                "priority": "high",
+                "enabled": False,
+                "audible": False,
+            }
+        )
+
+        imported = import_rules_csv(export_rules_csv([rule]))
+
+        self.assertEqual(len(imported), 1)
+        self.assertEqual(imported[0].to_dict(), rule.to_dict())
+
+    def test_rules_csv_rejects_missing_columns(self) -> None:
+        with self.assertRaisesRegex(AlarmValidationError, "missing required columns"):
+            import_rules_csv("id,name,condition\nr1,Rule,above\n")
+
+    def test_rules_csv_rejects_duplicate_ids(self) -> None:
+        content = (
+            "id,entity_id,name,condition,threshold\n"
+            "r1,sensor.one,One,above,1\n"
+            "r1,sensor.two,Two,below,2\n"
+        )
+
+        with self.assertRaisesRegex(AlarmValidationError, "duplicate rule id r1"):
+            import_rules_csv(content)
+
     def test_generated_rule_ids_use_auto_prefix(self) -> None:
         self.assertTrue(is_generated_rule_id("auto_sensor_main_power_unavailable"))
         self.assertFalse(is_generated_rule_id("manual_temperature_high"))
 
-    def test_select_suggested_rules_keeps_requested_order_and_reports_skips(self) -> None:
+    def test_select_suggested_rules_keeps_requested_order_and_reports_skips(
+        self,
+    ) -> None:
         suggested = [
             {"id": "auto_a", "name": "A"},
             {"id": "auto_b", "name": "B"},
@@ -83,7 +121,9 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
 
         result = await delete_rules(engine, generated_only=True)
 
-        self.assertEqual(result.deleted_rule_ids, ["auto_sensor_power_high_consumption"])
+        self.assertEqual(
+            result.deleted_rule_ids, ["auto_sensor_power_high_consumption"]
+        )
         self.assertEqual(result.skipped_rule_ids, [])
         self.assertNotIn("auto_sensor_power_high_consumption", engine.rules)
         self.assertIn("manual_temperature_high", engine.rules)
@@ -158,13 +198,17 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
         )
         entries = [
             FakeRegistryEntry("binary_sensor.match", expected_unique_id, "entry-1"),
-            FakeRegistryEntry("binary_sensor.other_entry", expected_unique_id, "entry-2"),
+            FakeRegistryEntry(
+                "binary_sensor.other_entry", expected_unique_id, "entry-2"
+            ),
             FakeRegistryEntry("sensor.source", "sensor.source_unique", "entry-1"),
         ]
 
         matches = matching_per_rule_entity_entries("entry-1", [rule], entries)
 
-        self.assertEqual([entry.entity_id for entry in matches], ["binary_sensor.match"])
+        self.assertEqual(
+            [entry.entity_id for entry in matches], ["binary_sensor.match"]
+        )
 
 
 if __name__ == "__main__":

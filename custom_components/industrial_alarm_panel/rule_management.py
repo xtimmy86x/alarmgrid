@@ -2,12 +2,51 @@
 
 from __future__ import annotations
 
+import csv
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
+from io import StringIO
 from typing import Any, Protocol
 
 from .alarm_models import AlarmRule, AlarmValidationError
 from .const import DOMAIN
+
+RULE_CSV_FIELDS = (
+    "id",
+    "enabled",
+    "entity_id",
+    "name",
+    "tag",
+    "area",
+    "system",
+    "description",
+    "condition",
+    "threshold",
+    "deadband",
+    "priority",
+    "requires_ack",
+    "audible",
+    "sound_profile",
+    "delay_on_seconds",
+    "delay_off_seconds",
+    "min_active_duration_seconds",
+    "repeat_alarm_after_seconds",
+    "show_when_cleared",
+    "auto_ack_on_clear",
+    "shelving_allowed",
+    "instructions",
+    "duration",
+    "template",
+)
+
+_BOOLEAN_CSV_FIELDS = {
+    "enabled",
+    "requires_ack",
+    "audible",
+    "show_when_cleared",
+    "auto_ack_on_clear",
+    "shelving_allowed",
+}
 
 
 class _RegistryEntry(Protocol):
@@ -29,6 +68,59 @@ class RuleDeletionResult:
 
         return [rule.id for rule in self.deleted_rules]
 
+
+def export_rules_csv(rules: Iterable[AlarmRule]) -> str:
+    """Serialize alarm rules to a spreadsheet-friendly CSV document."""
+
+    output = StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=RULE_CSV_FIELDS, extrasaction="ignore")
+    writer.writeheader()
+    for rule in rules:
+        writer.writerow(rule.to_dict())
+    return output.getvalue()
+
+
+def import_rules_csv(content: str) -> list[AlarmRule]:
+    """Parse and validate every alarm rule in a CSV document."""
+
+    if not content.strip():
+        raise AlarmValidationError("CSV file is empty")
+    try:
+        reader = csv.DictReader(StringIO(content.lstrip("\ufeff")))
+        if reader.fieldnames is None:
+            raise AlarmValidationError("CSV header is missing")
+        missing = {"id", "entity_id", "name", "condition"} - set(reader.fieldnames)
+        if missing:
+            raise AlarmValidationError(
+                f"CSV is missing required columns: {', '.join(sorted(missing))}"
+            )
+
+        rules: list[AlarmRule] = []
+        seen: set[str] = set()
+        for row_number, row in enumerate(reader, start=2):
+            if None in row:
+                raise AlarmValidationError(f"CSV row {row_number} has extra columns")
+            data = {key: value for key, value in row.items() if value != ""}
+            for field_name in _BOOLEAN_CSV_FIELDS & data.keys():
+                value = data[field_name].strip().lower()
+                if value not in {"true", "false", "1", "0", "yes", "no"}:
+                    raise AlarmValidationError(
+                        f"CSV row {row_number}: {field_name} must be true or false"
+                    )
+                data[field_name] = value in {"true", "1", "yes"}
+            rule = AlarmRule.from_dict(data)
+            if rule.id in seen:
+                raise AlarmValidationError(
+                    f"CSV row {row_number}: duplicate rule id {rule.id}"
+                )
+            seen.add(rule.id)
+            rules.append(rule)
+    except csv.Error as exc:
+        raise AlarmValidationError(f"Invalid CSV: {exc}") from exc
+
+    if not rules:
+        raise AlarmValidationError("CSV contains no rules")
+    return rules
 
 def is_generated_rule_id(rule_id: str) -> bool:
     """Return whether a rule ID belongs to generated suggestions."""
