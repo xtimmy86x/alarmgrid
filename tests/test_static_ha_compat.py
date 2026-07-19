@@ -167,6 +167,18 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("colgroup", source)
         self.assertIn("data-table-id", source)
 
+    def test_frontend_downloads_history_for_a_selected_time_range(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+
+        self.assertIn('type="datetime-local" data-history-range="start"', source)
+        self.assertIn('type="datetime-local" data-history-range="end"', source)
+        self.assertIn('type: "industrial_alarm_panel/export_history"', source)
+        self.assertIn("start_time: start.toISOString()", source)
+        self.assertIn("end_time: end.toISOString()", source)
+        self.assertIn("industrial-alarm-history-", source)
+        
     def test_frontend_delays_alarm_color_and_throttles_browser_horn(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"

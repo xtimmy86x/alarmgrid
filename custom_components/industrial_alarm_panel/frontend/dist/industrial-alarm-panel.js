@@ -28,6 +28,12 @@ const TRANSLATIONS = {
     search_placeholder: "Search tag, alarm, entity, area",
     shelve_for: "Shelve for",
     refresh: "Refresh",
+    history_from: "From",
+    history_to: "To",
+    download_history: "Download CSV",
+    history_range_required: "Select both the start and end of the time range",
+    history_range_invalid: "The end of the time range must be after the start",
+    history_exported: "Downloaded {count} history events",
     priority_all: "all",
     priority_critical: "critical",
     priority_high: "high",
@@ -154,6 +160,12 @@ const TRANSLATIONS = {
     search_placeholder: "Cerca tag, allarme, entità, area",
     shelve_for: "Sospendi per",
     refresh: "Aggiorna",
+    history_from: "Da",
+    history_to: "A",
+    download_history: "Scarica CSV",
+    history_range_required: "Seleziona l'inizio e la fine dell'intervallo",
+    history_range_invalid: "La fine dell'intervallo deve essere successiva all'inizio",
+    history_exported: "Scaricati {count} eventi dello storico",
     priority_all: "tutte",
     priority_critical: "critica",
     priority_high: "alta",
@@ -261,6 +273,9 @@ class IndustrialAlarmPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._alarms = [];
     this._history = [];
+    this._historyStart = "";
+    this._historyEnd = "";
+    this._historyExportResult = "";
     this._rules = [];
     this._ruleDraft = {
       id: "",
@@ -674,6 +689,16 @@ class IndustrialAlarmPanel extends HTMLElement {
 
   _historyView() {
     return `
+      <section class="toolbar history-export">
+        <label>${this._t("history_from")}
+          <input type="datetime-local" data-history-range="start" value="${this._escape(this._historyStart)}">
+        </label>
+        <label>${this._t("history_to")}
+          <input type="datetime-local" data-history-range="end" value="${this._escape(this._historyEnd)}">
+        </label>
+        <button class="primary" data-action="export-history">${this._t("download_history")}</button>
+        ${this._historyExportResult ? `<span class="notice history-export-result">${this._escape(this._historyExportResult)}</span>` : ""}
+      </section>
       <section class="table-shell">
         <table data-table-id="history">
           <thead><tr><th>${this._t("col_time")}</th><th>${this._t("col_event")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_area")}</th><th>${this._t("col_tag")}</th><th>${this._t("col_alarm")}</th><th>${this._t("col_from")}</th><th>${this._t("col_to")}</th><th>${this._t("col_operator")}</th></tr></thead>
@@ -819,6 +844,7 @@ class IndustrialAlarmPanel extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='ack-all']")?.addEventListener("click", () => this._ackAll());
     this.shadowRoot.querySelector("[data-action='silence']")?.addEventListener("click", () => this._silence());
     this.shadowRoot.querySelector("[data-action='refresh']")?.addEventListener("click", () => this._load());
+    this.shadowRoot.querySelector("[data-action='export-history']")?.addEventListener("click", () => this._exportHistory());
     this.shadowRoot.querySelector("[data-action='toggle-menu']")?.addEventListener("click", () => this._toggleSidebar());
     this.shadowRoot.querySelector("[data-action='enable-audio']")?.addEventListener("click", () => this._testSound());
     this.shadowRoot.querySelector("[data-action='test-sound']")?.addEventListener("click", () => this._testSound());
@@ -850,6 +876,13 @@ class IndustrialAlarmPanel extends HTMLElement {
       };
       field.addEventListener("input", updateDraft);
       field.addEventListener("change", updateDraft);
+    });
+    this.shadowRoot.querySelectorAll("[data-history-range]").forEach((field) => {
+      field.addEventListener("change", () => {
+        if (field.dataset.historyRange === "start") this._historyStart = field.value;
+        else this._historyEnd = field.value;
+        this._historyExportResult = "";
+      });
     });
     this.shadowRoot.querySelectorAll("[data-suggested-select]").forEach((field) => {
       field.addEventListener("change", () => {
@@ -1038,6 +1071,46 @@ class IndustrialAlarmPanel extends HTMLElement {
       this._rulesResult = err.message || String(err);
       this._render();
     }
+  }
+
+  async _exportHistory() {
+    if (!this._historyStart || !this._historyEnd) {
+      this._historyExportResult = this._t("history_range_required");
+      this._render();
+      return;
+    }
+    const start = new Date(this._historyStart);
+    const end = new Date(this._historyEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      this._historyExportResult = this._t("history_range_invalid");
+      this._render();
+      return;
+    }
+    try {
+      const result = await this._callWS({
+        type: "industrial_alarm_panel/export_history",
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        format: "csv",
+      });
+      const rows = result?.rows || [];
+      const columns = ["timestamp", "event_type", "priority", "area", "system", "tag", "rule_id", "entity_id", "name", "previous_state", "new_state", "source_state", "source_value", "message", "operator"];
+      const csvCell = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+      const csv = [columns, ...rows.map((row) => columns.map((column) => row[column]))]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\r\n");
+      const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `industrial-alarm-history-${this._historyStart.replaceAll(":", "-")}-${this._historyEnd.replaceAll(":", "-")}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      this._historyExportResult = this._t("history_exported", { count: rows.length });
+    } catch (err) {
+      this._historyExportResult = err.message || String(err);
+    }
+    this._render();
   }
 
   async _importRules(file) {
@@ -1265,6 +1338,9 @@ class IndustrialAlarmPanel extends HTMLElement {
       .tabs button.selected { background: var(--iap-selected-bg); color: var(--iap-selected-text); border-color: var(--iap-selected-bg); }
       .toolbar { padding: 12px 18px; }
       .shelve-duration { display: flex; gap: 6px; align-items: center; color: var(--iap-heading-muted); font-size: 13px; }
+      .history-export label { display: grid; gap: 4px; color: var(--iap-heading-muted); font-size: 12px; }
+      .history-export input { min-width: 210px; }
+      .history-export-result { margin-top: 0; }      
       .table-shell { overflow: auto; padding: 0 18px 18px; }
       table { width: 100%; border-collapse: collapse; background: var(--iap-surface); table-layout: auto; }
       th, td { border-bottom: 1px solid var(--iap-border-soft); padding: 8px 9px; text-align: left; font-size: 13px; white-space: nowrap; }
