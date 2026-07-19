@@ -9,6 +9,7 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 from .alarm_models import AlarmPriority
 from .const import DOMAIN
@@ -63,7 +64,7 @@ def _runtime(hass: HomeAssistant) -> Any:
     for key, value in hass.data.get(DOMAIN, {}).items():
         if key not in {"services_registered", "websocket_registered"}:
             return value
-    raise RuntimeError("Industrial Alarm Panel is not configured")
+    raise HomeAssistantError("Industrial Alarm Panel is not loaded")
 
 
 @websocket_api.websocket_command(

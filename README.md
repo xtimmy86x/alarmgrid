@@ -23,12 +23,13 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
-## What's New in v1.0.14
+## What's New in v1.0.15
 
 - Bumped the frontend cache-busting version so the light/dark theme bundle is reloaded by browsers and Lovelace instead of the cached pre-theme build.
 - Fixed unreadable `Silence`, `Ack All`, and secondary action buttons in the light theme by using white text and dedicated hover colors on colored buttons.
 - Added entity autocomplete to the rule form: the **Entity id** field now suggests all available Home Assistant entities (with friendly names) while typing.
 - Added Italian localization: the panel and card UI follow the Home Assistant user language (English and Italian), and the config flow ships an `it.json` translation.
+- Added an **Edit** button to each rule row: the rule form switches to edit mode with Save/Cancel and updates the rule through the existing `update_rule` WebSocket command.
 
 ## What's New in v1.0.13
 
@@ -103,7 +104,7 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 You can embed the same Industrial Alarm Panel frontend in a Lovelace dashboard as a custom card. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.14
+url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.15
 type: module
 ```
 

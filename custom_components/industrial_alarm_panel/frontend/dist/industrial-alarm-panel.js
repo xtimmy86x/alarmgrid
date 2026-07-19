@@ -85,6 +85,11 @@ const TRANSLATIONS = {
     placeholder_name: "Name",
     placeholder_threshold: "Threshold",
     add_rule: "Add Rule",
+    edit: "Edit",
+    save_rule: "Save Rule",
+    cancel: "Cancel",
+    editing_rule: "Editing rule {id}",
+    rule_updated: "Rule {id} updated",
     delete_selected: "Delete Selected",
     yes: "yes",
     no: "no",
@@ -193,6 +198,11 @@ const TRANSLATIONS = {
     placeholder_name: "Nome",
     placeholder_threshold: "Soglia",
     add_rule: "Aggiungi regola",
+    edit: "Modifica",
+    save_rule: "Salva regola",
+    cancel: "Annulla",
+    editing_rule: "Modifica della regola {id}",
+    rule_updated: "Regola {id} aggiornata",
     delete_selected: "Elimina selezionate",
     yes: "sì",
     no: "no",
@@ -243,6 +253,7 @@ class IndustrialAlarmPanel extends HTMLElement {
     this._suggestedRules = [];
     this._selectedSuggestedRuleIds = new Set();
     this._selectedRuleIds = new Set();
+    this._editingRuleId = null;
     this._rulesResult = null;
     this._suggestedRulesResult = null;
     this._sound = {};
@@ -293,6 +304,10 @@ class IndustrialAlarmPanel extends HTMLElement {
     if (this._alarmVisualRefreshTimer) {
       window.clearTimeout(this._alarmVisualRefreshTimer);
       this._alarmVisualRefreshTimer = undefined;
+    }
+    if (this._retryLoadTimer) {
+      window.clearTimeout(this._retryLoadTimer);
+      this._retryLoadTimer = undefined;
     }
     if (this._unsubscribeUpdates) {
       Promise.resolve(this._unsubscribeUpdates)
@@ -362,14 +377,29 @@ class IndustrialAlarmPanel extends HTMLElement {
       this._suggestedRules = this._suggestedRules.filter((rule) => !ruleIds.has(rule.id));
       const suggestedRuleIds = new Set(this._suggestedRules.map((rule) => rule.id));
       this._selectedSuggestedRuleIds = new Set([...this._selectedSuggestedRuleIds].filter((id) => suggestedRuleIds.has(id)));
+      this._error = undefined;
       this._maybePlayBrowserHorn();
       if (!this._isEditingRulesForm()) this._render();
     } catch (err) {
-      this._error = err.message || String(err);
-      if (!this._isEditingRulesForm()) this._render();
+      const message = err?.message || String(err);
+      if (/not loaded|not configured/i.test(message)) {
+        // The config entry is reloading (e.g. after a rule change); retry shortly.
+        this._scheduleRetryLoad();
+      } else {
+        this._error = message;
+        if (!this._isEditingRulesForm()) this._render();
+      }
     } finally {
       this._refreshing = false;
     }
+  }
+
+  _scheduleRetryLoad() {
+    if (this._retryLoadTimer) return;
+    this._retryLoadTimer = window.setTimeout(() => {
+      this._retryLoadTimer = undefined;
+      this._load();
+    }, 1500);
   }
 
   async _ack(ruleId) {
@@ -681,7 +711,7 @@ class IndustrialAlarmPanel extends HTMLElement {
           ` : ""}
         </div>
         <div class="rule-form">
-          <input placeholder="${this._t("placeholder_rule_id")}" value="${this._escape(ruleDraft.id)}" data-new="id">
+          <input placeholder="${this._t("placeholder_rule_id")}" value="${this._escape(ruleDraft.id)}" data-new="id" ${this._editingRuleId ? "disabled" : ""}>
           <input placeholder="${this._t("placeholder_entity_id")}" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
           <datalist id="entity-id-options">${this._entityOptions()}</datalist>
           <input placeholder="${this._t("placeholder_name")}" value="${this._escape(ruleDraft.name)}" data-new="name">
@@ -692,8 +722,12 @@ class IndustrialAlarmPanel extends HTMLElement {
           <select data-new="priority">
             ${["critical", "high", "medium", "low", "info", "status"].map((p) => `<option value="${p}" ${ruleDraft.priority === p ? "selected" : ""}>${this._t(`priority_${p}`)}</option>`).join("")}
           </select>
-          <button class="primary" data-action="create-rule">${this._t("add_rule")}</button>
+          ${this._editingRuleId
+            ? `<button class="primary" data-action="update-rule">${this._t("save_rule")}</button>
+          <button class="secondary" data-action="cancel-edit-rule">${this._t("cancel")}</button>`
+            : `<button class="primary" data-action="create-rule">${this._t("add_rule")}</button>`}
         </div>
+        ${this._editingRuleId ? `<div class="notice">${this._t("editing_rule", { id: this._escape(this._editingRuleId) })}</div>` : ""}
         ${this._rulesResult ? `<div class="notice">${this._escape(this._rulesResult)}</div>` : ""}
         <div class="bulk-actions">
           <span>${this._t("n_rules", { count: this._rules.length })}</span>
@@ -705,8 +739,8 @@ class IndustrialAlarmPanel extends HTMLElement {
         </div>
         <div class="table-shell">
           <table data-table-id="rules">
-            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_enabled")}</th></tr></thead>
-            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td></tr>`).join("") : `<tr><td colspan="7" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
+            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
+            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="8" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
           </table>
         </div>
       </section>
@@ -753,6 +787,9 @@ class IndustrialAlarmPanel extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='enable-audio']")?.addEventListener("click", () => this._testSound());
     this.shadowRoot.querySelector("[data-action='test-sound']")?.addEventListener("click", () => this._testSound());
     this.shadowRoot.querySelector("[data-action='create-rule']")?.addEventListener("click", () => this._createRule());
+    this.shadowRoot.querySelector("[data-action='update-rule']")?.addEventListener("click", () => this._updateRule());
+    this.shadowRoot.querySelector("[data-action='cancel-edit-rule']")?.addEventListener("click", () => this._cancelEditRule());
+    this.shadowRoot.querySelectorAll("[data-edit-rule]").forEach((button) => button.addEventListener("click", () => this._startEditRule(button.dataset.editRule)));
     this.shadowRoot.querySelector("[data-action='preview-suggested-rules']")?.addEventListener("click", () => this._previewSuggestedRules());
     this.shadowRoot.querySelector("[data-action='select-all-suggested-rules']")?.addEventListener("click", () => this._selectAllSuggestedRules());
     this.shadowRoot.querySelector("[data-action='deselect-all-suggested-rules']")?.addEventListener("click", () => this._deselectAllSuggestedRules());
@@ -812,6 +849,12 @@ class IndustrialAlarmPanel extends HTMLElement {
     });
     if (fields.threshold !== undefined && fields.threshold !== "") fields.threshold = Number(fields.threshold);
     await this._callWS({ type: "industrial_alarm_panel/create_rule", rule: fields });
+    this._resetRuleDraft();
+    await this._load();
+  }
+
+  _resetRuleDraft() {
+    this._editingRuleId = null;
     this._ruleDraft = {
       id: "",
       entity_id: "",
@@ -820,7 +863,50 @@ class IndustrialAlarmPanel extends HTMLElement {
       threshold: "",
       priority: "medium",
     };
-    await this._load();
+  }
+
+  _startEditRule(ruleId) {
+    const rule = this._rules.find((item) => item.id === ruleId);
+    if (!rule) return;
+    this._editingRuleId = ruleId;
+    this._ruleDraft = {
+      id: rule.id || "",
+      entity_id: rule.entity_id || "",
+      name: rule.name || "",
+      condition: rule.condition || "above",
+      threshold: rule.threshold ?? "",
+      priority: rule.priority || "medium",
+    };
+    this._render();
+    this.shadowRoot.querySelector("[data-new='entity_id']")?.focus();
+  }
+
+  _cancelEditRule() {
+    this._resetRuleDraft();
+    this._render();
+  }
+
+  async _updateRule() {
+    if (!this._editingRuleId) return;
+    const changes = { ...this._ruleDraft };
+    delete changes.id;
+    Object.keys(changes).forEach((key) => {
+      if (changes[key] === "") delete changes[key];
+    });
+    if (changes.threshold !== undefined) changes.threshold = Number(changes.threshold);
+    try {
+      await this._callWS({
+        type: "industrial_alarm_panel/update_rule",
+        rule_id: this._editingRuleId,
+        changes,
+      });
+      this._rulesResult = this._t("rule_updated", { id: this._editingRuleId });
+      this._resetRuleDraft();
+      await this._load();
+    } catch (err) {
+      this._rulesResult = err.message || String(err);
+      this._render();
+    }
   }
 
   _toggleSidebar() {
