@@ -29,7 +29,11 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Fixed unreadable `Silence`, `Ack All`, and secondary action buttons in the light theme by using white text and dedicated hover colors on colored buttons.
 - Added entity autocomplete to the rule form: the **Entity id** field now suggests all available Home Assistant entities (with friendly names) while typing.
 - Added Italian localization: the panel and card UI follow the Home Assistant user language (English and Italian), and the config flow ships an `it.json` translation.
+- Localized alarm priorities and lifecycle states in the alarm and history tables (for example `ACTIVE_UNACK` renders as "Active, unacknowledged" / "Attivo, non riconosciuto").
 - Added an **Edit** button to each rule row: the rule form switches to edit mode with Save/Cancel and updates the rule through the existing `update_rule` WebSocket command.
+- Fixed the "Industrial Alarm Panel is not configured" traceback logged when the panel refreshed during the config entry reload that follows a rule change; the frontend now silently retries while the reload completes.
+- Auto-filled the rule **area** from the Home Assistant area of the source entity (entity or device registry) when creating or saving a rule from the panel.
+- Added an editable **System** field to the rule form and Area/System columns to the rules table.
 
 ## What's New in v1.0.13
 
