@@ -98,6 +98,7 @@ const TRANSLATIONS = {
     placeholder_rule_id: "Rule id",
     placeholder_entity_id: "Entity id",
     placeholder_name: "Name",
+    placeholder_system: "System",
     placeholder_threshold: "Threshold",
     add_rule: "Add Rule",
     edit: "Edit",
@@ -230,6 +231,7 @@ const TRANSLATIONS = {
     placeholder_rule_id: "ID regola",
     placeholder_entity_id: "ID entità",
     placeholder_name: "Nome",
+    placeholder_system: "Sistema",
     placeholder_threshold: "Soglia",
     add_rule: "Aggiungi regola",
     edit: "Modifica",
@@ -284,6 +286,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       condition: "above",
       threshold: "",
       priority: "medium",
+      system: "",
     };
     this._suggestionDraft = {
       power_threshold_w: 2000,
@@ -773,6 +776,7 @@ class IndustrialAlarmPanel extends HTMLElement {
           <input placeholder="${this._t("placeholder_entity_id")}" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
           <datalist id="entity-id-options">${this._entityOptions()}</datalist>
           <input placeholder="${this._t("placeholder_name")}" value="${this._escape(ruleDraft.name)}" data-new="name">
+          <input placeholder="${this._t("placeholder_system")}" value="${this._escape(ruleDraft.system)}" data-new="system">
           <select data-new="condition">
             ${["above", "below", "equal", "not_equal", "contains", "is_on", "is_off", "state_changed", "unavailable", "unavailable_for", "unknown_for", "manual"].map((c) => `<option value="${c}" ${ruleDraft.condition === c ? "selected" : ""}>${c}</option>`).join("")}
           </select>
@@ -800,8 +804,8 @@ class IndustrialAlarmPanel extends HTMLElement {
           </div>
         <div class="table-shell">
           <table data-table-id="rules">
-            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
-            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="8" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
+            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
+            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.area || "")}</td><td>${this._escape(rule.system || "")}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="10" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
           </table>
         </div>
       </section>
@@ -818,6 +822,15 @@ class IndustrialAlarmPanel extends HTMLElement {
         return `<option value="${this._escape(entityId)}"${label}></option>`;
       })
       .join("");
+  }
+
+  _entityAreaName(entityId) {
+    if (!entityId || !this._hass) return null;
+    const entityEntry = this._hass.entities?.[entityId];
+    const areaId = entityEntry?.area_id
+      || (entityEntry?.device_id ? this._hass.devices?.[entityEntry.device_id]?.area_id : null);
+    if (!areaId) return null;
+    return this._hass.areas?.[areaId]?.name || null;
   }
 
   _settingsView() {
@@ -920,6 +933,8 @@ class IndustrialAlarmPanel extends HTMLElement {
       if (fields[key] === "") delete fields[key];
     });
     if (fields.threshold !== undefined && fields.threshold !== "") fields.threshold = Number(fields.threshold);
+    const areaName = this._entityAreaName(fields.entity_id);
+    if (areaName) fields.area = areaName;
     await this._callWS({ type: "industrial_alarm_panel/create_rule", rule: fields });
     this._resetRuleDraft();
     await this._load();
@@ -934,6 +949,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       condition: "above",
       threshold: "",
       priority: "medium",
+      system: "",
     };
   }
 
@@ -948,6 +964,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       condition: rule.condition || "above",
       threshold: rule.threshold ?? "",
       priority: rule.priority || "medium",
+      system: rule.system || "",
     };
     this._render();
     this.shadowRoot.querySelector("[data-new='entity_id']")?.focus();
@@ -962,10 +979,13 @@ class IndustrialAlarmPanel extends HTMLElement {
     if (!this._editingRuleId) return;
     const changes = { ...this._ruleDraft };
     delete changes.id;
+    if (changes.system === "") changes.system = null;
     Object.keys(changes).forEach((key) => {
       if (changes[key] === "") delete changes[key];
     });
-    if (changes.threshold !== undefined) changes.threshold = Number(changes.threshold);
+    if (changes.threshold !== undefined && changes.threshold !== null) changes.threshold = Number(changes.threshold);
+    const areaName = this._entityAreaName(changes.entity_id);
+    if (areaName) changes.area = areaName;
     try {
       await this._callWS({
         type: "industrial_alarm_panel/update_rule",
