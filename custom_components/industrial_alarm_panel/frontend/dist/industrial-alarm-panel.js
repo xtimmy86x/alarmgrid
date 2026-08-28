@@ -1459,6 +1459,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
   setConfig(config = {}) {
     const views = new Set(["active", "unacknowledged", "shelved", "disabled", "inactive"]);
     const requestedView = config.view ?? config.tab;
+    const showActions = config.show_actions !== false;
     const priorities = Array.isArray(config.priorities)
       ? config.priorities.map((value) => String(value).toLowerCase()).filter((value) => ["critical", "high", "medium", "low", "info", "status"].includes(value))
       : null;
@@ -1467,6 +1468,8 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       title: config.title || "Industrial Alarms",
       header_icon: typeof config.header_icon === "string" && config.header_icon.trim() ? config.header_icon.trim() : "mdi:alarm-light",
       show_header_icon: config.show_header_icon !== false,
+      show_header_status: config.show_header_status !== false,
+      show_header_actions: config.show_header_actions !== undefined ? config.show_header_actions !== false : showActions,
       header_icon_size: this._normalizeCssSize(config.header_icon_size, "24px"),
       title_font_size: this._normalizeCssSize(config.title_font_size, "1.15rem"),
       subtitle_font_size: this._normalizeCssSize(config.subtitle_font_size, ".85rem"),
@@ -1478,7 +1481,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       view: views.has(requestedView) ? requestedView : "active",
       max_alarms: Math.max(0, Number.isFinite(Number(config.max_alarms)) ? Math.floor(Number(config.max_alarms)) : 5),
       show_summary: config.show_summary !== false,
-      show_actions: config.show_actions !== false,
+      show_actions: showActions,
       show_value: config.show_value !== false,
       show_area: config.show_area !== false,
       show_system: config.show_system !== false,
@@ -1676,7 +1679,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     const count = (priority) => this._alarms.filter((alarm) => alarm.priority === priority && ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
     const themeClass = this._config.theme === "auto" ? "" : ` force-${this._config.theme}`;
     this.shadowRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
-      ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2><p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p></div></div>${this._config.show_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
+      ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
       ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>💤 ${shelved}</b></span><span class="chip"><b>🚫 ${disabled}</b></span></section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>

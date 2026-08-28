@@ -112,6 +112,25 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("overflow-wrap:anywhere", card_source)
         self.assertIn("@media (max-width:420px)", card_source)
 
+    def test_lovelace_card_splits_header_and_item_action_visibility(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+        card = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn("const showActions = config.show_actions !== false", card)
+        self.assertIn("show_actions: showActions", card)
+        self.assertIn("show_header_status: config.show_header_status !== false", card)
+        self.assertIn(
+            "show_header_actions: config.show_header_actions !== undefined ? config.show_header_actions !== false : showActions",
+            card,
+        )
+        self.assertIn("this._config.show_header_status ? `<p>", card)
+        self.assertIn("this._config.show_header_actions ? `<div class=\"header-actions\">", card)
+        self.assertIn("this._config.show_actions ? `<div class=\"item-actions\">", card)
+        self.assertIn('this._config.hide_header ? "" : `<header>', card)
+        self.assertNotIn("this._config.show_actions ? `<div class=\"header-actions\">", card)
+
     def test_frontend_assets_register_even_when_sidebar_panel_disabled(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/alarm_panel.py"
@@ -408,7 +427,8 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
         card = source[source.index("class IndustrialAlarmPanelCard") :]
 
-        self.assertIn('show_actions: config.show_actions !== false', card)
+        self.assertIn('const showActions = config.show_actions !== false', card)
+        self.assertIn('show_actions: showActions', card)
         self.assertIn('show_shelve_action: config.show_shelve_action !== false', card)
         self.assertIn('show_disable_action: config.show_disable_action !== false', card)
         self.assertIn('activeActions && (this._config.show_shelve_action || this._config.show_disable_action)', card)

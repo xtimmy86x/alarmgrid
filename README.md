@@ -132,6 +132,8 @@ title: Industrial Alarms
 view: active
 max_alarms: 5
 show_summary: true
+show_header_status: true
+show_header_actions: true
 show_actions: true
 show_shelve_action: true
 show_disable_action: true
@@ -176,7 +178,10 @@ Card options:
 - `title`: card heading shown above its metrics and compact actions.
 - `view`: alarm list to show: `active` (default), `unacknowledged`, `shelved`, `disabled`, or `inactive` (shelved and disabled together). The card has no tab bar; history, rules, and settings remain in the full sidebar console.
 - `max_alarms`: maximum alarm items shown before the “more alarms” link (default `5`). Items retain severity-then-timestamp ordering.
-- `show_summary`, `show_actions`, and `show_open_panel`: toggle the metric chips, all per-item/header actions, and full-panel link respectively (all default to `true`).
+- `show_summary` and `show_open_panel`: toggle the metric chips and full-panel link respectively (both default to `true`).
+- `show_header_status`: shows or hides the active/unacknowledged/horn status line under the card title (default `true`).
+- `show_header_actions`: shows or hides global header actions such as **Silence horn** and **Ack All** (default `true`). When omitted, it inherits `show_actions` so existing configurations with `show_actions: false` continue to hide all actions.
+- `show_actions`: controls only the actions on individual alarms, such as **ACK** and the more-actions menu (default `true`).
 - `show_shelve_action` and `show_disable_action`: independently control the temporary-shelve and persistent-disable entries in active/unacknowledged alarm menus (both default to `true`).
 - `show_restore_actions`: controls **Unshelve now** and **Enable alarm** in the shelved, disabled, and inactive views (default `true`).
 - `show_value`, `show_area`, `show_system`, and `show_tag`: toggle optional alarm item metadata (all default to `true`). Empty values are always omitted.
@@ -197,6 +202,8 @@ remain the defaults when these options are omitted:
 | --- | --- | --- |
 | `header_icon` | `mdi:alarm-light` | Header icon |
 | `show_header_icon` | `true` | Header icon visibility |
+| `show_header_status` | `true` | Active/unacknowledged/horn status line under the title |
+| `show_header_actions` | `true` | Global Silence horn and Ack All actions |
 | `header_icon_size` | `24px` | Header icon dimensions |
 | `title_font_size` | `1.15rem` | Main card title |
 | `subtitle_font_size` | `0.85rem` | Active/unacknowledged subtitle |
@@ -243,8 +250,25 @@ view: active
 show_header_icon: false
 ```
 
+To keep per-alarm actions while showing only the icon and title in the header:
+
+```yaml
+type: custom:industrial-alarm-panel-card
+title: Allarmi
+view: active
+
+show_header_icon: true
+show_header_status: false
+show_header_actions: false
+
+show_actions: true
+```
+
+This keeps **ACK** and the more-actions menu on each alarm, while removing the
+active/unacknowledged/horn status line and the global header controls.
+
 - `theme`: `auto`, `light`, or `dark`; `auto` follows the active Home Assistant light/dark theme. The sidebar panel also follows Home Assistant automatically.
-- `hide_header`: set to `true` to hide the title, metrics, and action buttons.
+- `hide_header`: set to `true` to hide the complete header (icon, title, status line, and global actions), regardless of the individual header visibility options.
 - `min_height`: optional CSS height such as `420px`; defaults to dashboard card sizing instead of the full sidebar height.
 
 Existing configurations remain valid: legacy `tab: active` and `tab: unacknowledged` are treated as aliases for `view`, and `hide_tabs` is accepted as a deprecated no-op because the summary card never renders tabs. Legacy full-console values such as `tab: history` safely fall back to the active alarm summary; open the sidebar panel for those workflows.
