@@ -1444,6 +1444,16 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     this._config = {};
     this._refreshing = false;
     this._subscribed = false;
+    this._closeActionMenus = (event) => {
+      if (event?.type === "keydown" && event.key !== "Escape") return;
+      if (event?.type === "pointerdown" && event.composedPath().includes(this)) return;
+      this.shadowRoot?.querySelectorAll("details.action-menu[open]").forEach((menu) => { menu.open = false; });
+    };
+  }
+
+  connectedCallback() {
+    document.addEventListener("pointerdown", this._closeActionMenus);
+    document.addEventListener("keydown", this._closeActionMenus);
   }
 
   setConfig(config = {}) {
@@ -1486,6 +1496,8 @@ class IndustrialAlarmPanelCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    document.removeEventListener("pointerdown", this._closeActionMenus);
+    document.removeEventListener("keydown", this._closeActionMenus);
     if (this._timer) window.clearInterval(this._timer);
     if (this._retryTimer) window.clearTimeout(this._retryTimer);
     if (this._unsubscribe) {
@@ -1617,7 +1629,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     if (state === "SHELVED") status = `${this._t("shelved_until", { time: this._time(alarm.shelve_expiry) })}<br>${this._remaining(alarm.shelve_expiry)}`;
     if (state === "DISABLED") status = this._t("alarm_disabled");
     const activeActions = ["active", "unacknowledged"].includes(this._config.view) && state !== "DISABLED" && state !== "SHELVED";
-    const menu = activeActions && (this._config.show_shelve_action || this._config.show_disable_action) ? `<details class="action-menu"><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical"></ha-icon></summary><div class="menu-popover">${this._config.show_shelve_action ? `<button data-open-shelve="${this._escape(alarm.id)}">${this._t("suspend_alarm")}</button>` : ""}${this._config.show_disable_action ? `<button class="destructive-text" data-open-disable="${this._escape(alarm.id)}">${this._t("disable_alarm")}</button>` : ""}</div></details>` : "";
+    const menu = activeActions && (this._config.show_shelve_action || this._config.show_disable_action) ? `<details class="action-menu"><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical" aria-hidden="true"></ha-icon></summary><div class="menu-popover">${this._config.show_shelve_action ? `<button data-open-shelve="${this._escape(alarm.id)}">${this._t("suspend_alarm")}</button>` : ""}${this._config.show_disable_action ? `<button class="destructive-text" data-open-disable="${this._escape(alarm.id)}">${this._t("disable_alarm")}</button>` : ""}</div></details>` : "";
     const restore = this._config.show_restore_actions && state === "SHELVED" ? `<button data-unshelve="${this._escape(alarm.id)}">${this._t("unshelve_now")}</button>` : this._config.show_restore_actions && state === "DISABLED" ? `<button data-enable="${this._escape(alarm.id)}">${this._t("enable_alarm")}</button>` : "";
     return `<article class="alarm-item priority-${this._escape(priority)} state-${state?.toLowerCase()}"><div class="accent" aria-hidden="true"></div><div class="alarm-content"><div class="alarm-leading"><span class="priority-badge"><span class="state-icon" aria-hidden="true">${state === "SHELVED" ? "💤" : state === "DISABLED" ? "🚫" : ""}</span><span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div><div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}<div class="alarm-footer"><div class="alarm-details">${this._config.show_value && value != null && value !== "" ? `${this._escape(value)} · ` : ""}<span class="state">${status}</span></div>${this._config.show_actions ? `<div class="item-actions">${activeActions ? `<button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${menu}` : restore}</div>` : ""}</div></div></article>`;
   }
@@ -1648,6 +1660,10 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='silence']")?.addEventListener("click", () => this._action("silence"));
     this.shadowRoot.querySelector("[data-action='ack-all']")?.addEventListener("click", () => this._action("acknowledge_all"));
     this.shadowRoot.querySelectorAll("[data-ack]").forEach((button) => button.addEventListener("click", () => this._action("acknowledge", button.dataset.ack)));
+    this.shadowRoot.querySelectorAll("details.action-menu").forEach((menu) => menu.addEventListener("toggle", () => {
+      if (!menu.open) return;
+      this.shadowRoot.querySelectorAll("details.action-menu[open]").forEach((other) => { if (other !== menu) other.open = false; });
+    }));
     this.shadowRoot.querySelectorAll("[data-open-shelve]").forEach((button) => button.addEventListener("click", () => this._showShelveDialog(this._alarms.find((alarm) => alarm.id === button.dataset.openShelve))));
     this.shadowRoot.querySelectorAll("[data-open-disable]").forEach((button) => button.addEventListener("click", () => this._showDisableDialog(this._alarms.find((alarm) => alarm.id === button.dataset.openDisable))));
     this.shadowRoot.querySelectorAll("[data-unshelve]").forEach((button) => button.addEventListener("click", () => this._action("unshelve", button.dataset.unshelve)));
@@ -1663,7 +1679,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
 
   _styles() {
     return `:host { display:block; min-width:0; font-family:inherit; --iap-critical:#d64545; --iap-high:#e17825; --iap-medium:#c79618; --iap-low:#4285b4; --iap-info:#477fc1; --iap-status:#718096; }
-      .alarm-card { min-height:var(--iap-card-min-height, 0); overflow:hidden; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border-radius:var(--ha-card-border-radius, 12px); }
+      .alarm-card { min-height:var(--iap-card-min-height, 0); overflow:visible; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border-radius:var(--ha-card-border-radius, 12px); }
       .force-light { color-scheme:light; --primary-text-color:#202124; --secondary-text-color:#5f6368; --divider-color:#dfe1e5; --ha-card-background:#fff; }
       .force-dark { color-scheme:dark; --primary-text-color:#e8eaed; --secondary-text-color:#aab0b6; --divider-color:#45494e; --ha-card-background:#202124; }
       header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 16px 10px; }
@@ -1677,17 +1693,17 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       .chip { display:inline-flex; gap:4px; align-items:center; padding:4px 9px; border:1px solid var(--divider-color); border-radius:999px; color:var(--secondary-text-color); font-size:.78rem; }
       .chip.critical b { color:var(--iap-critical); } .chip.high b { color:var(--iap-high); } .chip.unack b { color:var(--warning-color, var(--iap-medium)); }
       .alarm-list { display:grid; gap:9px; padding:4px 12px 12px; min-width:0; }
-      .alarm-item { --priority:var(--iap-status); position:relative; display:flex; min-width:0; border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 96%, var(--priority)); overflow:hidden; }
+      .alarm-item { --priority:var(--iap-status); position:relative; display:flex; min-width:0; border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 96%, var(--priority)); overflow:visible; }
       .priority-critical { --priority:var(--iap-critical); } .priority-high { --priority:var(--iap-high); } .priority-medium { --priority:var(--iap-medium); } .priority-low { --priority:var(--iap-low); } .priority-info { --priority:var(--iap-info); }
-      .accent { width:4px; flex:none; background:var(--priority); } .alarm-content { padding:10px 12px; min-width:0; flex:1; }
+      .accent { width:4px; flex:none; background:var(--priority); border-radius:var(--ha-card-border-radius, 12px) 0 0 var(--ha-card-border-radius, 12px); } .alarm-content { padding:10px 12px; min-width:0; flex:1; border-radius:0 var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px) 0; }
       .alarm-leading, .alarm-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; min-width:0; }
       .priority-badge { display:inline-flex; align-items:center; gap:6px; color:var(--priority); font-size:.7rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
       .priority-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } time, .alarm-tag, .alarm-context, .alarm-details { color:var(--secondary-text-color); font-size:.78rem; }
       .alarm-name { margin:5px 0 2px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; } .alarm-tag { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .alarm-context { margin-top:3px; overflow-wrap:anywhere; } .alarm-footer { margin-top:7px; align-items:flex-end; } .alarm-details { min-width:0; overflow-wrap:anywhere; }
-      .state { color:var(--primary-text-color); } .item-actions { display:flex; flex:none; gap:3px; } .item-actions button { min-height:36px; padding:0 10px; color:var(--primary-color); font-size:.78rem; font-weight:600; text-transform:uppercase; }
-      .action-menu { position:relative; } .action-menu summary { list-style:none; } .action-menu summary::-webkit-details-marker { display:none; }
-      .menu-popover { position:absolute; z-index:3; right:0; bottom:42px; min-width:170px; padding:5px; border:1px solid var(--divider-color); border-radius:10px; background:var(--ha-card-background, var(--card-background-color)); box-shadow:var(--ha-card-box-shadow, 0 3px 12px rgba(0,0,0,.2)); } .menu-popover button { display:block; width:100%; min-height:40px; padding:8px 10px; text-align:left; } .destructive-text { color:var(--error-color)!important; }
+      .state { color:var(--primary-text-color); } .item-actions { position:relative; z-index:1; display:flex; flex:none; align-items:center; gap:3px; } .item-actions button { min-height:40px; padding:0 10px; color:var(--primary-color); font-size:.78rem; font-weight:600; text-transform:uppercase; }
+      .action-menu { position:relative; flex:none; } .action-menu[open] { z-index:4; } .action-menu summary { box-sizing:border-box; list-style:none; cursor:pointer; color:var(--primary-text-color); border-radius:var(--ha-card-border-radius, 12px); } .action-menu summary::-webkit-details-marker { display:none; } .action-menu summary::marker { content:""; } .action-menu summary:hover { background:color-mix(in srgb, var(--primary-text-color) 8%, transparent); } .action-menu summary:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px; } .action-menu summary ha-icon { display:block; width:24px; height:24px; color:var(--primary-text-color); }
+      .menu-popover { position:absolute; z-index:4; right:0; bottom:calc(100% + 4px); box-sizing:border-box; min-width:170px; max-width:min(240px, calc(100vw - 32px)); padding:5px; border:1px solid var(--divider-color); border-radius:10px; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); box-shadow:var(--ha-card-box-shadow, 0 3px 12px rgba(0,0,0,.2)); } .menu-popover button { display:block; width:100%; min-height:40px; padding:8px 10px; color:var(--primary-text-color); text-align:left; } .destructive-text { color:var(--error-color)!important; }
       .state-shelved .accent { background:var(--info-color, var(--primary-color)); } .state-disabled .accent { background:var(--disabled-text-color, var(--secondary-text-color)); }
       dialog { width:min(420px, calc(100vw - 32px)); box-sizing:border-box; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); padding:20px; } dialog::backdrop { background:rgba(0,0,0,.45); } dialog form, dialog label { display:grid; gap:8px; } dialog h3, dialog p { margin:0 0 12px; } dialog select, dialog input, dialog textarea { box-sizing:border-box; width:100%; min-height:42px; padding:8px; color:inherit; background:var(--input-fill-color, transparent); border:1px solid var(--divider-color); border-radius:8px; font:inherit; } .custom-duration { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:end; } .custom-duration[hidden] { display:none; } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; } .dialog-actions button { min-height:44px; padding:0 14px; color:var(--primary-color); } .dialog-actions .destructive { color:var(--text-primary-color, white); background:var(--error-color); } .validation { min-height:1.2em; color:var(--error-color); font-size:.85rem; } .is-unack .accent, .is-unack .priority-dot { animation:cardPulse 1.8s ease-in-out infinite; }
       @keyframes cardPulse { 50% { opacity:.42; } } @media (prefers-reduced-motion:reduce) { .is-unack .accent, .is-unack .priority-dot { animation:none; } }

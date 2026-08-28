@@ -23,6 +23,12 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v1.0.18
+
+- Fixed the Lovelace alarm item's per-alarm action trigger so the 44 px three-dot button remains visible beside ACK in active and unacknowledged views.
+- Prevented the Suspend/Disable popup from being clipped by the alarm item while preserving its rounded accent styling.
+- Added outside-click, Escape, and single-open-menu behavior, and bumped the frontend cache key.
+
 ## What's New in v1.0.16
 
 - Redesigned the Lovelace card as a standalone, responsive alarm summary while retaining the sidebar panel as the complete DCS console.

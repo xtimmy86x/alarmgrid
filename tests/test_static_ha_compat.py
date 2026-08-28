@@ -224,7 +224,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         pyproject_source = Path("pyproject.toml").read_text()
         readme_source = Path("README.md").read_text()
 
-        expected_version = "1.0.16"
+        expected_version = "1.0.18"
         const_version_match = re.search(r'^VERSION = "([^"]+)"$', const_source, re.MULTILINE)
 
         self.assertIsNotNone(const_version_match)
@@ -362,6 +362,31 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn('@media (max-width:420px)', card)
         self.assertIn('force-light', card)
         self.assertIn('force-dark', card)
+
+    def test_lovelace_item_action_menu_is_visible_and_not_clipped(self) -> None:
+        source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
+        card = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn('show_actions: config.show_actions !== false', card)
+        self.assertIn('show_shelve_action: config.show_shelve_action !== false', card)
+        self.assertIn('show_disable_action: config.show_disable_action !== false', card)
+        self.assertIn('activeActions && (this._config.show_shelve_action || this._config.show_disable_action)', card)
+        self.assertIn('alarm.acknowledged ? "disabled" : ""', card)
+        self.assertIn('.icon-button { display:grid; place-items:center; width:44px; height:44px;', card)
+        self.assertIn('.action-menu summary ha-icon { display:block; width:24px; height:24px; color:var(--primary-text-color);', card)
+        self.assertIn('.alarm-item { --priority:var(--iap-status); position:relative; display:flex; min-width:0;', card)
+        self.assertIn('overflow:visible;', card)
+        self.assertNotIn('background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 96%, var(--priority)); overflow:hidden;', card)
+
+    def test_lovelace_item_action_menu_closes_cleanly(self) -> None:
+        source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
+        card = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn('event.key !== "Escape"', card)
+        self.assertIn('document.addEventListener("pointerdown", this._closeActionMenus)', card)
+        self.assertIn('document.removeEventListener("pointerdown", this._closeActionMenus)', card)
+        self.assertIn('details.action-menu[open]', card)
+        self.assertIn('if (other !== menu) other.open = false', card)
 
 
 if __name__ == "__main__":
