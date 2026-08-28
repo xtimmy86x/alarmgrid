@@ -44,6 +44,33 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("setConfig(config = {})", source)
         self.assertIn("getStubConfig()", source)
 
+    def test_lovelace_card_is_a_standalone_summary_not_the_sidebar_table(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+        card_source = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn("class IndustrialAlarmPanelCard extends HTMLElement", card_source)
+        self.assertNotIn("extends IndustrialAlarmPanel", card_source)
+        self.assertIn('class="alarm-list"', card_source)
+        self.assertNotIn("<table", card_source)
+        self.assertIn('window.setInterval(() => this._load(), 5000)', card_source)
+        self.assertIn("ALARMS_UPDATED_EVENT", card_source)
+
+    def test_lovelace_card_supports_summary_configuration_and_legacy_tab(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+        card_source = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn("config.view ?? config.tab", card_source)
+        self.assertIn("max_alarms", card_source)
+        self.assertIn("config.priorities", card_source)
+        self.assertIn("show_open_panel", card_source)
+        self.assertIn('history.pushState(null, "", "/industrial-alarms")', card_source)
+        self.assertIn('new Event("location-changed")', card_source)
+        self.assertIn("prefers-reduced-motion:reduce", card_source)
+
     def test_frontend_assets_register_even_when_sidebar_panel_disabled(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/alarm_panel.py"
@@ -197,7 +224,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         pyproject_source = Path("pyproject.toml").read_text()
         readme_source = Path("README.md").read_text()
 
-        expected_version = "1.0.15"
+        expected_version = "1.0.16"
         const_version_match = re.search(r'^VERSION = "([^"]+)"$', const_source, re.MULTILINE)
 
         self.assertIsNotNone(const_version_match)

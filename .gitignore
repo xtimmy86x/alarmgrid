@@ -12,3 +12,4 @@ htmlcov/
 /dist/
 node_modules/
 .worktrees/
+patch.patch

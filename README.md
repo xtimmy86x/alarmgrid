@@ -23,6 +23,12 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v1.0.16
+
+- Redesigned the Lovelace card as a standalone, responsive alarm summary while retaining the sidebar panel as the complete DCS console.
+- Added compact alarm items, summary chips, card-local view and priority filters, configurable metadata/actions, and client-side navigation to the full panel.
+- Preserved legacy `tab`, `hide_tabs`, `hide_header`, and `min_height` card configuration compatibility and bumped the frontend cache key.
+
 ## What's New in v1.0.15
 
 - Bumped the frontend cache-busting version so the light/dark theme bundle is reloaded by browsers and Lovelace instead of the cached pre-theme build.
@@ -105,10 +111,10 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 
 ## Lovelace Card
 
-You can embed the same Industrial Alarm Panel frontend in a Lovelace dashboard as a custom card. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
+The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.15
+url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.16
 type: module
 ```
 
@@ -117,19 +123,35 @@ If you use Lovelace YAML mode, add the resource above to `ui-lovelace.yaml` manu
 ```yaml
 type: custom:industrial-alarm-panel-card
 title: Industrial Alarms
-tab: active
-hide_tabs: false
+view: active
+max_alarms: 5
+show_summary: true
+show_actions: true
+show_open_panel: true
 theme: auto
 ```
 
 Card options:
 
-- `title`: card heading shown above metrics and actions.
-- `tab`: initial view (`active`, `unacknowledged`, `history`, `shelved`, `disabled`, `rules`, or `settings`).
-- `hide_tabs`: set to `true` to lock the card to the selected tab.
+- `title`: card heading shown above its metrics and compact actions.
+- `view`: alarm list to show: `active` (default), `unacknowledged`, `shelved`, or `disabled`. The card has no tab bar; history, rules, and settings remain in the full sidebar console.
+- `max_alarms`: maximum alarm items shown before the “more alarms” link (default `5`). Items retain severity-then-timestamp ordering.
+- `show_summary`, `show_actions`, and `show_open_panel`: toggle the metric chips, ACK/Silence controls, and full-panel link respectively (all default to `true`).
+- `show_value`, `show_area`, `show_system`, and `show_tag`: toggle optional alarm item metadata (all default to `true`). Empty values are always omitted.
+- `show_shelve`: add a secondary one-hour Shelve action to each applicable item (default `false`).
+- `priorities`: optional card-local priority filter. For example:
+
+  ```yaml
+  priorities:
+    - critical
+    - high
+  ```
+
 - `theme`: `auto`, `light`, or `dark`; `auto` follows the active Home Assistant light/dark theme. The sidebar panel also follows Home Assistant automatically.
 - `hide_header`: set to `true` to hide the title, metrics, and action buttons.
 - `min_height`: optional CSS height such as `420px`; defaults to dashboard card sizing instead of the full sidebar height.
+
+Existing configurations remain valid: legacy `tab: active` and `tab: unacknowledged` are treated as aliases for `view`, and `hide_tabs` is accepted as a deprecated no-op because the summary card never renders tabs. Legacy full-console values such as `tab: history` safely fall back to the active alarm summary; open the sidebar panel for those workflows.
 
 The integration registers the static frontend path even when the sidebar panel option is disabled, and it persists the Lovelace resource in storage-mode dashboards so the card is still loaded after a browser refresh.
 

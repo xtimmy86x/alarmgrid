@@ -1418,36 +1418,239 @@ class IndustrialAlarmPanel extends HTMLElement {
   }
 }
 
-class IndustrialAlarmPanelCard extends IndustrialAlarmPanel {
+// The dashboard card deliberately owns its rendering and data lifecycle.  The
+// sidebar remains the full DCS console above; sharing that renderer here would
+// re-introduce its tables, tabs and desktop interaction model.
+class IndustrialAlarmPanelCard extends HTMLElement {
   constructor() {
     super();
-    this._title = "";
-    this._hideTabs = false;
-    this._hideHeader = false;
-    this._themeMode = "auto";
+    this.attachShadow({ mode: "open" });
+    this._alarms = [];
+    this._sound = {};
+    this._config = {};
+    this._refreshing = false;
+    this._subscribed = false;
   }
 
   setConfig(config = {}) {
-    const validTabs = new Set(["active", "unacknowledged", "history", "shelved", "disabled", "rules", "settings"]);
-    this._cardConfig = config;
-    this._title = config.title || "";
-    this._tab = validTabs.has(config.tab) ? config.tab : "active";
-    this._hideTabs = Boolean(config.hide_tabs);
-    this._hideHeader = Boolean(config.hide_header);
-    this._themeMode = ["auto", "light", "dark"].includes(config.theme) ? config.theme : "auto";
-    this.style.setProperty("--iap-min-height", config.min_height || "0");
+    const views = new Set(["active", "unacknowledged", "shelved", "disabled"]);
+    const requestedView = config.view ?? config.tab;
+    const priorities = Array.isArray(config.priorities)
+      ? config.priorities.map((value) => String(value).toLowerCase()).filter((value) => ["critical", "high", "medium", "low", "info", "status"].includes(value))
+      : null;
+    this._config = {
+      ...config,
+      title: config.title || "Industrial Alarms",
+      view: views.has(requestedView) ? requestedView : "active",
+      max_alarms: Math.max(0, Number.isFinite(Number(config.max_alarms)) ? Math.floor(Number(config.max_alarms)) : 5),
+      show_summary: config.show_summary !== false,
+      show_actions: config.show_actions !== false,
+      show_value: config.show_value !== false,
+      show_area: config.show_area !== false,
+      show_system: config.show_system !== false,
+      show_tag: config.show_tag !== false,
+      show_open_panel: config.show_open_panel !== false,
+      show_shelve: config.show_shelve === true,
+      hide_header: config.hide_header === true,
+      priorities,
+      theme: ["auto", "light", "dark"].includes(config.theme) ? config.theme : "auto",
+    };
+    this.style.setProperty("--iap-card-min-height", config.min_height || "0px");
     if (this._rendered) this._render();
   }
 
+  set hass(hass) {
+    this._hass = hass;
+    this._subscribeUpdates();
+    if (!this._rendered) {
+      this._render();
+      this._load();
+      this._timer = window.setInterval(() => this._load(), 5000);
+    }
+  }
+
+  disconnectedCallback() {
+    if (this._timer) window.clearInterval(this._timer);
+    if (this._retryTimer) window.clearTimeout(this._retryTimer);
+    if (this._unsubscribe) {
+      Promise.resolve(this._unsubscribe).then((unsubscribe) => typeof unsubscribe === "function" && unsubscribe()).catch(() => undefined);
+      this._unsubscribe = undefined;
+      this._subscribed = false;
+    }
+  }
+
+  _subscribeUpdates() {
+    if (this._subscribed || !this._hass?.connection?.subscribeEvents) return;
+    this._subscribed = true;
+    try {
+      this._unsubscribe = this._hass.connection.subscribeEvents((event) => {
+        if (this._config.entry_id && event?.data?.entry_id && event.data.entry_id !== this._config.entry_id) return;
+        this._load();
+      }, ALARMS_UPDATED_EVENT);
+    } catch (_err) {
+      this._subscribed = false;
+    }
+  }
+
+  async _load() {
+    if (!this._hass || this._refreshing) return;
+    this._refreshing = true;
+    try {
+      const result = await this._hass.callWS({ type: "industrial_alarm_panel/list_alarms" });
+      this._alarms = result?.alarms || [];
+      this._sound = result?.sound || {};
+      this._error = undefined;
+      this._render();
+    } catch (err) {
+      this._error = err?.message || String(err);
+      this._render();
+      if (/not loaded|not configured/i.test(this._error) && !this._retryTimer) {
+        this._retryTimer = window.setTimeout(() => { this._retryTimer = undefined; this._load(); }, 1500);
+      }
+    } finally {
+      this._refreshing = false;
+    }
+  }
+
+  async _action(type, ruleId) {
+    const payload = { type: `industrial_alarm_panel/${type}` };
+    if (ruleId) payload.rule_id = ruleId;
+    if (type === "shelve") payload.duration_minutes = 60;
+    await this._hass.callWS(payload);
+    await this._load();
+  }
+
+  _visibleAlarms() {
+    const states = {
+      active: ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"],
+      unacknowledged: ["ACTIVE_UNACK", "CLEARED_UNACK"],
+      shelved: ["SHELVED"],
+      disabled: ["DISABLED"],
+    };
+    return this._alarms
+      .filter((alarm) => states[this._config.view].includes(alarm.lifecycle_state))
+      .filter((alarm) => !this._config.priorities || this._config.priorities.includes(String(alarm.priority).toLowerCase()))
+      .sort((a, b) => (Number(b.severity) - Number(a.severity)) || String(b.active_since || b.cleared_at || "").localeCompare(String(a.active_since || a.cleared_at || "")));
+  }
+
+  _language() {
+    return String(this._hass?.locale?.language || this._hass?.language || "en").toLowerCase().split("-")[0];
+  }
+
+  _t(key, replacements = {}) {
+    const table = TRANSLATIONS[this._language()] || TRANSLATIONS.en;
+    let value = table[key] ?? TRANSLATIONS.en[key] ?? key;
+    Object.entries(replacements).forEach(([name, replacement]) => { value = value.replaceAll(`{${name}}`, String(replacement)); });
+    return value;
+  }
+
+  _escape(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
+  }
+
+  _time(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? this._escape(value) : new Intl.DateTimeFormat(this._language(), { hour: "2-digit", minute: "2-digit" }).format(date);
+  }
+
+  _alarmItem(alarm) {
+    const priority = String(alarm.priority || "status").toLowerCase();
+    const unack = ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state);
+    const context = [this._config.show_system && alarm.system, this._config.show_area && alarm.area].filter(Boolean);
+    const value = alarm.last_value ?? alarm.last_source_state;
+    const details = [this._config.show_value && value !== undefined && value !== null && value !== "" ? String(value) : "", this._time(alarm.active_since || alarm.cleared_at)].filter(Boolean);
+    const stateKey = `state_${String(alarm.lifecycle_state || "normal").toLowerCase()}`;
+    return `<article class="alarm-item priority-${this._escape(priority)} ${unack ? "is-unack" : ""}">
+      <div class="accent" aria-hidden="true"></div>
+      <div class="alarm-content">
+        <div class="alarm-leading"><span class="priority-badge"><span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div>
+        <div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>
+        ${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}
+        ${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}
+        <div class="alarm-footer"><div class="alarm-details">${details.length ? `${details.map((item) => this._escape(item)).join(" · ")}<span aria-hidden="true"> · </span>` : ""}<span class="state">${this._escape(this._t(stateKey))}</span></div>
+          ${this._config.show_actions ? `<div class="item-actions"><button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${this._config.show_shelve ? `<button class="quiet" data-shelve="${this._escape(alarm.id)}" ${alarm.shelved || alarm.disabled ? "disabled" : ""}>${this._t("shelve")}</button>` : ""}</div>` : ""}
+        </div>
+      </div>
+    </article>`;
+  }
+
+  _openPanel() {
+    history.pushState(null, "", "/industrial-alarms");
+    window.dispatchEvent(new Event("location-changed"));
+  }
+
+  _render() {
+    if (!this.shadowRoot) return;
+    const visible = this._visibleAlarms();
+    const shown = visible.slice(0, this._config.max_alarms);
+    const active = this._alarms.filter((alarm) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(alarm.lifecycle_state)).length;
+    const unack = this._alarms.filter((alarm) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
+    const count = (priority) => this._alarms.filter((alarm) => alarm.priority === priority && ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
+    const themeClass = this._config.theme === "auto" ? "" : ` force-${this._config.theme}`;
+    this.shadowRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
+      ${this._config.hide_header ? "" : `<header><div class="heading"><ha-icon icon="mdi:alarm-light" aria-hidden="true"></ha-icon><div><h2>${this._escape(this._config.title)}</h2><p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p></div></div>${this._config.show_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
+      ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span></section>` : ""}
+      ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
+      <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
+      ${visible.length > shown.length ? `<button class="more" data-action="open-panel">+${visible.length - shown.length} more alarms</button>` : ""}
+      ${this._config.show_open_panel ? `<footer><button data-action="open-panel">Open Industrial Alarm Panel <span aria-hidden="true">→</span></button></footer>` : ""}
+    </ha-card>`;
+    this.shadowRoot.querySelector("[data-action='silence']")?.addEventListener("click", () => this._action("silence"));
+    this.shadowRoot.querySelector("[data-action='ack-all']")?.addEventListener("click", () => this._action("acknowledge_all"));
+    this.shadowRoot.querySelectorAll("[data-ack]").forEach((button) => button.addEventListener("click", () => this._action("acknowledge", button.dataset.ack)));
+    this.shadowRoot.querySelectorAll("[data-shelve]").forEach((button) => button.addEventListener("click", () => this._action("shelve", button.dataset.shelve)));
+    this.shadowRoot.querySelectorAll("[data-action='open-panel']").forEach((button) => button.addEventListener("click", () => this._openPanel()));
+    this._rendered = true;
+  }
+
+  _styles() {
+    return `:host { display:block; min-width:0; font-family:inherit; --iap-critical:#d64545; --iap-high:#e17825; --iap-medium:#c79618; --iap-low:#4285b4; --iap-info:#477fc1; --iap-status:#718096; }
+      .alarm-card { min-height:var(--iap-card-min-height, 0); overflow:hidden; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border-radius:var(--ha-card-border-radius, 12px); }
+      .force-light { color-scheme:light; --primary-text-color:#202124; --secondary-text-color:#5f6368; --divider-color:#dfe1e5; --ha-card-background:#fff; }
+      .force-dark { color-scheme:dark; --primary-text-color:#e8eaed; --secondary-text-color:#aab0b6; --divider-color:#45494e; --ha-card-background:#202124; }
+      header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 16px 10px; }
+      .heading { display:flex; min-width:0; gap:12px; align-items:center; } .heading>ha-icon { color:var(--error-color, var(--iap-critical)); flex:none; }
+      h2 { margin:0; font-size:1.15rem; line-height:1.3; font-weight:600; overflow-wrap:anywhere; } p { margin:3px 0 0; color:var(--secondary-text-color); font-size:.85rem; }
+      button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; border-radius:var(--ha-card-border-radius, 12px); }
+      button:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px; } button:disabled { opacity:.45; cursor:default; }
+      .header-actions { display:flex; gap:4px; flex:none; } .icon-button { display:grid; place-items:center; width:44px; height:44px; }
+      .icon-button:hover, footer button:hover, .more:hover { background:color-mix(in srgb, var(--primary-text-color) 8%, transparent); }
+      .summary { display:flex; flex-wrap:wrap; gap:7px; padding:4px 16px 12px; }
+      .chip { display:inline-flex; gap:4px; align-items:center; padding:4px 9px; border:1px solid var(--divider-color); border-radius:999px; color:var(--secondary-text-color); font-size:.78rem; }
+      .chip.critical b { color:var(--iap-critical); } .chip.high b { color:var(--iap-high); } .chip.unack b { color:var(--warning-color, var(--iap-medium)); }
+      .alarm-list { display:grid; gap:9px; padding:4px 12px 12px; min-width:0; }
+      .alarm-item { --priority:var(--iap-status); position:relative; display:flex; min-width:0; border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 96%, var(--priority)); overflow:hidden; }
+      .priority-critical { --priority:var(--iap-critical); } .priority-high { --priority:var(--iap-high); } .priority-medium { --priority:var(--iap-medium); } .priority-low { --priority:var(--iap-low); } .priority-info { --priority:var(--iap-info); }
+      .accent { width:4px; flex:none; background:var(--priority); } .alarm-content { padding:10px 12px; min-width:0; flex:1; }
+      .alarm-leading, .alarm-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; min-width:0; }
+      .priority-badge { display:inline-flex; align-items:center; gap:6px; color:var(--priority); font-size:.7rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+      .priority-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } time, .alarm-tag, .alarm-context, .alarm-details { color:var(--secondary-text-color); font-size:.78rem; }
+      .alarm-name { margin:5px 0 2px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; } .alarm-tag { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .alarm-context { margin-top:3px; overflow-wrap:anywhere; } .alarm-footer { margin-top:7px; align-items:flex-end; } .alarm-details { min-width:0; overflow-wrap:anywhere; }
+      .state { color:var(--primary-text-color); } .item-actions { display:flex; flex:none; gap:3px; } .item-actions button { min-height:36px; padding:0 10px; color:var(--primary-color); font-size:.78rem; font-weight:600; text-transform:uppercase; }
+      .item-actions .quiet { color:var(--secondary-text-color); } .is-unack .accent, .is-unack .priority-dot { animation:cardPulse 1.8s ease-in-out infinite; }
+      @keyframes cardPulse { 50% { opacity:.42; } } @media (prefers-reduced-motion:reduce) { .is-unack .accent, .is-unack .priority-dot { animation:none; } }
+      .empty { display:flex; justify-content:center; align-items:center; gap:8px; min-height:96px; color:var(--secondary-text-color); text-align:center; }
+      .empty ha-icon { color:var(--primary-color); } .error { margin:0 16px 10px; padding:10px; color:var(--error-color); border:1px solid var(--error-color); border-radius:var(--ha-card-border-radius, 12px); }
+      .more { display:block; margin:0 auto 6px; min-height:40px; padding:0 12px; color:var(--secondary-text-color); font-size:.82rem; }
+      footer { border-top:1px solid var(--divider-color); padding:5px 8px; text-align:center; } footer button { min-height:44px; width:100%; color:var(--primary-color); font-weight:500; }
+      @media (max-width:420px) { header { padding-inline:12px; } .summary { padding-inline:12px; } .alarm-footer { align-items:flex-start; flex-direction:column; } .item-actions { align-self:flex-end; } }
+    `;
+  }
+
   getCardSize() {
-    return this._hideTabs ? 6 : 8;
+    return Math.max(2, Math.min(this._config.max_alarms || 5, this._visibleAlarms().length) * 2 + 2);
   }
 
   static getStubConfig() {
     return {
       title: "Industrial Alarms",
-      tab: "active",
-      hide_tabs: false,
+      view: "active",
+      max_alarms: 5,
+      show_summary: true,
+      show_actions: true,
+      show_open_panel: true,
       theme: "auto",
     };
   }
@@ -1466,7 +1669,7 @@ if (!window.customCards.some((card) => card.type === "industrial-alarm-panel-car
   window.customCards.push({
     type: "industrial-alarm-panel-card",
     name: "Industrial Alarm Panel",
-    description: "Industrial Alarm Panel alarms, history, rules, and sound controls as a Lovelace card.",
+    description: "Compact, responsive alarm summary for Home Assistant dashboards.",
     preview: true,
   });
 }
