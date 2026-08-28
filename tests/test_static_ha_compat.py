@@ -71,6 +71,47 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn('new Event("location-changed")', card_source)
         self.assertIn("prefers-reduced-motion:reduce", card_source)
 
+    def test_lovelace_card_supports_safe_visual_customization(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+        card_source = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn('header_icon: typeof config.header_icon === "string"', card_source)
+        self.assertIn(': "mdi:alarm-light"', card_source)
+        self.assertIn("show_header_icon: config.show_header_icon !== false", card_source)
+        self.assertIn("this._config.show_header_icon ? `<ha-icon", card_source)
+        self.assertIn('icon="${this._escape(this._config.header_icon)}"', card_source)
+        self.assertIn("_normalizeCssSize(value, fallback)", card_source)
+        self.assertIn("(?:px|rem|em|%)$", card_source)
+
+        defaults = {
+            "header_icon_size": "24px",
+            "title_font_size": "1.15rem",
+            "subtitle_font_size": ".85rem",
+            "summary_font_size": ".78rem",
+            "alarm_name_font_size": "1rem",
+            "alarm_meta_font_size": ".78rem",
+            "priority_font_size": ".7rem",
+            "action_font_size": ".78rem",
+        }
+        for option, default in defaults.items():
+            with self.subTest(option=option):
+                self.assertIn(
+                    f'{option}: this._normalizeCssSize(config.{option}, "{default}")',
+                    card_source,
+                )
+                css_property = option.replace("_", "-")
+                self.assertIn(f'"--iap-{css_property}"', card_source)
+                self.assertIn(f"var(--iap-{css_property}, {default})", card_source)
+
+        # The existing min-width and wrapping guards keep larger valid values usable
+        # at the card's mobile breakpoint without introducing horizontal overflow.
+        self.assertIn(".heading { display:flex; min-width:0", card_source)
+        self.assertIn(".alarm-name { margin:5px 0 2px; min-width:0", card_source)
+        self.assertIn("overflow-wrap:anywhere", card_source)
+        self.assertIn("@media (max-width:420px)", card_source)
+
     def test_frontend_assets_register_even_when_sidebar_panel_disabled(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/alarm_panel.py"

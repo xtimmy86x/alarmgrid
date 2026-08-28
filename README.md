@@ -181,6 +181,7 @@ Card options:
 - `show_restore_actions`: controls **Unshelve now** and **Enable alarm** in the shelved, disabled, and inactive views (default `true`).
 - `show_value`, `show_area`, `show_system`, and `show_tag`: toggle optional alarm item metadata (all default to `true`). Empty values are always omitted.
 - `show_shelve` remains accepted for compatibility; setting it to `false` hides the shelving action. New configurations should use `show_shelve_action`.
+- `header_icon` selects the Home Assistant MDI icon in the heading (default `mdi:alarm-light`); `show_header_icon` shows or hides it (default `true`).
 - `priorities`: optional card-local priority filter. For example:
 
   ```yaml
@@ -188,6 +189,59 @@ Card options:
     - critical
     - high
   ```
+
+All visual customization options are optional. The existing icon and type sizes
+remain the defaults when these options are omitted:
+
+| Option | Default | Affects |
+| --- | --- | --- |
+| `header_icon` | `mdi:alarm-light` | Header icon |
+| `show_header_icon` | `true` | Header icon visibility |
+| `header_icon_size` | `24px` | Header icon dimensions |
+| `title_font_size` | `1.15rem` | Main card title |
+| `subtitle_font_size` | `0.85rem` | Active/unacknowledged subtitle |
+| `summary_font_size` | `0.78rem` | Summary chips |
+| `alarm_name_font_size` | `1rem` | Alarm name |
+| `alarm_meta_font_size` | `0.78rem` | Timestamp, tag, context, value, state, and remaining shelf time |
+| `priority_font_size` | `0.7rem` | Priority badge |
+| `action_font_size` | `0.78rem` | Textual alarm-item actions (not icon-only actions) |
+
+Size options accept non-negative numeric values using `px`, `rem`, `em`, or `%`.
+Invalid values are ignored and replaced with the defaults above. For example:
+
+```yaml
+type: custom:industrial-alarm-panel-card
+title: Allarmi
+view: active
+
+header_icon: mdi:shield-alert
+header_icon_size: 30px
+
+title_font_size: 20px
+subtitle_font_size: 13px
+summary_font_size: 12px
+
+alarm_name_font_size: 17px
+alarm_meta_font_size: 13px
+priority_font_size: 11px
+action_font_size: 12px
+```
+
+A minimal icon override only needs:
+
+```yaml
+type: custom:industrial-alarm-panel-card
+view: active
+header_icon: mdi:shield-alert
+```
+
+To omit the icon without leaving an empty header slot:
+
+```yaml
+type: custom:industrial-alarm-panel-card
+view: active
+show_header_icon: false
+```
 
 - `theme`: `auto`, `light`, or `dark`; `auto` follows the active Home Assistant light/dark theme. The sidebar panel also follows Home Assistant automatically.
 - `hide_header`: set to `true` to hide the title, metrics, and action buttons.

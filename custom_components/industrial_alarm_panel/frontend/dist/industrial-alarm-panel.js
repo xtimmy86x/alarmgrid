@@ -1465,6 +1465,16 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     this._config = {
       ...config,
       title: config.title || "Industrial Alarms",
+      header_icon: typeof config.header_icon === "string" && config.header_icon.trim() ? config.header_icon.trim() : "mdi:alarm-light",
+      show_header_icon: config.show_header_icon !== false,
+      header_icon_size: this._normalizeCssSize(config.header_icon_size, "24px"),
+      title_font_size: this._normalizeCssSize(config.title_font_size, "1.15rem"),
+      subtitle_font_size: this._normalizeCssSize(config.subtitle_font_size, ".85rem"),
+      summary_font_size: this._normalizeCssSize(config.summary_font_size, ".78rem"),
+      alarm_name_font_size: this._normalizeCssSize(config.alarm_name_font_size, "1rem"),
+      alarm_meta_font_size: this._normalizeCssSize(config.alarm_meta_font_size, ".78rem"),
+      priority_font_size: this._normalizeCssSize(config.priority_font_size, ".7rem"),
+      action_font_size: this._normalizeCssSize(config.action_font_size, ".78rem"),
       view: views.has(requestedView) ? requestedView : "active",
       max_alarms: Math.max(0, Number.isFinite(Number(config.max_alarms)) ? Math.floor(Number(config.max_alarms)) : 5),
       show_summary: config.show_summary !== false,
@@ -1482,7 +1492,23 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       theme: ["auto", "light", "dark"].includes(config.theme) ? config.theme : "auto",
     };
     this.style.setProperty("--iap-card-min-height", config.min_height || "0px");
+    const sizeProperties = {
+      "--iap-header-icon-size": this._config.header_icon_size,
+      "--iap-title-font-size": this._config.title_font_size,
+      "--iap-subtitle-font-size": this._config.subtitle_font_size,
+      "--iap-summary-font-size": this._config.summary_font_size,
+      "--iap-alarm-name-font-size": this._config.alarm_name_font_size,
+      "--iap-alarm-meta-font-size": this._config.alarm_meta_font_size,
+      "--iap-priority-font-size": this._config.priority_font_size,
+      "--iap-action-font-size": this._config.action_font_size,
+    };
+    Object.entries(sizeProperties).forEach(([property, value]) => this.style.setProperty(property, value));
     if (this._rendered) this._render();
+  }
+
+  _normalizeCssSize(value, fallback) {
+    const normalized = typeof value === "string" ? value.trim() : "";
+    return /^(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|%)$/.test(normalized) ? normalized : fallback;
   }
 
   set hass(hass) {
@@ -1650,7 +1676,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     const count = (priority) => this._alarms.filter((alarm) => alarm.priority === priority && ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
     const themeClass = this._config.theme === "auto" ? "" : ` force-${this._config.theme}`;
     this.shadowRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
-      ${this._config.hide_header ? "" : `<header><div class="heading"><ha-icon icon="mdi:alarm-light" aria-hidden="true"></ha-icon><div><h2>${this._escape(this._config.title)}</h2><p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p></div></div>${this._config.show_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
+      ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2><p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p></div></div>${this._config.show_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
       ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>💤 ${shelved}</b></span><span class="chip"><b>🚫 ${disabled}</b></span></section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
@@ -1683,25 +1709,25 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       .force-light { color-scheme:light; --primary-text-color:#202124; --secondary-text-color:#5f6368; --divider-color:#dfe1e5; --ha-card-background:#fff; }
       .force-dark { color-scheme:dark; --primary-text-color:#e8eaed; --secondary-text-color:#aab0b6; --divider-color:#45494e; --ha-card-background:#202124; }
       header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 16px 10px; }
-      .heading { display:flex; min-width:0; gap:12px; align-items:center; } .heading>ha-icon { color:var(--error-color, var(--iap-critical)); flex:none; }
-      h2 { margin:0; font-size:1.15rem; line-height:1.3; font-weight:600; overflow-wrap:anywhere; } p { margin:3px 0 0; color:var(--secondary-text-color); font-size:.85rem; }
+      .heading { display:flex; min-width:0; gap:12px; align-items:center; } .heading>ha-icon { width:var(--iap-header-icon-size, 24px); height:var(--iap-header-icon-size, 24px); --mdc-icon-size:var(--iap-header-icon-size, 24px); color:var(--error-color, var(--iap-critical)); flex:none; }
+      h2 { margin:0; font-size:var(--iap-title-font-size, 1.15rem); line-height:1.3; font-weight:600; overflow-wrap:anywhere; } p { margin:3px 0 0; color:var(--secondary-text-color); font-size:.85rem; } header p { font-size:var(--iap-subtitle-font-size, .85rem); overflow-wrap:anywhere; }
       button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; border-radius:var(--ha-card-border-radius, 12px); }
       button:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px; } button:disabled { opacity:.45; cursor:default; }
       .header-actions { display:flex; gap:4px; flex:none; } .icon-button { display:grid; place-items:center; width:44px; height:44px; }
       .icon-button:hover, footer button:hover, .more:hover { background:color-mix(in srgb, var(--primary-text-color) 8%, transparent); }
-      .summary { display:flex; flex-wrap:wrap; gap:7px; padding:4px 16px 12px; }
-      .chip { display:inline-flex; gap:4px; align-items:center; padding:4px 9px; border:1px solid var(--divider-color); border-radius:999px; color:var(--secondary-text-color); font-size:.78rem; }
+      .summary { display:flex; flex-wrap:wrap; gap:7px; padding:4px 16px 12px; font-size:var(--iap-summary-font-size, .78rem); }
+      .chip { display:inline-flex; gap:4px; align-items:center; padding:4px 9px; border:1px solid var(--divider-color); border-radius:999px; color:var(--secondary-text-color); font-size:inherit; }
       .chip.critical b { color:var(--iap-critical); } .chip.high b { color:var(--iap-high); } .chip.unack b { color:var(--warning-color, var(--iap-medium)); }
       .alarm-list { display:grid; gap:9px; padding:4px 12px 12px; min-width:0; }
       .alarm-item { --priority:var(--iap-status); position:relative; display:flex; min-width:0; border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 96%, var(--priority)); overflow:visible; }
       .priority-critical { --priority:var(--iap-critical); } .priority-high { --priority:var(--iap-high); } .priority-medium { --priority:var(--iap-medium); } .priority-low { --priority:var(--iap-low); } .priority-info { --priority:var(--iap-info); }
       .accent { width:4px; flex:none; background:var(--priority); border-radius:var(--ha-card-border-radius, 12px) 0 0 var(--ha-card-border-radius, 12px); } .alarm-content { padding:10px 12px; min-width:0; flex:1; border-radius:0 var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px) 0; }
       .alarm-leading, .alarm-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; min-width:0; }
-      .priority-badge { display:inline-flex; align-items:center; gap:6px; color:var(--priority); font-size:.7rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
-      .priority-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } time, .alarm-tag, .alarm-context, .alarm-details { color:var(--secondary-text-color); font-size:.78rem; }
-      .alarm-name { margin:5px 0 2px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; } .alarm-tag { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .priority-badge { display:inline-flex; align-items:center; gap:6px; color:var(--priority); font-size:var(--iap-priority-font-size, .7rem); font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+      .priority-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } time, .alarm-tag, .alarm-context, .alarm-details { color:var(--secondary-text-color); font-size:var(--iap-alarm-meta-font-size, .78rem); }
+      .alarm-name { margin:5px 0 2px; min-width:0; font-size:var(--iap-alarm-name-font-size, 1rem); font-weight:600; line-height:1.35; overflow-wrap:anywhere; } .alarm-tag { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .alarm-context { margin-top:3px; overflow-wrap:anywhere; } .alarm-footer { margin-top:7px; align-items:flex-end; } .alarm-details { min-width:0; overflow-wrap:anywhere; }
-      .state { color:var(--primary-text-color); } .item-actions { position:relative; z-index:1; display:flex; flex:none; align-items:center; gap:3px; } .item-actions button { min-height:40px; padding:0 10px; color:var(--primary-color); font-size:.78rem; font-weight:600; text-transform:uppercase; }
+      .state { color:var(--primary-text-color); } .item-actions { position:relative; z-index:1; display:flex; flex:none; align-items:center; gap:3px; } .item-actions button { min-height:40px; padding:0 10px; color:var(--primary-color); font-size:var(--iap-action-font-size, .78rem); font-weight:600; text-transform:uppercase; }
       .action-menu { position:relative; flex:none; } .action-menu[open] { z-index:4; } .action-menu summary { box-sizing:border-box; list-style:none; cursor:pointer; color:var(--primary-text-color); border-radius:var(--ha-card-border-radius, 12px); } .action-menu summary::-webkit-details-marker { display:none; } .action-menu summary::marker { content:""; } .action-menu summary:hover { background:color-mix(in srgb, var(--primary-text-color) 8%, transparent); } .action-menu summary:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px; } .action-menu summary ha-icon { display:block; width:24px; height:24px; color:var(--primary-text-color); }
       .menu-popover { position:absolute; z-index:4; right:0; bottom:calc(100% + 4px); box-sizing:border-box; min-width:170px; max-width:min(240px, calc(100vw - 32px)); padding:5px; border:1px solid var(--divider-color); border-radius:10px; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); box-shadow:var(--ha-card-box-shadow, 0 3px 12px rgba(0,0,0,.2)); } .menu-popover button { display:block; width:100%; min-height:40px; padding:8px 10px; color:var(--primary-text-color); text-align:left; } .destructive-text { color:var(--error-color)!important; }
       .state-shelved .accent { background:var(--info-color, var(--primary-color)); } .state-disabled .accent { background:var(--disabled-text-color, var(--secondary-text-color)); }
@@ -1730,6 +1756,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       show_disable_action: true,
       show_restore_actions: true,
       show_open_panel: true,
+      header_icon: "mdi:alarm-light",
       theme: "auto",
     };
   }
