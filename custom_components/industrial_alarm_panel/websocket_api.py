@@ -59,6 +59,9 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_acknowledge_all)
     websocket_api.async_register_command(hass, websocket_silence)
     websocket_api.async_register_command(hass, websocket_shelve)
+    websocket_api.async_register_command(hass, websocket_unshelve)
+    websocket_api.async_register_command(hass, websocket_disable)
+    websocket_api.async_register_command(hass, websocket_enable)
     websocket_api.async_register_command(hass, websocket_test_sound)
     websocket_api.async_register_command(hass, websocket_export_history)
     domain_data["websocket_registered"] = True
@@ -467,6 +470,67 @@ async def websocket_shelve(
         comment=msg.get("comment"),
     )
     connection.send_result(msg["id"], {"shelved": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "industrial_alarm_panel/unshelve",
+        vol.Required("rule_id"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_unshelve(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Restore a temporarily shelved alarm."""
+
+    await _runtime(hass).engine.unshelve_alarm(
+        msg["rule_id"], operator=connection.user.id
+    )
+    connection.send_result(msg["id"], {"unshelved": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "industrial_alarm_panel/disable",
+        vol.Required("rule_id"): str,
+        vol.Optional("comment"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_disable(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Disable an alarm until it is manually enabled."""
+
+    await _runtime(hass).engine.disable_alarm(
+        msg["rule_id"], operator=connection.user.id, comment=msg.get("comment")
+    )
+    connection.send_result(msg["id"], {"disabled": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "industrial_alarm_panel/enable",
+        vol.Required("rule_id"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_enable(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Re-enable a disabled alarm."""
+
+    await _runtime(hass).engine.enable_alarm(
+        msg["rule_id"], operator=connection.user.id
+    )
+    connection.send_result(msg["id"], {"enabled": True})
 
 
 @websocket_api.websocket_command(

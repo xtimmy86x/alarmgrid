@@ -10,7 +10,7 @@ const TRANSLATIONS = {
     horn_active: "Horn active",
     horn_idle: "Horn idle",
     enable_alarm_sound: "Enable Alarm Sound",
-    silence: "Silence",
+    silence: "Silence horn",
     ack_all: "Ack All",
     tab_active: "Active Alarms",
     tab_unacknowledged: "Unacknowledged",
@@ -133,6 +133,13 @@ const TRANSLATIONS = {
     no_items_to_delete: "No {label} to delete",
     confirm_delete_rules: "Delete {count} {label} and about {entities} entities? Source entities will not be removed.",
     deleted_rules: "Deleted {count} rules and {entities} entities",
+    more_actions: "More actions", suspend_alarm: "Suspend alarm", disable_alarm: "Disable alarm",
+    unshelve_now: "Unshelve now", enable_alarm: "Enable alarm", suspend_for: "Suspend for", custom_duration: "Custom…",
+    duration: "Duration", minutes: "minutes", hours: "hours", days: "days", comment_optional: "Comment / Reason (optional)",
+    confirm_disable_title: 'Disable "{name}"?', confirm_disable_message: "This alarm will no longer be generated until it is manually enabled again.",
+    suspend: "Suspend", disable: "Disable", shelved_until: "Suspended until {time}", remaining: "{time} remaining",
+    alarm_disabled: "Alarm disabled", expiring: "Expiring…", shelved_temporary: "Shelved · temporary", disabled_persistent: "Disabled · until manually enabled",
+    duration_invalid: "Enter a duration greater than zero.", duration_15m: "15 minutes", custom: "Custom…",
   },
   it: {
     default_title: "Allarmi Industriali",
@@ -143,7 +150,7 @@ const TRANSLATIONS = {
     horn_active: "Sirena attiva",
     horn_idle: "Sirena a riposo",
     enable_alarm_sound: "Abilita suono allarmi",
-    silence: "Silenzia",
+    silence: "Silenzia sirena",
     ack_all: "Riconosci tutti",
     tab_active: "Allarmi attivi",
     tab_unacknowledged: "Non riconosciuti",
@@ -266,6 +273,13 @@ const TRANSLATIONS = {
     no_items_to_delete: "Nessuna {label} da eliminare",
     confirm_delete_rules: "Eliminare {count} {label} e circa {entities} entità? Le entità sorgente non verranno rimosse.",
     deleted_rules: "Eliminate {count} regole e {entities} entità",
+    more_actions: "Altre azioni", suspend_alarm: "Sospendi allarme", disable_alarm: "Disabilita allarme",
+    unshelve_now: "Riattiva ora", enable_alarm: "Abilita allarme", suspend_for: "Sospendi per", custom_duration: "Personalizzato…",
+    duration: "Durata", minutes: "minuti", hours: "ore", days: "giorni", comment_optional: "Commento / Motivo (opzionale)",
+    confirm_disable_title: 'Disabilitare "{name}"?', confirm_disable_message: "L’allarme non verrà più generato finché non verrà riabilitato manualmente.",
+    suspend: "Sospendi", disable: "Disabilita", shelved_until: "Sospeso fino alle {time}", remaining: "{time} rimanenti",
+    alarm_disabled: "Allarme disabilitato", expiring: "In scadenza…", shelved_temporary: "Sospeso · temporaneo", disabled_persistent: "Disabilitato · fino alla riabilitazione manuale",
+    duration_invalid: "Inserisci una durata maggiore di zero.", duration_15m: "15 minuti", custom: "Personalizzato…",
   },
 };
 
@@ -1433,7 +1447,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
   }
 
   setConfig(config = {}) {
-    const views = new Set(["active", "unacknowledged", "shelved", "disabled"]);
+    const views = new Set(["active", "unacknowledged", "shelved", "disabled", "inactive"]);
     const requestedView = config.view ?? config.tab;
     const priorities = Array.isArray(config.priorities)
       ? config.priorities.map((value) => String(value).toLowerCase()).filter((value) => ["critical", "high", "medium", "low", "info", "status"].includes(value))
@@ -1450,7 +1464,9 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       show_system: config.show_system !== false,
       show_tag: config.show_tag !== false,
       show_open_panel: config.show_open_panel !== false,
-      show_shelve: config.show_shelve === true,
+      show_shelve_action: config.show_shelve_action !== false && config.show_shelve !== false,
+      show_disable_action: config.show_disable_action !== false,
+      show_restore_actions: config.show_restore_actions !== false,
       hide_header: config.hide_header === true,
       priorities,
       theme: ["auto", "light", "dark"].includes(config.theme) ? config.theme : "auto",
@@ -1512,12 +1528,48 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     }
   }
 
-  async _action(type, ruleId) {
-    const payload = { type: `industrial_alarm_panel/${type}` };
+  async _action(type, ruleId, extra = {}) {
+    const payload = { type: `industrial_alarm_panel/${type}`, ...extra };
     if (ruleId) payload.rule_id = ruleId;
-    if (type === "shelve") payload.duration_minutes = 60;
     await this._hass.callWS(payload);
     await this._load();
+  }
+
+  _showShelveDialog(alarm) {
+    this._dialog = { kind: "shelve", alarm, preset: "15" };
+    this._render();
+    this.shadowRoot.querySelector("dialog")?.showModal();
+  }
+
+  _showDisableDialog(alarm) {
+    this._dialog = { kind: "disable", alarm };
+    this._render();
+    this.shadowRoot.querySelector("dialog")?.showModal();
+  }
+
+  _durationMinutes(dialog) {
+    const preset = dialog.querySelector("[name=preset]").value;
+    if (preset !== "custom") return Number(preset);
+    const value = Number(dialog.querySelector("[name=duration]").value);
+    const factor = { minutes: 1, hours: 60, days: 1440 }[dialog.querySelector("[name=unit]").value];
+    const minutes = value * factor;
+    return Number.isFinite(minutes) && minutes > 0 ? Math.ceil(minutes) : null;
+  }
+
+  _remaining(expiry) {
+    const milliseconds = new Date(expiry).getTime() - Date.now();
+    if (!Number.isFinite(milliseconds) || milliseconds <= 0) return this._t("expiring");
+    const minutes = Math.ceil(milliseconds / 60000);
+    const days = Math.floor(minutes / 1440), hours = Math.floor((minutes % 1440) / 60), mins = minutes % 60;
+    return this._t("remaining", { time: [days && `${days} d`, hours && `${hours} h`, !days && mins && `${mins} min`].filter(Boolean).join(" ") });
+  }
+
+  _dialogMarkup() {
+    if (!this._dialog) return "";
+    const alarm = this._dialog.alarm;
+    const comment = `<label>${this._t("comment_optional")}<textarea name="comment" rows="2"></textarea></label>`;
+    if (this._dialog.kind === "disable") return `<dialog aria-labelledby="dialog-title"><form method="dialog"><h3 id="dialog-title">${this._escape(this._t("confirm_disable_title", { name: alarm.name || alarm.id }))}</h3><p>${this._t("confirm_disable_message")}</p>${comment}<div class="dialog-actions"><button value="cancel">${this._t("cancel")}</button><button class="destructive" value="default" data-confirm-disable>${this._t("disable")}</button></div></form></dialog>`;
+    return `<dialog aria-labelledby="dialog-title"><form method="dialog"><h3 id="dialog-title">${this._t("suspend_alarm")}</h3><label>${this._t("suspend_for")}<select name="preset"><option value="15">${this._t("duration_15m")}</option><option value="60">${this._t("duration_1h")}</option><option value="240">${this._t("duration_4h")}</option><option value="480">${this._t("duration_8h")}</option><option value="1440">${this._t("duration_1d")}</option><option value="4320">${this._t("duration_3d")}</option><option value="10080">${this._t("duration_7d")}</option><option value="custom">${this._t("custom")}</option></select></label><div class="custom-duration" hidden><label>${this._t("duration")}<input name="duration" type="number" min="0.01" step="any" inputmode="decimal"></label><select name="unit" aria-label="${this._t("duration")}"><option value="minutes">${this._t("minutes")}</option><option value="hours">${this._t("hours")}</option><option value="days">${this._t("days")}</option></select></div>${comment}<div class="validation" role="alert"></div><div class="dialog-actions"><button value="cancel">${this._t("cancel")}</button><button value="default" data-confirm-shelve>${this._t("suspend")}</button></div></form></dialog>`;
   }
 
   _visibleAlarms() {
@@ -1526,6 +1578,7 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       unacknowledged: ["ACTIVE_UNACK", "CLEARED_UNACK"],
       shelved: ["SHELVED"],
       disabled: ["DISABLED"],
+      inactive: ["SHELVED", "DISABLED"],
     };
     return this._alarms
       .filter((alarm) => states[this._config.view].includes(alarm.lifecycle_state))
@@ -1556,23 +1609,17 @@ class IndustrialAlarmPanelCard extends HTMLElement {
 
   _alarmItem(alarm) {
     const priority = String(alarm.priority || "status").toLowerCase();
-    const unack = ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state);
+    const state = alarm.lifecycle_state;
+    const unack = ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(state);
     const context = [this._config.show_system && alarm.system, this._config.show_area && alarm.area].filter(Boolean);
     const value = alarm.last_value ?? alarm.last_source_state;
-    const details = [this._config.show_value && value !== undefined && value !== null && value !== "" ? String(value) : "", this._time(alarm.active_since || alarm.cleared_at)].filter(Boolean);
-    const stateKey = `state_${String(alarm.lifecycle_state || "normal").toLowerCase()}`;
-    return `<article class="alarm-item priority-${this._escape(priority)} ${unack ? "is-unack" : ""}">
-      <div class="accent" aria-hidden="true"></div>
-      <div class="alarm-content">
-        <div class="alarm-leading"><span class="priority-badge"><span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div>
-        <div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>
-        ${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}
-        ${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}
-        <div class="alarm-footer"><div class="alarm-details">${details.length ? `${details.map((item) => this._escape(item)).join(" · ")}<span aria-hidden="true"> · </span>` : ""}<span class="state">${this._escape(this._t(stateKey))}</span></div>
-          ${this._config.show_actions ? `<div class="item-actions"><button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${this._config.show_shelve ? `<button class="quiet" data-shelve="${this._escape(alarm.id)}" ${alarm.shelved || alarm.disabled ? "disabled" : ""}>${this._t("shelve")}</button>` : ""}</div>` : ""}
-        </div>
-      </div>
-    </article>`;
+    let status = this._t(`state_${String(state || "normal").toLowerCase()}`);
+    if (state === "SHELVED") status = `${this._t("shelved_until", { time: this._time(alarm.shelve_expiry) })}<br>${this._remaining(alarm.shelve_expiry)}`;
+    if (state === "DISABLED") status = this._t("alarm_disabled");
+    const activeActions = ["active", "unacknowledged"].includes(this._config.view) && state !== "DISABLED" && state !== "SHELVED";
+    const menu = activeActions && (this._config.show_shelve_action || this._config.show_disable_action) ? `<details class="action-menu"><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical"></ha-icon></summary><div class="menu-popover">${this._config.show_shelve_action ? `<button data-open-shelve="${this._escape(alarm.id)}">${this._t("suspend_alarm")}</button>` : ""}${this._config.show_disable_action ? `<button class="destructive-text" data-open-disable="${this._escape(alarm.id)}">${this._t("disable_alarm")}</button>` : ""}</div></details>` : "";
+    const restore = this._config.show_restore_actions && state === "SHELVED" ? `<button data-unshelve="${this._escape(alarm.id)}">${this._t("unshelve_now")}</button>` : this._config.show_restore_actions && state === "DISABLED" ? `<button data-enable="${this._escape(alarm.id)}">${this._t("enable_alarm")}</button>` : "";
+    return `<article class="alarm-item priority-${this._escape(priority)} state-${state?.toLowerCase()}"><div class="accent" aria-hidden="true"></div><div class="alarm-content"><div class="alarm-leading"><span class="priority-badge"><span class="state-icon" aria-hidden="true">${state === "SHELVED" ? "💤" : state === "DISABLED" ? "🚫" : ""}</span><span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div><div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}<div class="alarm-footer"><div class="alarm-details">${this._config.show_value && value != null && value !== "" ? `${this._escape(value)} · ` : ""}<span class="state">${status}</span></div>${this._config.show_actions ? `<div class="item-actions">${activeActions ? `<button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${menu}` : restore}</div>` : ""}</div></div></article>`;
   }
 
   _openPanel() {
@@ -1586,20 +1633,30 @@ class IndustrialAlarmPanelCard extends HTMLElement {
     const shown = visible.slice(0, this._config.max_alarms);
     const active = this._alarms.filter((alarm) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(alarm.lifecycle_state)).length;
     const unack = this._alarms.filter((alarm) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
+    const shelved = this._alarms.filter((alarm) => alarm.lifecycle_state === "SHELVED").length;
+    const disabled = this._alarms.filter((alarm) => alarm.lifecycle_state === "DISABLED").length;
     const count = (priority) => this._alarms.filter((alarm) => alarm.priority === priority && ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
     const themeClass = this._config.theme === "auto" ? "" : ` force-${this._config.theme}`;
     this.shadowRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
       ${this._config.hide_header ? "" : `<header><div class="heading"><ha-icon icon="mdi:alarm-light" aria-hidden="true"></ha-icon><div><h2>${this._escape(this._config.title)}</h2><p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p></div></div>${this._config.show_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
-      ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span></section>` : ""}
+      ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>💤 ${shelved}</b></span><span class="chip"><b>🚫 ${disabled}</b></span></section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
       ${visible.length > shown.length ? `<button class="more" data-action="open-panel">+${visible.length - shown.length} more alarms</button>` : ""}
       ${this._config.show_open_panel ? `<footer><button data-action="open-panel">Open Industrial Alarm Panel <span aria-hidden="true">→</span></button></footer>` : ""}
-    </ha-card>`;
+    </ha-card>${this._dialogMarkup()}`;
     this.shadowRoot.querySelector("[data-action='silence']")?.addEventListener("click", () => this._action("silence"));
     this.shadowRoot.querySelector("[data-action='ack-all']")?.addEventListener("click", () => this._action("acknowledge_all"));
     this.shadowRoot.querySelectorAll("[data-ack]").forEach((button) => button.addEventListener("click", () => this._action("acknowledge", button.dataset.ack)));
-    this.shadowRoot.querySelectorAll("[data-shelve]").forEach((button) => button.addEventListener("click", () => this._action("shelve", button.dataset.shelve)));
+    this.shadowRoot.querySelectorAll("[data-open-shelve]").forEach((button) => button.addEventListener("click", () => this._showShelveDialog(this._alarms.find((alarm) => alarm.id === button.dataset.openShelve))));
+    this.shadowRoot.querySelectorAll("[data-open-disable]").forEach((button) => button.addEventListener("click", () => this._showDisableDialog(this._alarms.find((alarm) => alarm.id === button.dataset.openDisable))));
+    this.shadowRoot.querySelectorAll("[data-unshelve]").forEach((button) => button.addEventListener("click", () => this._action("unshelve", button.dataset.unshelve)));
+    this.shadowRoot.querySelectorAll("[data-enable]").forEach((button) => button.addEventListener("click", () => this._action("enable", button.dataset.enable)));
+    const dialog = this.shadowRoot.querySelector("dialog");
+    dialog?.addEventListener("close", () => { this._dialog = undefined; this._render(); });
+    dialog?.querySelector("[name=preset]")?.addEventListener("change", (event) => { dialog.querySelector(".custom-duration").hidden = event.target.value !== "custom"; });
+    dialog?.querySelector("[data-confirm-shelve]")?.addEventListener("click", async (event) => { const duration_minutes = this._durationMinutes(dialog); if (!duration_minutes) { event.preventDefault(); dialog.querySelector(".validation").textContent = this._t("duration_invalid"); return; } const comment = dialog.querySelector("[name=comment]").value.trim(); await this._action("shelve", this._dialog.alarm.id, { duration_minutes, ...(comment ? { comment } : {}) }); });
+    dialog?.querySelector("[data-confirm-disable]")?.addEventListener("click", async () => { const comment = dialog.querySelector("[name=comment]").value.trim(); await this._action("disable", this._dialog.alarm.id, comment ? { comment } : {}); });
     this.shadowRoot.querySelectorAll("[data-action='open-panel']").forEach((button) => button.addEventListener("click", () => this._openPanel()));
     this._rendered = true;
   }
@@ -1629,7 +1686,10 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       .alarm-name { margin:5px 0 2px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; } .alarm-tag { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .alarm-context { margin-top:3px; overflow-wrap:anywhere; } .alarm-footer { margin-top:7px; align-items:flex-end; } .alarm-details { min-width:0; overflow-wrap:anywhere; }
       .state { color:var(--primary-text-color); } .item-actions { display:flex; flex:none; gap:3px; } .item-actions button { min-height:36px; padding:0 10px; color:var(--primary-color); font-size:.78rem; font-weight:600; text-transform:uppercase; }
-      .item-actions .quiet { color:var(--secondary-text-color); } .is-unack .accent, .is-unack .priority-dot { animation:cardPulse 1.8s ease-in-out infinite; }
+      .action-menu { position:relative; } .action-menu summary { list-style:none; } .action-menu summary::-webkit-details-marker { display:none; }
+      .menu-popover { position:absolute; z-index:3; right:0; bottom:42px; min-width:170px; padding:5px; border:1px solid var(--divider-color); border-radius:10px; background:var(--ha-card-background, var(--card-background-color)); box-shadow:var(--ha-card-box-shadow, 0 3px 12px rgba(0,0,0,.2)); } .menu-popover button { display:block; width:100%; min-height:40px; padding:8px 10px; text-align:left; } .destructive-text { color:var(--error-color)!important; }
+      .state-shelved .accent { background:var(--info-color, var(--primary-color)); } .state-disabled .accent { background:var(--disabled-text-color, var(--secondary-text-color)); }
+      dialog { width:min(420px, calc(100vw - 32px)); box-sizing:border-box; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); padding:20px; } dialog::backdrop { background:rgba(0,0,0,.45); } dialog form, dialog label { display:grid; gap:8px; } dialog h3, dialog p { margin:0 0 12px; } dialog select, dialog input, dialog textarea { box-sizing:border-box; width:100%; min-height:42px; padding:8px; color:inherit; background:var(--input-fill-color, transparent); border:1px solid var(--divider-color); border-radius:8px; font:inherit; } .custom-duration { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:end; } .custom-duration[hidden] { display:none; } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; } .dialog-actions button { min-height:44px; padding:0 14px; color:var(--primary-color); } .dialog-actions .destructive { color:var(--text-primary-color, white); background:var(--error-color); } .validation { min-height:1.2em; color:var(--error-color); font-size:.85rem; } .is-unack .accent, .is-unack .priority-dot { animation:cardPulse 1.8s ease-in-out infinite; }
       @keyframes cardPulse { 50% { opacity:.42; } } @media (prefers-reduced-motion:reduce) { .is-unack .accent, .is-unack .priority-dot { animation:none; } }
       .empty { display:flex; justify-content:center; align-items:center; gap:8px; min-height:96px; color:var(--secondary-text-color); text-align:center; }
       .empty ha-icon { color:var(--primary-color); } .error { margin:0 16px 10px; padding:10px; color:var(--error-color); border:1px solid var(--error-color); border-radius:var(--ha-card-border-radius, 12px); }
@@ -1650,6 +1710,9 @@ class IndustrialAlarmPanelCard extends HTMLElement {
       max_alarms: 5,
       show_summary: true,
       show_actions: true,
+      show_shelve_action: true,
+      show_disable_action: true,
+      show_restore_actions: true,
       show_open_panel: true,
       theme: "auto",
     };

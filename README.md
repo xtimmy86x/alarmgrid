@@ -127,18 +127,54 @@ view: active
 max_alarms: 5
 show_summary: true
 show_actions: true
+show_shelve_action: true
+show_disable_action: true
 show_open_panel: true
 theme: auto
 ```
 
+The same dashboard-first card can also provide focused suppression views:
+
+```yaml
+# Temporarily shelved alarms
+type: custom:industrial-alarm-panel-card
+title: Shelved Alarms
+view: shelved
+max_alarms: 10
+show_restore_actions: true
+```
+
+```yaml
+# Alarms disabled until manually enabled
+type: custom:industrial-alarm-panel-card
+title: Disabled Alarms
+view: disabled
+max_alarms: 10
+show_restore_actions: true
+```
+
+```yaml
+# Both categories, kept visually distinct
+type: custom:industrial-alarm-panel-card
+title: Suppressed Alarms
+view: inactive
+max_alarms: 10
+show_restore_actions: true
+```
+
+**Shelved** means temporary suppression with automatic expiry. **Disabled** means
+persistent suppression until the alarm is manually enabled again.
+
 Card options:
 
 - `title`: card heading shown above its metrics and compact actions.
-- `view`: alarm list to show: `active` (default), `unacknowledged`, `shelved`, or `disabled`. The card has no tab bar; history, rules, and settings remain in the full sidebar console.
+- `view`: alarm list to show: `active` (default), `unacknowledged`, `shelved`, `disabled`, or `inactive` (shelved and disabled together). The card has no tab bar; history, rules, and settings remain in the full sidebar console.
 - `max_alarms`: maximum alarm items shown before the “more alarms” link (default `5`). Items retain severity-then-timestamp ordering.
-- `show_summary`, `show_actions`, and `show_open_panel`: toggle the metric chips, ACK/Silence controls, and full-panel link respectively (all default to `true`).
+- `show_summary`, `show_actions`, and `show_open_panel`: toggle the metric chips, all per-item/header actions, and full-panel link respectively (all default to `true`).
+- `show_shelve_action` and `show_disable_action`: independently control the temporary-shelve and persistent-disable entries in active/unacknowledged alarm menus (both default to `true`).
+- `show_restore_actions`: controls **Unshelve now** and **Enable alarm** in the shelved, disabled, and inactive views (default `true`).
 - `show_value`, `show_area`, `show_system`, and `show_tag`: toggle optional alarm item metadata (all default to `true`). Empty values are always omitted.
-- `show_shelve`: add a secondary one-hour Shelve action to each applicable item (default `false`).
+- `show_shelve` remains accepted for compatibility; setting it to `false` hides the shelving action. New configurations should use `show_shelve_action`.
 - `priorities`: optional card-local priority filter. For example:
 
   ```yaml

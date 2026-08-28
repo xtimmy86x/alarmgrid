@@ -325,6 +325,44 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("Shelved Until", source)
         self.assertIn("shelve_expiry", source)
 
+    def test_suppression_websocket_commands_delegate_to_engine(self) -> None:
+        source = Path("custom_components/industrial_alarm_panel/websocket_api.py").read_text()
+
+        for command in ("unshelve", "disable", "enable"):
+            self.assertIn(f'"industrial_alarm_panel/{command}"', source)
+            self.assertIn(f"websocket_{command}", source)
+            self.assertIn(f"engine.{command}_alarm(", source)
+        self.assertGreaterEqual(source.count("operator=connection.user.id"), 7)
+        self.assertIn('comment=msg.get("comment")', source)
+        self.assertIn('{"unshelved": True}', source)
+        self.assertIn('{"disabled": True}', source)
+        self.assertIn('{"enabled": True}', source)
+
+    def test_lovelace_card_supports_suppression_views_and_actions(self) -> None:
+        source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
+        card = source[source.index("class IndustrialAlarmPanelCard") :]
+
+        self.assertIn('["active", "unacknowledged", "shelved", "disabled", "inactive"]', card)
+        self.assertIn('inactive: ["SHELVED", "DISABLED"]', card)
+        self.assertIn('data-open-shelve', card)
+        self.assertIn('data-open-disable', card)
+        self.assertIn('data-unshelve', card)
+        self.assertIn('data-enable', card)
+        self.assertIn('show_shelve_action', card)
+        self.assertIn('show_disable_action', card)
+        self.assertIn('show_restore_actions', card)
+        self.assertIn('duration_minutes', card)
+        for minutes in ("15", "60", "240", "480", "1440", "4320", "10080"):
+            self.assertIn(f'<option value="{minutes}">', card)
+        self.assertIn('Number.isFinite(minutes) && minutes > 0', card)
+        self.assertIn('Math.ceil(minutes)', card)
+        self.assertIn('mdi:dots-vertical', card)
+        self.assertIn('aria-label=', card)
+        self.assertIn('dialog::backdrop', card)
+        self.assertIn('@media (max-width:420px)', card)
+        self.assertIn('force-light', card)
+        self.assertIn('force-dark', card)
+
 
 if __name__ == "__main__":
     unittest.main()
