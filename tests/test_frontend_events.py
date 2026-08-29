@@ -1,9 +1,9 @@
 import unittest
 
-from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
-from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
-from custom_components.industrial_alarm_panel.const import EVENT_ALARMS_UPDATED
-from custom_components.industrial_alarm_panel.frontend_events import (
+from custom_components.alarmgrid.alarm_engine import AlarmEngine
+from custom_components.alarmgrid.alarm_store import InMemoryHistoryStore
+from custom_components.alarmgrid.const import EVENT_ALARMS_UPDATED
+from custom_components.alarmgrid.frontend_events import (
     attach_alarm_update_event_listener,
 )
 

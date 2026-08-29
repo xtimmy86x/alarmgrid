@@ -2,20 +2,20 @@ import unittest
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
-from custom_components.industrial_alarm_panel.alarm_models import (
+from custom_components.alarmgrid.alarm_engine import AlarmEngine
+from custom_components.alarmgrid.alarm_models import (
     AlarmEvent,
     AlarmRule,
     AlarmRuntimeState,
 )
-from custom_components.industrial_alarm_panel.alarm_notifications import (
+from custom_components.alarmgrid.alarm_notifications import (
     AlarmNotificationManager,
     TelegramNotifier,
     format_telegram_message,
 )
-from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
-from custom_components.industrial_alarm_panel.const import DEFAULT_OPTIONS
-from custom_components.industrial_alarm_panel.telegram_interactive import (
+from custom_components.alarmgrid.alarm_store import InMemoryHistoryStore
+from custom_components.alarmgrid.const import DEFAULT_OPTIONS
+from custom_components.alarmgrid.telegram_interactive import (
     TelegramInteractiveManager,
 )
 

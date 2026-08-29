@@ -4,7 +4,7 @@
 
 **Goal:** Add safe suggested-rule preview, selected creation, generated-rule cleanup, and selected bulk rule deletion with Home Assistant entity registry cleanup.
 
-**Architecture:** Put rule-selection and deletion semantics in a pure Python helper so they can be tested without Home Assistant installed. Wire the helper into websocket commands, then update the existing bundled plain web component UI in `frontend/dist/industrial-alarm-panel.js` because this repo does not include a frontend build pipeline.
+**Architecture:** Put rule-selection and deletion semantics in a pure Python helper so they can be tested without Home Assistant installed. Wire the helper into websocket commands, then update the existing bundled plain web component UI in `frontend/dist/alarmgrid.js` because this repo does not include a frontend build pipeline.
 
 **Tech Stack:** Python 3.12, Home Assistant custom integration APIs, pytest/unittest, plain JavaScript custom element.
 
@@ -12,19 +12,19 @@
 
 ## File Structure
 
-- Create `custom_components/industrial_alarm_panel/rule_management.py`: pure rule-management helpers for generated-rule detection, selected suggested-rule creation, bulk deletion, and expected per-rule entity unique IDs.
+- Create `custom_components/alarmgrid/rule_management.py`: pure rule-management helpers for generated-rule detection, selected suggested-rule creation, bulk deletion, and expected per-rule entity unique IDs.
 - Create `tests/test_rule_management.py`: pure unit tests for the helper module.
-- Modify `custom_components/industrial_alarm_panel/websocket_api.py`: add preview and bulk delete websocket commands, selected suggested-rule creation, and entity registry cleanup.
-- Modify `custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js`: add preview table, checkbox selection, selected creation, generated cleanup, and selected deletion.
-- Modify `custom_components/industrial_alarm_panel/frontend/src/api.ts`: list the new command names for source parity.
+- Modify `custom_components/alarmgrid/websocket_api.py`: add preview and bulk delete websocket commands, selected suggested-rule creation, and entity registry cleanup.
+- Modify `custom_components/alarmgrid/frontend/dist/alarmgrid.js`: add preview table, checkbox selection, selected creation, generated cleanup, and selected deletion.
+- Modify `custom_components/alarmgrid/frontend/src/api.ts`: list the new command names for source parity.
 - Modify `tests/test_static_ha_compat.py`: static assertions for new frontend/websocket behavior and version bump.
 - Modify `README.md`: document preview, selected creation, and cleanup.
-- Modify `custom_components/industrial_alarm_panel/const.py`, `custom_components/industrial_alarm_panel/manifest.json`, and `pyproject.toml`: bump version from `1.0.9` to `1.0.10`.
+- Modify `custom_components/alarmgrid/const.py`, `custom_components/alarmgrid/manifest.json`, and `pyproject.toml`: bump version from `1.0.9` to `1.0.10`.
 
 ### Task 1: Pure Rule Management Helpers
 
 **Files:**
-- Create: `custom_components/industrial_alarm_panel/rule_management.py`
+- Create: `custom_components/alarmgrid/rule_management.py`
 - Create: `tests/test_rule_management.py`
 
 - [ ] **Step 1: Write the failing tests**
@@ -34,13 +34,13 @@ Create `tests/test_rule_management.py` with:
 ```python
 import unittest
 
-from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
-from custom_components.industrial_alarm_panel.alarm_models import (
+from custom_components.alarmgrid.alarm_engine import AlarmEngine
+from custom_components.alarmgrid.alarm_models import (
     AlarmRule,
     AlarmValidationError,
 )
-from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
-from custom_components.industrial_alarm_panel.rule_management import (
+from custom_components.alarmgrid.alarm_store import InMemoryHistoryStore
+from custom_components.alarmgrid.rule_management import (
     delete_rules,
     is_generated_rule_id,
     matching_per_rule_entity_entries,
@@ -132,17 +132,17 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             per_rule_entity_unique_ids("entry-1", rule),
             {
-                "industrial_alarm_panel_entry-1_alarm_auto_sensor_powertag_main_power_high_consumption",
-                "industrial_alarm_panel_entry-1_ack_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
-                "industrial_alarm_panel_entry-1_shelve_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
-                "industrial_alarm_panel_entry-1_disable_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_alarm_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_ack_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_shelve_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_disable_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
             },
         )
 
     def test_matching_registry_entries_returns_only_current_entry_per_rule_entities(self) -> None:
         rule = make_rule("auto_sensor_power_high_consumption")
         expected_unique_id = (
-            "industrial_alarm_panel_entry-1_alarm_auto_sensor_power_high_consumption"
+            "alarmgrid_entry-1_alarm_auto_sensor_power_high_consumption"
         )
         entries = [
             FakeRegistryEntry("binary_sensor.match", expected_unique_id, "entry-1"),
@@ -167,11 +167,11 @@ Run:
 pytest tests/test_rule_management.py -q
 ```
 
-Expected: FAIL during collection with `ModuleNotFoundError: No module named 'custom_components.industrial_alarm_panel.rule_management'`.
+Expected: FAIL during collection with `ModuleNotFoundError: No module named 'custom_components.alarmgrid.rule_management'`.
 
 - [ ] **Step 3: Add the helper implementation**
 
-Create `custom_components/industrial_alarm_panel/rule_management.py` with:
+Create `custom_components/alarmgrid/rule_management.py` with:
 
 ```python
 """Rule preview, selection, and deletion helpers."""
@@ -319,14 +319,14 @@ Expected: `8 passed`.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add custom_components/industrial_alarm_panel/rule_management.py tests/test_rule_management.py
+git add custom_components/alarmgrid/rule_management.py tests/test_rule_management.py
 git commit -m "Add rule management helpers"
 ```
 
 ### Task 2: Websocket Preview, Selected Create, and Bulk Delete
 
 **Files:**
-- Modify: `custom_components/industrial_alarm_panel/websocket_api.py`
+- Modify: `custom_components/alarmgrid/websocket_api.py`
 - Modify: `tests/test_static_ha_compat.py`
 
 - [ ] **Step 1: Write failing static API tests**
@@ -335,7 +335,7 @@ In `tests/test_static_ha_compat.py`, replace `test_websocket_registers_suggested
 
 ```python
     def test_websocket_registers_suggested_rule_management_commands(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/websocket_api.py").read_text()
+        source = Path("custom_components/alarmgrid/websocket_api.py").read_text()
 
         self.assertIn("websocket_list_suggested_rules", source)
         self.assertIn("websocket_create_suggested_rules", source)
@@ -359,7 +359,7 @@ Expected: FAIL because `websocket_list_suggested_rules`, `websocket_delete_rules
 
 - [ ] **Step 3: Modify websocket imports and registration**
 
-In `custom_components/industrial_alarm_panel/websocket_api.py`, add this import:
+In `custom_components/alarmgrid/websocket_api.py`, add this import:
 
 ```python
 from .rule_management import (
@@ -416,7 +416,7 @@ def _suggested_rules_for_message(hass: HomeAssistant, msg: dict[str, Any]) -> li
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "industrial_alarm_panel/list_suggested_rules",
+        vol.Required("type"): "alarmgrid/list_suggested_rules",
         **SUGGESTED_RULE_THRESHOLDS_SCHEMA,
     }
 )
@@ -441,7 +441,7 @@ Replace the `websocket_create_suggested_rules` decorator schema with:
 ```python
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "industrial_alarm_panel/create_suggested_rules",
+        vol.Required("type"): "alarmgrid/create_suggested_rules",
         **SUGGESTED_RULE_THRESHOLDS_SCHEMA,
         vol.Optional("rule_ids"): [str],
     }
@@ -514,7 +514,7 @@ Add the websocket command after `websocket_delete_rule`:
 ```python
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "industrial_alarm_panel/delete_rules",
+        vol.Required("type"): "alarmgrid/delete_rules",
         vol.Optional("rule_ids"): [str],
         vol.Optional("generated_only", default=False): bool,
     }
@@ -567,15 +567,15 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add custom_components/industrial_alarm_panel/websocket_api.py tests/test_static_ha_compat.py
+git add custom_components/alarmgrid/websocket_api.py tests/test_static_ha_compat.py
 git commit -m "Add websocket rule management commands"
 ```
 
 ### Task 3: Frontend Preview and Bulk Cleanup UI
 
 **Files:**
-- Modify: `custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js`
-- Modify: `custom_components/industrial_alarm_panel/frontend/src/api.ts`
+- Modify: `custom_components/alarmgrid/frontend/dist/alarmgrid.js`
+- Modify: `custom_components/alarmgrid/frontend/src/api.ts`
 - Modify: `tests/test_static_ha_compat.py`
 
 - [ ] **Step 1: Write failing frontend static tests**
@@ -585,7 +585,7 @@ Add these tests to `tests/test_static_ha_compat.py`:
 ```python
     def test_frontend_previews_and_selects_suggested_rules(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("list_suggested_rules", source)
@@ -597,7 +597,7 @@ Add these tests to `tests/test_static_ha_compat.py`:
 
     def test_frontend_can_bulk_delete_rules(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("delete_rules", source)
@@ -620,7 +620,7 @@ Expected: FAIL because the frontend has only immediate suggested-rule creation a
 
 - [ ] **Step 3: Add command names to source API**
 
-In `custom_components/industrial_alarm_panel/frontend/src/api.ts`, add:
+In `custom_components/alarmgrid/frontend/src/api.ts`, add:
 
 ```typescript
   listSuggestedRules: `${DOMAIN}/list_suggested_rules`,
@@ -642,7 +642,7 @@ The `commands` object should include these next to the existing rule commands:
 
 - [ ] **Step 4: Add frontend state fields**
 
-In the `IndustrialAlarmPanel` constructor in `frontend/dist/industrial-alarm-panel.js`, after `_suggestedRulesResult`, add:
+In the `AlarmGrid` constructor in `frontend/dist/alarmgrid.js`, after `_suggestedRulesResult`, add:
 
 ```javascript
     this._suggestedRules = [];
@@ -781,7 +781,7 @@ Replace `_createSuggestedRules` with these methods:
   async _previewSuggestedRules() {
     try {
       const result = await this._callWS({
-        type: "industrial_alarm_panel/list_suggested_rules",
+        type: "alarmgrid/list_suggested_rules",
         ...this._suggestionPayload(),
       });
       this._suggestedRules = result?.suggested || [];
@@ -814,7 +814,7 @@ Replace `_createSuggestedRules` with these methods:
   async _createSuggestedRules(ruleIds) {
     try {
       const result = await this._callWS({
-        type: "industrial_alarm_panel/create_suggested_rules",
+        type: "alarmgrid/create_suggested_rules",
         ...this._suggestionPayload(),
         rule_ids: ruleIds,
       });
@@ -837,7 +837,7 @@ Replace `_createSuggestedRules` with these methods:
     if (!window.confirm(`${label} ${count} rules and about ${entityCount} Home Assistant entities? Source entities will not be removed.`)) return;
     try {
       const result = await this._callWS({
-        type: "industrial_alarm_panel/delete_rules",
+        type: "alarmgrid/delete_rules",
         ...payload,
       });
       const deleted = result?.deleted_count || 0;
@@ -888,7 +888,7 @@ Run:
 
 ```bash
 pytest tests/test_static_ha_compat.py::StaticHomeAssistantCompatibilityTests::test_frontend_previews_and_selects_suggested_rules tests/test_static_ha_compat.py::StaticHomeAssistantCompatibilityTests::test_frontend_can_bulk_delete_rules -q
-node --check custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js
+node --check custom_components/alarmgrid/frontend/dist/alarmgrid.js
 ```
 
 Expected: both pytest tests PASS and `node --check` exits 0.
@@ -896,15 +896,15 @@ Expected: both pytest tests PASS and `node --check` exits 0.
 - [ ] **Step 12: Commit**
 
 ```bash
-git add custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js custom_components/industrial_alarm_panel/frontend/src/api.ts tests/test_static_ha_compat.py
+git add custom_components/alarmgrid/frontend/dist/alarmgrid.js custom_components/alarmgrid/frontend/src/api.ts tests/test_static_ha_compat.py
 git commit -m "Add frontend rule preview and bulk cleanup"
 ```
 
 ### Task 4: Version and Documentation
 
 **Files:**
-- Modify: `custom_components/industrial_alarm_panel/const.py`
-- Modify: `custom_components/industrial_alarm_panel/manifest.json`
+- Modify: `custom_components/alarmgrid/const.py`
+- Modify: `custom_components/alarmgrid/manifest.json`
 - Modify: `pyproject.toml`
 - Modify: `README.md`
 - Modify: `tests/test_static_ha_compat.py`
@@ -915,9 +915,9 @@ In `tests/test_static_ha_compat.py`, rename the version test to `test_frontend_v
 
 ```python
     def test_frontend_version_is_bumped_for_rule_management_ui(self) -> None:
-        const_source = Path("custom_components/industrial_alarm_panel/const.py").read_text()
+        const_source = Path("custom_components/alarmgrid/const.py").read_text()
         manifest_source = Path(
-            "custom_components/industrial_alarm_panel/manifest.json"
+            "custom_components/alarmgrid/manifest.json"
         ).read_text()
         pyproject_source = Path("pyproject.toml").read_text()
 
@@ -940,8 +940,8 @@ Expected: FAIL because the repo still says `1.0.9`.
 
 Change:
 
-- `custom_components/industrial_alarm_panel/const.py`: `VERSION = "1.0.10"`
-- `custom_components/industrial_alarm_panel/manifest.json`: `"version": "1.0.10"`
+- `custom_components/alarmgrid/const.py`: `VERSION = "1.0.10"`
+- `custom_components/alarmgrid/manifest.json`: `"version": "1.0.10"`
 - `pyproject.toml`: `version = "1.0.10"`
 
 - [ ] **Step 4: Update README suggested rules section**
@@ -949,7 +949,7 @@ Change:
 Replace the first paragraph under `### Suggested Rules` with:
 
 ```markdown
-Open **Industrial Alarms > Rules > Suggested Rules** and click **Preview Suggested Rules** to scan current Home Assistant `sensor.*` entities before creating anything. Select the suggestions you want, then click **Create Selected**. **Create All** is still available after preview, but it asks for confirmation and shows the estimated Home Assistant entity count.
+Open **AlarmGrid > Rules > Suggested Rules** and click **Preview Suggested Rules** to scan current Home Assistant `sensor.*` entities before creating anything. Select the suggestions you want, then click **Create Selected**. **Create All** is still available after preview, but it asks for confirmation and shows the estimated Home Assistant entity count.
 ```
 
 Replace the paragraph that starts `The generator detects candidates` with:
@@ -977,7 +977,7 @@ Expected: all static tests PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add custom_components/industrial_alarm_panel/const.py custom_components/industrial_alarm_panel/manifest.json pyproject.toml README.md tests/test_static_ha_compat.py
+git add custom_components/alarmgrid/const.py custom_components/alarmgrid/manifest.json pyproject.toml README.md tests/test_static_ha_compat.py
 git commit -m "Document rule management workflow"
 ```
 
@@ -1011,7 +1011,7 @@ Expected: tests that do not require Home Assistant PASS, and Home Assistant impo
 Run:
 
 ```bash
-node --check custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js
+node --check custom_components/alarmgrid/frontend/dist/alarmgrid.js
 ```
 
 Expected: exits 0 with no syntax errors.
@@ -1032,7 +1032,7 @@ Expected: only intended files changed since the last task commit, or a clean wor
 If verification required fixup edits, commit only those fixups:
 
 ```bash
-git add custom_components/industrial_alarm_panel tests README.md pyproject.toml
+git add custom_components/alarmgrid tests README.md pyproject.toml
 git commit -m "Fix rule management verification issues"
 ```
 

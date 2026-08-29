@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "AlarmGrid",
+        "description": "Configura l'annunciatore di allarmi in stile DCS.",
+        "data": {
+          "instance_name": "Nome istanza",
+          "enable_panel": "Abilita pannello nella barra laterale",
+          "enable_browser_sound": "Abilita suono nel browser",
+          "enable_media_player_sound": "Abilita suono su media player",
+          "history_retention_days": "Giorni predefiniti di conservazione dello storico",
+          "max_active_alarms": "Numero massimo predefinito di allarmi attivi mostrati",
+          "max_history_rows": "Numero massimo predefinito di righe di storico mostrate"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "AlarmGrid è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni AlarmGrid",
+        "description": "Configura il comportamento degli allarmi e il canale opzionale di notifica Telegram.",
+        "data": {
+          "telegram_enabled": "Abilita notifiche Telegram",
+          "telegram_targets": "Entità notify Telegram",
+          "telegram_min_priority": "Priorità minima Telegram",
+          "telegram_notify_activated": "Notifica attivazione",
+          "telegram_notify_cleared": "Notifica rientro",
+          "telegram_notify_acknowledged": "Notifica riconoscimento",
+          "telegram_notify_shelved": "Notifica shelving",
+          "telegram_notify_unshelved": "Notifica fine shelving",
+          "telegram_notify_disabled": "Notifica disabilitazione",
+          "telegram_notify_enabled": "Notifica abilitazione",
+          "telegram_interactive_enabled": "Abilita azioni Telegram interattive",
+          "telegram_callback_event_entities": "Event entity callback Telegram",
+          "telegram_interactive_ack": "Consenti ACK",
+          "telegram_interactive_shelve": "Consenti sospensione",
+          "telegram_interactive_disable": "Consenti disabilitazione"
+        }
+      }
+    },
+    "error": {
+      "telegram_targets_required": "Seleziona almeno un destinatario per le notifiche.",
+      "telegram_required": "Abilita prima le notifiche Telegram.",
+      "telegram_callback_entities_required": "Seleziona almeno una event entity callback Telegram.",
+      "telegram_action_required": "Consenti almeno una azione interattiva."
+    }
+  }
+}

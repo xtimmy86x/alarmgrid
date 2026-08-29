@@ -1,7 +1,7 @@
 import unittest
 
-from custom_components.industrial_alarm_panel.alarm_models import AlarmPriority
-from custom_components.industrial_alarm_panel.alarm_sound import AlarmSoundManager
+from custom_components.alarmgrid.alarm_models import AlarmPriority
+from custom_components.alarmgrid.alarm_sound import AlarmSoundManager
 
 
 class AlarmSoundTests(unittest.IsolatedAsyncioTestCase):

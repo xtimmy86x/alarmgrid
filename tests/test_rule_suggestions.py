@@ -1,6 +1,6 @@
 import unittest
 
-from custom_components.industrial_alarm_panel.rule_suggestions import (
+from custom_components.alarmgrid.rule_suggestions import (
     suggest_alarm_rules,
 )
 

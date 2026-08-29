@@ -1,12 +1,12 @@
 import unittest
 from datetime import UTC, datetime, timedelta
 
-from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
-from custom_components.industrial_alarm_panel.alarm_models import (
+from custom_components.alarmgrid.alarm_engine import AlarmEngine
+from custom_components.alarmgrid.alarm_models import (
     AlarmLifecycleState,
     AlarmRule,
 )
-from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
+from custom_components.alarmgrid.alarm_store import InMemoryHistoryStore
 
 
 class Clock:

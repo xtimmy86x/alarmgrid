@@ -1,5 +1,5 @@
 {
-  "name": "Industrial Alarm Panel",
+  "name": "AlarmGrid",
   "render_readme": true,
   "homeassistant": "2025.1.0"
 }

@@ -4,7 +4,7 @@ This repository is a HACS custom integration for Home Assistant.
 
 ## HACS Installation
 
-[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xtimmy86x&repository=industrial-alarm-panel&category=integration)
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xtimmy86x&repository=alarmgrid&category=integration)
 
 1. Open Home Assistant.
 2. Go to **HACS > Integrations**.
@@ -12,19 +12,19 @@ This repository is a HACS custom integration for Home Assistant.
 4. Add this repository URL:
 
    ```text
-   https://github.com/xtimmy86x/industrial-alarm-panel
+   https://github.com/xtimmy86x/alarmgrid
    ```
 
 5. Select category **Integration**.
-6. Install **Industrial Alarm Panel**.
+6. Install **AlarmGrid**.
 7. Restart Home Assistant.
 8. Go to **Settings > Devices & services > Add integration**.
-9. Search for **Industrial Alarm Panel** and complete the setup flow.
+9. Search for **AlarmGrid** and complete the setup flow.
 
 After setup, the sidebar panel is available at:
 
 ```text
-/industrial-alarms
+/alarmgrid
 ```
 
 After every HACS update, restart Home Assistant. If the panel was already open in your browser, hard refresh it with `Ctrl+Shift+R`.
@@ -34,7 +34,7 @@ After every HACS update, restart Home Assistant. If the panel was already open i
 1. Copy this directory into your Home Assistant config directory:
 
    ```text
-   custom_components/industrial_alarm_panel
+   custom_components/alarmgrid
    ```
 
 2. Restart Home Assistant.
@@ -47,7 +47,7 @@ Manual installation is useful for local testing. HACS is preferred for normal us
 For media-player alarm sound, place MP3 files here:
 
 ```text
-/config/www/industrial_alarm_panel/sounds/
+/config/www/alarmgrid/sounds/
 ```
 
 Recommended filenames:
@@ -67,7 +67,7 @@ Browser sound works without these files after the operator clicks **Enable Alarm
 Use **Developer Tools > Services**:
 
 ```yaml
-service: industrial_alarm_panel.create_rule
+service: alarmgrid.create_rule
 data:
   rule:
     id: inverter_high_temp
@@ -89,7 +89,7 @@ For production rules, prefer stable `entity_id` references and create separate r
 
 ## Development Requirements
 
-Runtime requirements are declared in `custom_components/industrial_alarm_panel/manifest.json`.
+Runtime requirements are declared in `custom_components/alarmgrid/manifest.json`.
 The root `requirements.txt` is intentionally empty except for comments because Home Assistant provides the runtime environment.
 
 For tests and local development:

@@ -1,7 +1,7 @@
 import unittest
 from datetime import UTC, datetime, timedelta
 
-from custom_components.industrial_alarm_panel.alarm_models import (
+from custom_components.alarmgrid.alarm_models import (
     AlarmPriority,
     AlarmRule,
     AlarmRuntimeState,

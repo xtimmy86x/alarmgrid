@@ -2,13 +2,13 @@
 
 ## Supported Versions
 
-Security fixes target the latest released version of Industrial Alarm Panel.
+Security fixes target the latest released version of AlarmGrid.
 
 ## Reporting A Vulnerability
 
 Do not open a public GitHub issue for a security vulnerability.
 
-Use [GitHub private vulnerability reporting](https://github.com/xtimmy86x/industrial-alarm-panel/security/advisories/new)
+Use [GitHub private vulnerability reporting](https://github.com/xtimmy86x/alarmgrid/security/advisories/new)
 if it is available on the repository. If private reporting is unavailable, open a
 minimal public issue that says you need a private contact path, without exploit
 details, secrets, logs, or screenshots.

@@ -6,7 +6,7 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
-industrial_alarm_panel_history.db
+alarmgrid_history.db
 .coverage
 htmlcov/
 /dist/

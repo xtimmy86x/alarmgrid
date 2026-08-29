@@ -5,7 +5,7 @@
 ## Validation
 
 - [ ] `python3 -m unittest discover -s tests -v`
-- [ ] `node --check custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js`
+- [ ] `node --check custom_components/alarmgrid/frontend/dist/alarmgrid.js`
 - [ ] Tested in Home Assistant
 
 ## Notes

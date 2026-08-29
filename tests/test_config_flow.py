@@ -8,9 +8,9 @@ import unittest
 )
 class ConfigFlowImportTests(unittest.TestCase):
     def test_config_flow_module_imports(self) -> None:
-        import custom_components.industrial_alarm_panel.config_flow as config_flow
+        import custom_components.alarmgrid.config_flow as config_flow
 
-        self.assertTrue(hasattr(config_flow, "IndustrialAlarmPanelConfigFlow"))
+        self.assertTrue(hasattr(config_flow, "AlarmGridConfigFlow"))
 
 
 if __name__ == "__main__":

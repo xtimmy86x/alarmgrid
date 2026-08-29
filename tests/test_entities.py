@@ -9,12 +9,12 @@ import unittest
 )
 class EntityImportTests(unittest.TestCase):
     def test_entity_modules_import(self) -> None:
-        import custom_components.industrial_alarm_panel.binary_sensor
-        import custom_components.industrial_alarm_panel.button
-        import custom_components.industrial_alarm_panel.number
-        import custom_components.industrial_alarm_panel.select
-        import custom_components.industrial_alarm_panel.sensor
-        import custom_components.industrial_alarm_panel.switch
+        import custom_components.alarmgrid.binary_sensor
+        import custom_components.alarmgrid.button
+        import custom_components.alarmgrid.number
+        import custom_components.alarmgrid.select
+        import custom_components.alarmgrid.sensor
+        import custom_components.alarmgrid.switch
 
         self.assertTrue(True)
 

@@ -1,12 +1,12 @@
 import unittest
 
-from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
-from custom_components.industrial_alarm_panel.alarm_models import (
+from custom_components.alarmgrid.alarm_engine import AlarmEngine
+from custom_components.alarmgrid.alarm_models import (
     AlarmRule,
     AlarmValidationError,
 )
-from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
-from custom_components.industrial_alarm_panel.rule_management import (
+from custom_components.alarmgrid.alarm_store import InMemoryHistoryStore
+from custom_components.alarmgrid.rule_management import (
     delete_rules,
     export_rules_csv,
     import_rules_csv,
@@ -210,10 +210,10 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             per_rule_entity_unique_ids("entry-1", rule),
             {
-                "industrial_alarm_panel_entry-1_alarm_auto_sensor_powertag_main_power_high_consumption",
-                "industrial_alarm_panel_entry-1_ack_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
-                "industrial_alarm_panel_entry-1_shelve_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
-                "industrial_alarm_panel_entry-1_disable_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_alarm_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_ack_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_shelve_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
+                "alarmgrid_entry-1_disable_auto_sensor_powertag_main_power_high_consumption_auto_sensor_powertag_main_power_high_consumption",
             },
         )
 
@@ -222,7 +222,7 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
     ) -> None:
         rule = make_rule("auto_sensor_power_high_consumption")
         expected_unique_id = (
-            "industrial_alarm_panel_entry-1_alarm_auto_sensor_power_high_consumption"
+            "alarmgrid_entry-1_alarm_auto_sensor_power_high_consumption"
         )
         entries = [
             FakeRegistryEntry("binary_sensor.match", expected_unique_id, "entry-1"),

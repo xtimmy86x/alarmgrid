@@ -41,4 +41,4 @@ jobs:
           node-version: "22"
 
       - name: Check frontend bundle syntax
-        run: node --check custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js
+        run: node --check custom_components/alarmgrid/frontend/dist/alarmgrid.js

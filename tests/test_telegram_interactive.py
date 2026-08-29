@@ -2,13 +2,13 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
-from custom_components.industrial_alarm_panel.alarm_models import (
+from custom_components.alarmgrid.alarm_engine import AlarmEngine
+from custom_components.alarmgrid.alarm_models import (
     AlarmLifecycleState,
     AlarmRule,
     AlarmRuntimeState,
 )
-from custom_components.industrial_alarm_panel.telegram_interactive import (
+from custom_components.alarmgrid.telegram_interactive import (
     MAX_SESSIONS,
     SHELVE_MINUTES,
     TelegramInteractiveManager,
@@ -63,16 +63,16 @@ class TelegramCallbackParserTests(unittest.TestCase):
             *SHELVE_MINUTES,
         }
         for action in actions:
-            self.assertEqual(parse_callback(f"iap:opaque:{action}"), ("opaque", action))
+            self.assertEqual(parse_callback(f"ag:opaque:{action}"), ("opaque", action))
 
     def test_foreign_and_malformed_callbacks_are_ignored(self):
         for value in (
             None,
             "",
             "other:token:ack",
-            "iap:token",
-            "iap::ack",
-            "iap:t:bad",
+            "ag:token",
+            "ag::ack",
+            "ag:t:bad",
         ):
             self.assertIsNone(parse_callback(value))
 
@@ -84,10 +84,10 @@ class TelegramSessionTests(unittest.TestCase):
             subject.keyboard("TOKEN", rule),
             [
                 [
-                    ["✅ Acknowledge", "iap:TOKEN:ack"],
-                    ["💤 Suspend", "iap:TOKEN:shelve"],
+                    ["✅ Acknowledge", "ag:TOKEN:ack"],
+                    ["💤 Suspend", "ag:TOKEN:shelve"],
                 ],
-                [["🚫 Disable", "iap:TOKEN:disable"]],
+                [["🚫 Disable", "ag:TOKEN:disable"]],
             ],
         )
         self.assertFalse(any(isinstance(button, dict) for row in subject.keyboard("TOKEN", rule) for button in row))
@@ -118,7 +118,7 @@ class TelegramCallbackTests(unittest.IsolatedAsyncioTestCase):
     async def test_expired_callback_is_answered_without_traceback(self):
         subject, _ = manager()
         await subject.handle_callback(
-            {"id": "query", "data": "iap:missing:ack", "chat_id": 1}
+            {"id": "query", "data": "ag:missing:ack", "chat_id": 1}
         )
         self.assertEqual(subject.hass.services.calls[-1][1], "answer_callback_query")
         self.assertEqual(
@@ -132,7 +132,7 @@ class TelegramCallbackTests(unittest.IsolatedAsyncioTestCase):
         await subject.handle_callback(
             {
                 "id": "query",
-                "data": "iap:token:ack",
+                "data": "ag:token:ack",
                 "chat_id": 11,
                 "message": {"message_id": 21},
             }
@@ -145,9 +145,9 @@ class TelegramCallbackTests(unittest.IsolatedAsyncioTestCase):
     async def test_bot_is_bound_then_other_bot_is_rejected(self):
         subject, _ = manager()
         subject.add_session("token", "temperature", "notify.telegram", 10, 20, "alarm")
-        await subject.handle_callback({"id": "one", "data": "iap:token:shelve", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
+        await subject.handle_callback({"id": "one", "data": "ag:token:shelve", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
         self.assertEqual(subject.sessions["token"].config_entry_id, "bot-one")
-        await subject.handle_callback({"id": "two", "data": "iap:token:ack", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-two"}})
+        await subject.handle_callback({"id": "two", "data": "ag:token:ack", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-two"}})
         data = subject.hass.services.calls[-1][2]["service_data"]
         self.assertEqual(data["message"], "Action no longer available")
         self.assertEqual(data["config_entry_id"], "bot-two")
@@ -164,7 +164,7 @@ class TelegramActionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         self.subject.add_session("token", "alarm", "notify.telegram", 10, 20, "alarm", "bot-one")
 
     async def callback(self, action):
-        await self.subject.handle_callback({"id": f"query-{action}", "data": f"iap:token:{action}", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
+        await self.subject.handle_callback({"id": f"query-{action}", "data": f"ag:token:{action}", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
         self.assertEqual(self.services.calls[-1][1], "answer_callback_query")
 
     async def test_ack_changes_real_engine_state_and_operator(self):
@@ -177,7 +177,7 @@ class TelegramActionLifecycleTests(unittest.IsolatedAsyncioTestCase):
     async def test_shelve_submenu_and_duration_change_real_engine(self):
         await self.callback("shelve")
         submenu = self.services.calls[-2][2]["service_data"]["inline_keyboard"]
-        self.assertEqual(submenu[0][1], ["1 hour", "iap:token:s60"])
+        self.assertEqual(submenu[0][1], ["1 hour", "ag:token:s60"])
         await self.callback("s60")
         state = self.engine.states["alarm"]
         self.assertEqual(state.lifecycle_state, AlarmLifecycleState.SHELVED)
