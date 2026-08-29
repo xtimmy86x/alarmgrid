@@ -2,6 +2,7 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
 from custom_components.industrial_alarm_panel.alarm_models import (
     AlarmLifecycleState,
     AlarmRule,
@@ -77,6 +78,20 @@ class TelegramCallbackParserTests(unittest.TestCase):
 
 
 class TelegramSessionTests(unittest.TestCase):
+    def test_keyboard_uses_home_assistant_pair_format(self):
+        subject, rule = manager()
+        self.assertEqual(
+            subject.keyboard("TOKEN", rule),
+            [
+                [
+                    ["✅ Acknowledge", "iap:TOKEN:ack"],
+                    ["💤 Suspend", "iap:TOKEN:shelve"],
+                ],
+                [["🚫 Disable", "iap:TOKEN:disable"]],
+            ],
+        )
+        self.assertFalse(any(isinstance(button, dict) for row in subject.keyboard("TOKEN", rule) for button in row))
+
     def test_tokens_are_unique_and_opaque(self):
         subject, _ = manager()
         tokens = {subject.new_token() for _ in range(100)}
@@ -126,3 +141,75 @@ class TelegramCallbackTests(unittest.IsolatedAsyncioTestCase):
             subject.hass.services.calls[-1][2]["service_data"]["message"],
             "Action no longer available",
         )
+
+    async def test_bot_is_bound_then_other_bot_is_rejected(self):
+        subject, _ = manager()
+        subject.add_session("token", "temperature", "notify.telegram", 10, 20, "alarm")
+        await subject.handle_callback({"id": "one", "data": "iap:token:shelve", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
+        self.assertEqual(subject.sessions["token"].config_entry_id, "bot-one")
+        await subject.handle_callback({"id": "two", "data": "iap:token:ack", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-two"}})
+        data = subject.hass.services.calls[-1][2]["service_data"]
+        self.assertEqual(data["message"], "Action no longer available")
+        self.assertEqual(data["config_entry_id"], "bot-two")
+
+
+class TelegramActionLifecycleTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.rule = AlarmRule.from_dict({"id": "alarm", "entity_id": "binary_sensor.alarm", "name": "Alarm", "condition": "is_on", "priority": "high"})
+        self.engine = AlarmEngine([self.rule])
+        self.engine.states["alarm"].lifecycle_state = AlarmLifecycleState.ACTIVE_UNACK
+        self.services = FakeServices()
+        hass = SimpleNamespace(config=SimpleNamespace(language="en"), services=self.services)
+        self.subject = TelegramInteractiveManager(hass, self.engine, {})
+        self.subject.add_session("token", "alarm", "notify.telegram", 10, 20, "alarm", "bot-one")
+
+    async def callback(self, action):
+        await self.subject.handle_callback({"id": f"query-{action}", "data": f"iap:token:{action}", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
+        self.assertEqual(self.services.calls[-1][1], "answer_callback_query")
+
+    async def test_ack_changes_real_engine_state_and_operator(self):
+        await self.callback("ack")
+        state = self.engine.states["alarm"]
+        self.assertEqual(state.lifecycle_state, AlarmLifecycleState.ACTIVE_ACK)
+        self.assertEqual(state.ack_user, "telegram")
+        self.assertTrue(any(call[1] == "edit_replymarkup" for call in self.services.calls))
+
+    async def test_shelve_submenu_and_duration_change_real_engine(self):
+        await self.callback("shelve")
+        submenu = self.services.calls[-2][2]["service_data"]["inline_keyboard"]
+        self.assertEqual(submenu[0][1], ["1 hour", "iap:token:s60"])
+        await self.callback("s60")
+        state = self.engine.states["alarm"]
+        self.assertEqual(state.lifecycle_state, AlarmLifecycleState.SHELVED)
+        self.assertAlmostEqual((state.shelve_expiry - datetime.now(UTC)).total_seconds(), 3600, delta=5)
+
+    async def test_disable_requires_confirmation_then_enable(self):
+        await self.callback("disable")
+        self.assertTrue(self.engine.rules["alarm"].enabled)
+        await self.callback("disable_confirm")
+        self.assertFalse(self.engine.rules["alarm"].enabled)
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.DISABLED)
+        await self.callback("enable")
+        self.assertTrue(self.engine.rules["alarm"].enabled)
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.NORMAL)
+
+    async def test_unshelve_calls_real_engine(self):
+        await self.callback("s60")
+        await self.callback("unshelve")
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.NORMAL)
+
+    async def test_shelve_rejected_after_alarm_clears_but_ack_remains_valid(self):
+        self.engine.states["alarm"].lifecycle_state = AlarmLifecycleState.CLEARED_UNACK
+        await self.callback("s60")
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.CLEARED_UNACK)
+        self.assertEqual(self.services.calls[-1][2]["service_data"]["message"], "Action no longer available")
+        await self.callback("ack")
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.CLEARED_ACK)
+
+    async def test_cancel_restores_pair_keyboard_without_engine_action(self):
+        await self.callback("cancel")
+        answer = self.services.calls[-1][2]["service_data"]
+        self.assertEqual(answer["message"], "Cancelled")
+        markup = self.services.calls[-2][2]["service_data"]["inline_keyboard"]
+        self.assertTrue(all(isinstance(button, list) for row in markup for button in row))
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.ACTIVE_UNACK)

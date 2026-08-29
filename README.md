@@ -23,6 +23,14 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v1.0.24
+
+- Fixed Home Assistant Telegram inline keyboard formatting so interactive buttons
+  display and callback correctly.
+- Added full English/Italian localization for Telegram alarm messages and actions.
+- Hardened callbacks for multiple Telegram bots and stale alarm lifecycle states.
+- Added lifecycle tests for ACK, shelving, disable/enable, keyboard payloads, and localization.
+
 ## What's New in v1.0.23
 
 - Added opt-in interactive Telegram actions for ACK, temporary shelving, disable,
@@ -143,7 +151,7 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.23
+url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.24
 type: module
 ```
 
@@ -597,6 +605,10 @@ rule:
 Industrial Alarm Panel does not store or manage Telegram bot tokens. Telegram
 configuration remains owned by Home Assistant.
 
+Telegram alarm messages and interactive action labels currently support English
+and Italian and follow the language configured in Home Assistant. Other languages
+fall back to English.
+
 ### Interactive Telegram actions
 
 Interactive actions extend the existing V1 setup and are disabled by default. The
@@ -631,4 +643,4 @@ not retried, preventing duplicate messages.
 
 Interactive Telegram action sessions are currently stored in memory, bounded to
 1,000 entries with a seven-day TTL. Buttons on messages created before a Home
-Assistant restart may expire gracefully. This limitation is intentional in v1.0.23.
+Assistant restart may expire gracefully. This limitation is intentional in v1.0.24.

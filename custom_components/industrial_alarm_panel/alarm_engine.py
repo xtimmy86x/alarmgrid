@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from collections import deque
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-import logging
 from typing import Any
 
 from .alarm_models import (
+    AlarmEvaluationResult,
     AlarmEvent,
     AlarmEventType,
-    AlarmEvaluationResult,
     AlarmLifecycleState,
     AlarmPriority,
     AlarmRule,
@@ -81,7 +81,7 @@ class AlarmEngine:
         sound_manager: AlarmSoundManager | None = None,
         now: Callable[[], datetime] | None = None,
         event_handler: AsyncEventHandler | None = None,
-    ) -> "AlarmEngine":
+    ) -> AlarmEngine:
         """Build an engine from a rule/runtime store."""
 
         rules = await rule_store.async_load_rules()

@@ -1,5 +1,7 @@
 """Frontend panel registration."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import logging

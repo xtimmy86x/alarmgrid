@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from .alarm_models import AlarmLifecycleState
+from .telegram_i18n import telegram_language, telegram_text
 
 _LOGGER = logging.getLogger(__name__)
 SESSION_TTL = timedelta(days=7)
@@ -33,45 +34,6 @@ VALID_ACTIONS = {
     *SHELVE_MINUTES,
 }
 
-_TEXT = {
-    "en": {
-        "ack": "Acknowledge",
-        "shelve": "Suspend",
-        "disable": "Disable",
-        "enable": "Enable",
-        "unshelve": "Unshelve now",
-        "confirm": "Confirm",
-        "cancel": "Cancel",
-        "ack_ok": "Alarm acknowledged",
-        "shelve_ok": "Alarm suspended",
-        "disable_ok": "Alarm disabled",
-        "enable_ok": "Alarm enabled",
-        "unshelve_ok": "Alarm unshelved",
-        "expired": "Action expired",
-        "unavailable": "Action no longer available",
-        "choose": "Suspend for:",
-        "disable_q": "Disable this alarm?",
-    },
-    "it": {
-        "ack": "Riconosci",
-        "shelve": "Sospendi",
-        "disable": "Disabilita",
-        "enable": "Abilita",
-        "unshelve": "Riattiva ora",
-        "confirm": "Conferma",
-        "cancel": "Annulla",
-        "ack_ok": "Allarme riconosciuto",
-        "shelve_ok": "Allarme sospeso",
-        "disable_ok": "Allarme disabilitato",
-        "enable_ok": "Allarme abilitato",
-        "unshelve_ok": "Allarme riattivato",
-        "expired": "Azione scaduta",
-        "unavailable": "Azione non più disponibile",
-        "choose": "Sospendi per:",
-        "disable_q": "Disabilitare questo allarme?",
-    },
-}
-
 
 @dataclass(slots=True)
 class TelegramActionSession:
@@ -84,6 +46,7 @@ class TelegramActionSession:
     message_id: int
     original_message: str
     created_at: datetime
+    config_entry_id: str | None = None
 
 
 def parse_callback(value: Any) -> tuple[str, str] | None:
@@ -110,8 +73,8 @@ class TelegramInteractiveManager:
         self.engine = engine
         self.options = options
         self.sessions: dict[str, TelegramActionSession] = {}
-        language = getattr(hass.config, "language", "en")
-        self.text = _TEXT["it" if str(language).lower().startswith("it") else "en"]
+        self.language = telegram_language(hass)
+        self.text = _TelegramText(self.language)
 
     def cleanup(self, now: datetime | None = None) -> None:
         """Opportunistically discard expired and oldest excess sessions."""
@@ -136,7 +99,7 @@ class TelegramInteractiveManager:
 
     def keyboard(
         self, token: str, rule: Any | None = None
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[list[str]]]:
         """Build the main keyboard from global and current rule capabilities."""
 
         if rule is None:
@@ -152,7 +115,10 @@ class TelegramInteractiveManager:
             buttons.append(self._button(f"✅ {self.text['ack']}", token, "ack"))
         if (
             self.options.get("telegram_interactive_shelve", True)
+            and rule.enabled
             and rule.shelving_allowed
+            and state is not None
+            and state.lifecycle_state in _ACTIVE_STATES
         ):
             buttons.append(self._button(f"💤 {self.text['shelve']}", token, "shelve"))
         rows = [buttons] if buttons else []
@@ -161,8 +127,9 @@ class TelegramInteractiveManager:
         return rows
 
     @staticmethod
-    def _button(text: str, token: str, action: str) -> dict[str, str]:
-        return {"text": text, "callback_data": f"iap:{token}:{action}"}
+    def _button(text: str, token: str, action: str) -> list[str]:
+        """Build the two-item sequence parsed by Home Assistant telegram_bot."""
+        return [text, f"iap:{token}:{action}"]
 
     def add_session(
         self,
@@ -172,6 +139,7 @@ class TelegramInteractiveManager:
         chat_id: Any,
         message_id: Any,
         message: str,
+        config_entry_id: str | None = None,
     ) -> TelegramActionSession:
         self.cleanup()
         session = TelegramActionSession(
@@ -182,6 +150,7 @@ class TelegramInteractiveManager:
             int(message_id),
             message,
             datetime.now(UTC),
+            config_entry_id,
         )
         self.sessions[token] = session
         self.cleanup()
@@ -195,10 +164,22 @@ class TelegramInteractiveManager:
             return
         token, action = parsed
         callback_id = attributes.get("id")
+        bot = attributes.get("bot")
+        callback_config_entry_id = (
+            bot.get("config_entry_id") if isinstance(bot, dict) else None
+        )
         self.cleanup()
         session = self.sessions.get(token)
         if session is None:
-            await self._answer(callback_id, self.text["expired"])
+            await self._answer(callback_id, self.text["expired"], callback_config_entry_id)
+            return
+        if session.config_entry_id is None and callback_config_entry_id:
+            session.config_entry_id = callback_config_entry_id
+        elif (
+            session.config_entry_id is not None
+            and callback_config_entry_id != session.config_entry_id
+        ):
+            await self._answer(callback_id, self.text["unavailable"], callback_config_entry_id)
             return
         message = attributes.get("message") or {}
         callback_message_id = (
@@ -214,14 +195,14 @@ class TelegramInteractiveManager:
             chat_matches = message_matches = False
         rule = self.engine.rules.get(session.rule_id)
         if not chat_matches or not message_matches or rule is None:
-            await self._answer(callback_id, self.text["unavailable"])
+            await self._answer(callback_id, self.text["unavailable"], session.config_entry_id)
             return
         try:
             answer = await self._execute(session, rule, action)
         except Exception:
             _LOGGER.warning("Interactive Telegram alarm action failed", exc_info=True)
             answer = self.text["unavailable"]
-        await self._answer(callback_id, answer)
+        await self._answer(callback_id, answer, session.config_entry_id)
 
     async def _execute(
         self, session: TelegramActionSession, rule: Any, action: str
@@ -230,23 +211,18 @@ class TelegramInteractiveManager:
         lifecycle = state.lifecycle_state
         if action == "cancel":
             await self._markup(session, self.keyboard(session.token, rule))
-            return self.text["unavailable"]
+            return self.text["cancelled"]
         if action == "shelve":
             if (
                 not self.options.get("telegram_interactive_shelve", True)
                 or not rule.enabled
                 or not rule.shelving_allowed
-                or lifecycle == AlarmLifecycleState.SHELVED
+                or lifecycle not in _ACTIVE_STATES
             ):
                 return self.text["unavailable"]
             durations = [
-                ("15 min", "s15"),
-                ("1 hour", "s60"),
-                ("4 hours", "s240"),
-                ("8 hours", "s480"),
-                ("1 day", "s1440"),
-                ("3 days", "s4320"),
-                ("7 days", "s10080"),
+                (self.text[f"duration_{minutes}"], code)
+                for code, minutes in SHELVE_MINUTES.items()
             ]
             rows = [
                 [
@@ -299,7 +275,7 @@ class TelegramInteractiveManager:
                 not self.options.get("telegram_interactive_shelve", True)
                 or not rule.enabled
                 or not rule.shelving_allowed
-                or lifecycle == AlarmLifecycleState.SHELVED
+                or lifecycle not in _ACTIVE_STATES
             ):
                 return self.text["unavailable"]
             await self.engine.shelve_alarm(
@@ -311,7 +287,10 @@ class TelegramInteractiveManager:
             until = self.engine.states[session.rule_id].shelve_expiry
             await self._edit(
                 session,
-                f"{session.original_message}\n\n💤 {self.text['shelve_ok']} until {until.astimezone().strftime('%H:%M')}",
+                f"{session.original_message}\n\n💤 "
+                + self.text["shelve_until"].format(
+                    time=until.astimezone().strftime("%H:%M")
+                ),
                 [
                     [
                         self._button(
@@ -351,18 +330,25 @@ class TelegramInteractiveManager:
             return self.text["enable_ok"]
         return self.text["unavailable"]
 
-    async def _call(self, service: str, data: dict[str, Any]) -> Any:
+    async def _call(
+        self, service: str, data: dict[str, Any], config_entry_id: str | None = None
+    ) -> Any:
+        if config_entry_id:
+            data = {**data, "config_entry_id": config_entry_id}
         return await self.hass.services.async_call(
             "telegram_bot", service, service_data=data, blocking=True
         )
 
-    async def _answer(self, callback_id: Any, message: str) -> None:
+    async def _answer(
+        self, callback_id: Any, message: str, config_entry_id: str | None = None
+    ) -> None:
         if not callback_id:
             return
         try:
             await self._call(
                 "answer_callback_query",
                 {"callback_query_id": callback_id, "message": message},
+                config_entry_id,
             )
         except Exception:
             _LOGGER.warning("Could not answer Telegram callback", exc_info=True)
@@ -378,6 +364,7 @@ class TelegramInteractiveManager:
                     "message_id": session.message_id,
                     "inline_keyboard": keyboard,
                 },
+                session.config_entry_id,
             )
         except Exception:
             _LOGGER.warning("Could not update Telegram reply markup", exc_info=True)
@@ -394,6 +381,23 @@ class TelegramInteractiveManager:
                     "message": message,
                     "inline_keyboard": keyboard,
                 },
+                session.config_entry_id,
             )
         except Exception:
             _LOGGER.warning("Could not edit Telegram message", exc_info=True)
+
+
+_ACTIVE_STATES = {
+    AlarmLifecycleState.ACTIVE_UNACK,
+    AlarmLifecycleState.ACTIVE_ACK,
+}
+
+
+class _TelegramText:
+    """Mapping-like compatibility wrapper around the shared translator."""
+
+    def __init__(self, language: str) -> None:
+        self.language = language
+
+    def __getitem__(self, key: str) -> str:
+        return telegram_text(self.language, key)

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import sqlite3
 from collections.abc import Iterable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-import json
 from pathlib import Path
-import sqlite3
 from typing import Any
 
 from .alarm_models import AlarmEvent, AlarmRule, AlarmRuntimeState
