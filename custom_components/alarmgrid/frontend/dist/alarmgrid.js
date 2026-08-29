@@ -793,7 +793,7 @@ class AlarmGrid extends HTMLElement {
       <input aria-label="Entity" list="entity-id-options" value="${this._escape(node.entity_id || "")}" data-condition-field="entity_id">
       <select aria-label="Operator" data-condition-field="operator">${this._operatorOptions(node.operator)}</select>
       ${needsValue ? range ? `<input type="number" aria-label="Lower" value="${node.lower ?? ""}" data-condition-field="lower"><input type="number" aria-label="Upper" value="${node.upper ?? ""}" data-condition-field="upper">` : `<input aria-label="Value" value="${node.value ?? ""}" data-condition-field="value">` : ""}
-      ${numeric ? `<label>${this._t("deadband_hysteresis")}<input type="number" min="0" step="any" value="${node.deadband || 0}" data-condition-field="deadband" title="${this._t("hysteresis_help")}"></label>` : ""}
+      ${numeric ? `<label>${this._t("deadband_hysteresis")}<input type="number" min="0" step="any" value="${node.deadband ?? 0}" data-condition-field="deadband" title="${this._t("hysteresis_help")}"></label>` : ""}
       <small>${this._t("current_state")}: ${this._escape(current)}</small><button type="button" data-delete-condition="${path}" title="${this._t("delete_condition")}">×</button></div>`;
   }
 
@@ -853,7 +853,27 @@ class AlarmGrid extends HTMLElement {
     return {parent, index, node};
   }
 
+  _syncConditionBuilderFromDom() {
+    this.shadowRoot?.querySelectorAll("[data-condition-path]").forEach((row) => {
+      const path = row.dataset.conditionPath;
+      if (!path) return;
+      const node = path === "simple" ? null : this._expressionCondition(path);
+      if (path !== "simple" && !node) return;
+      row.querySelectorAll("[data-condition-field]").forEach((field) => {
+        const name = field.dataset.conditionField;
+        if (path === "simple") {
+          const legacyFields = {entity_id:"entity_id",operator:"condition",value:"threshold",deadband:"deadband"};
+          const target = legacyFields[name];
+          if (target) this._ruleDraft[target] = field.value;
+          return;
+        }
+        if (["entity_id","operator","value","lower","upper","deadband"].includes(name)) node[name] = field.value;
+      });
+    });
+  }
+
   _addExpressionNode(path, addGroup) {
+    this._syncConditionBuilderFromDom();
     this._promoteSimple();
     const group = this._expressionGroup(path === "simple" ? "root" : path);
     if (!group) return;
@@ -863,6 +883,7 @@ class AlarmGrid extends HTMLElement {
 
   _deleteExpressionNode(path, deleteGroup) {
     if (path === "root") return;
+    this._syncConditionBuilderFromDom();
     const resolved = this._resolveExpressionParent(path);
     if (!resolved) return;
     if (deleteGroup) {
@@ -874,7 +895,7 @@ class AlarmGrid extends HTMLElement {
   }
 
   _promoteSimple() {
-    if (!this._ruleDraft.condition_expression) this._ruleDraft.condition_expression = {type:"group",operator:"and",conditions:[{type:"condition",entity_id:this._ruleDraft.entity_id,operator:this._ruleDraft.condition,value:this._ruleDraft.threshold,deadband:Number(this._ruleDraft.deadband || 0)}]};
+    if (!this._ruleDraft.condition_expression) this._ruleDraft.condition_expression = {type:"group",operator:"and",conditions:[{type:"condition",entity_id:this._ruleDraft.entity_id,operator:this._ruleDraft.condition,value:this._ruleDraft.threshold,deadband:this._ruleDraft.deadband}]};
   }
 
   _entityOptions() {
@@ -942,14 +963,24 @@ class AlarmGrid extends HTMLElement {
       field.addEventListener("input", updateDraft);
       field.addEventListener("change", updateDraft);
     });
-    this.shadowRoot.querySelectorAll("[data-condition-field]").forEach((field) => field.addEventListener("change", () => {
-      if (builderRevision !== this._builderRevision) return;
-      const path = field.closest("[data-condition-path]")?.dataset.conditionPath;
-      if (!path) return;
-      if (path === "simple") { const map = {value:"threshold"}; this._ruleDraft[map[field.dataset.conditionField] || field.dataset.conditionField] = field.value; return; }
-      const node = this._expressionCondition(path); if (!node) return;
-      node[field.dataset.conditionField] = ["lower","upper","deadband"].includes(field.dataset.conditionField) ? Number(field.value) : field.value;
-    }));
+    this.shadowRoot.querySelectorAll("[data-condition-field]").forEach((field) => {
+      const updateConditionField = () => {
+        if (builderRevision !== this._builderRevision) return;
+        const path = field.closest("[data-condition-path]")?.dataset.conditionPath;
+        if (!path) return;
+        if (path === "simple") { const map = {entity_id:"entity_id",operator:"condition",value:"threshold",deadband:"deadband"}; const target = map[field.dataset.conditionField]; if (target) this._ruleDraft[target] = field.value; }
+        else {
+          const node = this._expressionCondition(path); if (!node) return;
+          node[field.dataset.conditionField] = field.value;
+        }
+        if (field.dataset.conditionField === "operator") {
+          this._syncConditionBuilderFromDom();
+          this._render();
+        }
+      };
+      if (field.dataset.conditionField !== "operator") field.addEventListener("input", updateConditionField);
+      field.addEventListener("change", updateConditionField);
+    });
     this.shadowRoot.querySelectorAll("[data-group-operator]").forEach((field) => field.addEventListener("change", () => {
       if (builderRevision !== this._builderRevision || !["and", "or"].includes(field.value)) return;
       const group = this._expressionGroup(field.dataset.groupOperator); if (group) group.operator = field.value;
@@ -996,7 +1027,10 @@ class AlarmGrid extends HTMLElement {
   }
 
   async _createRule() {
+    this._syncConditionBuilderFromDom();
     const fields = { ...this._ruleDraft };
+    if (fields.condition_expression) fields.condition_expression = structuredClone(fields.condition_expression);
+    this._normalizeConditionDraft(fields.condition_expression);
     Object.keys(fields).forEach((key) => {
       if (fields[key] === "") delete fields[key];
     });
@@ -1021,6 +1055,13 @@ class AlarmGrid extends HTMLElement {
       system: "",
       deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
     };
+  }
+
+  _normalizeConditionDraft(node) {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "group" && Array.isArray(node.conditions)) {
+      node.conditions.forEach((child) => this._normalizeConditionDraft(child));
+    } else if (node.type === "condition" && node.deadband === "") node.deadband = 0;
   }
 
   _startEditRule(ruleId) {
@@ -1050,7 +1091,10 @@ class AlarmGrid extends HTMLElement {
 
   async _updateRule() {
     if (!this._editingRuleId) return;
+    this._syncConditionBuilderFromDom();
     const changes = { ...this._ruleDraft };
+    if (changes.condition_expression) changes.condition_expression = structuredClone(changes.condition_expression);
+    this._normalizeConditionDraft(changes.condition_expression);
     delete changes.id;
     if (changes.system === "") changes.system = null;
     Object.keys(changes).forEach((key) => {
