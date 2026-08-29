@@ -337,10 +337,10 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         )
 
         self.assertEqual("2.1.0", VERSION)
-        self.assertEqual("20260829.7", FRONTEND_BUILD)
+        self.assertEqual("20260829.8", FRONTEND_BUILD)
         self.assertEqual(
             "/alarmgrid/frontend/dist/alarmgrid.js"
-            "?v=2.1.0&build=20260829.7",
+            "?v=2.1.0&build=20260829.8",
             FRONTEND_MODULE,
         )
 
@@ -667,11 +667,11 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
         self.assertEqual("2.1.0", VERSION)
-        self.assertEqual("20260829.7", FRONTEND_BUILD)
+        self.assertEqual("20260829.8", FRONTEND_BUILD)
         self.assertEqual("2.1.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
         self.assertIn(
-            "alarmgrid.js?v=2.1.0&build=20260829.7", FRONTEND_MODULE
+            "alarmgrid.js?v=2.1.0&build=20260829.8", FRONTEND_MODULE
         )
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)

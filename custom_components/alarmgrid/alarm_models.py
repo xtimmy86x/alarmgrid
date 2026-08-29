@@ -304,6 +304,8 @@ class AlarmRule:
 
         numeric_threshold = _coerce_float(threshold, "threshold")
         deadband = _coerce_float(data.get("deadband", 0), "deadband") or 0.0
+        if deadband < 0:
+            raise AlarmValidationError("deadband cannot be negative")
         sound_profile = data.get("sound_profile") or PRIORITY_PROFILES[priority]["sound_profile"]
 
         return cls(
