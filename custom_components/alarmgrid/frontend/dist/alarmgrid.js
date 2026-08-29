@@ -306,6 +306,7 @@ class AlarmGrid extends HTMLElement {
     this._selectedRuleIds = new Set();
     this._editingRuleId = null;
     this._rulesResult = null;
+    this._builderRevision = 0;
     this._sound = {};
     this._tab = "active";
     this._themeMode = "auto";
@@ -541,6 +542,7 @@ class AlarmGrid extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot) return;
+    this._builderRevision += 1;
     this._syncTheme();
     this._captureTableScroll();
     const visible = this._filteredAlarms();
@@ -796,7 +798,8 @@ class AlarmGrid extends HTMLElement {
   }
 
   _groupBuilder(group, path="root") {
-    return `<div class="condition-group ${path === "root" ? "root" : ""}" data-group-path="${path}"><div class="group-head"><select data-group-operator="${path}"><option value="and" ${group.operator === "and" ? "selected" : ""}>${this._t("all_conditions")}</option><option value="or" ${group.operator === "or" ? "selected" : ""}>${this._t("any_condition")}</option></select>${path === "root" ? "" : `<button type="button" data-delete-group="${path}">${this._t("delete_group")}</button>`}</div>${group.conditions.map((node,index) => node.type === "group" ? this._groupBuilder(node, `${path}.${index}`) : this._conditionRow(node, `${path}.${index}`)).join("")}<div class="group-actions"><button type="button" data-add-condition="${path}">${this._t("add_condition")}</button><button type="button" data-add-group="${path}">${this._t("add_group")}</button></div></div>`;
+    if (!group || group.type !== "group" || !Array.isArray(group.conditions)) return "";
+    return `<div class="condition-group ${path === "root" ? "root" : ""}" data-group-path="${path}"><div class="group-head"><select data-group-operator="${path}"><option value="and" ${group.operator === "and" ? "selected" : ""}>${this._t("all_conditions")}</option><option value="or" ${group.operator === "or" ? "selected" : ""}>${this._t("any_condition")}</option></select>${path === "root" ? "" : `<button type="button" data-delete-group="${path}">${this._t("delete_group")}</button>`}</div>${group.conditions.map((node,index) => node?.type === "group" ? this._groupBuilder(node, `${path}.${index}`) : node?.type === "condition" ? this._conditionRow(node, `${path}.${index}`) : "").join("")}<div class="group-actions"><button type="button" data-add-condition="${path}">${this._t("add_condition")}</button><button type="button" data-add-group="${path}">${this._t("add_group")}</button></div></div>`;
   }
 
   _conditionBuilder(draft) {
@@ -812,9 +815,62 @@ class AlarmGrid extends HTMLElement {
   }
 
   _expressionNode(path) {
-    let node = this._ruleDraft.condition_expression;
-    for (const index of path.split(".").slice(1)) node = node.conditions[Number(index)];
+    const root = this._ruleDraft?.condition_expression;
+    if (!path || typeof path !== "string" || !root || typeof root !== "object" || Array.isArray(root)) return null;
+    if (path === "root") return root;
+    const parts = path.split(".");
+    if (parts[0] !== "root" || parts.length < 2) return null;
+    let node = root;
+    for (const part of parts.slice(1)) {
+      const index = Number(part);
+      if (part === "" || node?.type !== "group" || !Array.isArray(node.conditions) || !Number.isInteger(index) || index < 0 || index >= node.conditions.length) return null;
+      node = node.conditions[index];
+      if (!node || typeof node !== "object" || Array.isArray(node)) return null;
+    }
     return node;
+  }
+
+  _expressionGroup(path) {
+    const node = this._expressionNode(path);
+    return node?.type === "group" && Array.isArray(node.conditions) ? node : null;
+  }
+
+  _expressionCondition(path) {
+    const node = this._expressionNode(path);
+    return node?.type === "condition" ? node : null;
+  }
+
+  _resolveExpressionParent(path) {
+    if (!path || typeof path !== "string" || path === "root") return null;
+    const parts = path.split(".");
+    const indexPart = parts.pop();
+    const index = Number(indexPart);
+    if (indexPart === "" || !Number.isInteger(index) || index < 0) return null;
+    const parent = this._expressionGroup(parts.join("."));
+    if (!parent || index >= parent.conditions.length) return null;
+    const node = parent.conditions[index];
+    if (!node || typeof node !== "object" || Array.isArray(node)) return null;
+    return {parent, index, node};
+  }
+
+  _addExpressionNode(path, addGroup) {
+    this._promoteSimple();
+    const group = this._expressionGroup(path === "simple" ? "root" : path);
+    if (!group) return;
+    group.conditions.push(addGroup ? {type:"group",operator:"and",conditions:[{type:"condition",entity_id:"",operator:"above",value:"",deadband:0}]} : {type:"condition",entity_id:"",operator:"above",value:"",deadband:0});
+    this._render();
+  }
+
+  _deleteExpressionNode(path, deleteGroup) {
+    if (path === "root") return;
+    const resolved = this._resolveExpressionParent(path);
+    if (!resolved) return;
+    if (deleteGroup) {
+      if (resolved.node.type !== "group" || !Array.isArray(resolved.node.conditions)) return;
+      if (resolved.node.conditions.length > 1 && !confirm(this._t("delete_group"))) return;
+    } else if (resolved.node.type !== "condition") return;
+    resolved.parent.conditions.splice(resolved.index, 1);
+    this._render();
   }
 
   _promoteSimple() {
@@ -857,6 +913,7 @@ class AlarmGrid extends HTMLElement {
   }
 
   _wire() {
+    const builderRevision = this._builderRevision;
     this.shadowRoot.querySelectorAll("[data-tab]").forEach((button) => {
       button.addEventListener("click", () => {
         this._tab = button.dataset.tab;
@@ -886,19 +943,26 @@ class AlarmGrid extends HTMLElement {
       field.addEventListener("change", updateDraft);
     });
     this.shadowRoot.querySelectorAll("[data-condition-field]").forEach((field) => field.addEventListener("change", () => {
-      const path = field.closest("[data-condition-path]").dataset.conditionPath;
+      if (builderRevision !== this._builderRevision) return;
+      const path = field.closest("[data-condition-path]")?.dataset.conditionPath;
+      if (!path) return;
       if (path === "simple") { const map = {value:"threshold"}; this._ruleDraft[map[field.dataset.conditionField] || field.dataset.conditionField] = field.value; return; }
-      const node = this._expressionNode(path); node[field.dataset.conditionField] = ["lower","upper","deadband"].includes(field.dataset.conditionField) ? Number(field.value) : field.value;
+      const node = this._expressionCondition(path); if (!node) return;
+      node[field.dataset.conditionField] = ["lower","upper","deadband"].includes(field.dataset.conditionField) ? Number(field.value) : field.value;
     }));
-    this.shadowRoot.querySelectorAll("[data-group-operator]").forEach((field) => field.addEventListener("change", () => { this._expressionNode(field.dataset.groupOperator).operator = field.value; }));
+    this.shadowRoot.querySelectorAll("[data-group-operator]").forEach((field) => field.addEventListener("change", () => {
+      if (builderRevision !== this._builderRevision || !["and", "or"].includes(field.value)) return;
+      const group = this._expressionGroup(field.dataset.groupOperator); if (group) group.operator = field.value;
+    }));
     this.shadowRoot.querySelectorAll("[data-add-condition],[data-add-group]").forEach((button) => button.addEventListener("click", () => {
-      const path = button.dataset.addCondition ?? button.dataset.addGroup; this._promoteSimple(); const group = path === "simple" ? this._ruleDraft.condition_expression : this._expressionNode(path);
-      group.conditions.push(button.dataset.addGroup !== undefined ? {type:"group",operator:"and",conditions:[{type:"condition",entity_id:"",operator:"above",value:"",deadband:0}]} : {type:"condition",entity_id:"",operator:"above",value:"",deadband:0}); this._render();
+      if (builderRevision !== this._builderRevision) return;
+      const path = button.dataset.addCondition ?? button.dataset.addGroup;
+      this._addExpressionNode(path, button.dataset.addGroup !== undefined);
     }));
     this.shadowRoot.querySelectorAll("[data-delete-condition],[data-delete-group]").forEach((button) => button.addEventListener("click", () => {
-      const path = button.dataset.deleteCondition ?? button.dataset.deleteGroup; const parts=path.split("."); const index=Number(parts.pop()); const parent=this._expressionNode(parts.join("."));
-      if (button.dataset.deleteGroup !== undefined && parent.conditions[index].conditions.length > 1 && !confirm(this._t("delete_group"))) return;
-      parent.conditions.splice(index,1); this._render();
+      if (builderRevision !== this._builderRevision) return;
+      const path = button.dataset.deleteCondition ?? button.dataset.deleteGroup;
+      this._deleteExpressionNode(path, button.dataset.deleteGroup !== undefined);
     }));
     this.shadowRoot.querySelectorAll("[data-history-range]").forEach((field) => {
       field.addEventListener("change", () => {
