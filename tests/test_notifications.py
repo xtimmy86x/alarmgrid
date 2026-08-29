@@ -1,5 +1,6 @@
 import unittest
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 from custom_components.industrial_alarm_panel.alarm_engine import AlarmEngine
 from custom_components.industrial_alarm_panel.alarm_models import (
@@ -14,6 +15,9 @@ from custom_components.industrial_alarm_panel.alarm_notifications import (
 )
 from custom_components.industrial_alarm_panel.alarm_store import InMemoryHistoryStore
 from custom_components.industrial_alarm_panel.const import DEFAULT_OPTIONS
+from custom_components.industrial_alarm_panel.telegram_interactive import (
+    TelegramInteractiveManager,
+)
 
 
 def event(event_type: str = "activated", priority: str = "critical", **values):
@@ -45,6 +49,75 @@ def options(**overrides):
 
 
 class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
+    async def test_italian_message_is_fully_localized(self):
+        message = format_telegram_message(
+            event(source_state="on", source_value="on", priority="high"), "it"
+        )
+        for expected in ("ALLARME ATTIVO", "Priorità: ALTA", "Stato: on", "Valore: on", "Ora:"):
+            self.assertIn(expected, message)
+        for english in ("ACTIVATED", "Priority:", "State:", "Value:", "Time:"):
+            self.assertNotIn(english, message)
+
+    async def test_unknown_language_falls_back_to_english(self):
+        message = format_telegram_message(event(), "de")
+        self.assertIn("ACTIVATED", message)
+        self.assertIn("Priority: CRITICAL", message)
+
+    async def test_interactive_send_payload_and_response_create_session(self):
+        rule = AlarmRule.from_dict({"id": "temperature", "entity_id": "sensor.temperature", "name": "Temperature", "condition": "equal", "threshold": 1, "priority": "critical"})
+        engine = SimpleNamespace(
+            rules={rule.id: rule},
+            states={rule.id: AlarmRuntimeState(rule_id=rule.id, lifecycle_state="active_unack")},
+        )
+
+        class Services:
+            def __init__(self):
+                self.calls = []
+
+            async def async_call(self, domain, service, **kwargs):
+                self.calls.append((domain, service, kwargs))
+                return {"chats": [{"chat_id": 10, "message_id": 20}]}
+
+        services = Services()
+        hass = SimpleNamespace(config=SimpleNamespace(language="en"), services=services)
+        manager = TelegramInteractiveManager(hass, engine, {})
+        plain = []
+
+        async def send(target, message):
+            plain.append((target, message))
+
+        notifier = TelegramNotifier(
+            options(telegram_interactive_enabled=True), send, manager
+        )
+        await notifier.notify(event())
+        domain, service, call = services.calls[0]
+        self.assertEqual((domain, service), ("telegram_bot", "send_message"))
+        self.assertIn("ACTIVATED", call["service_data"]["message"])
+        self.assertIsInstance(call["service_data"]["inline_keyboard"][0][0], list)
+        self.assertEqual(call["target"], {"entity_id": "notify.telegram_operations"})
+        self.assertTrue(call["blocking"])
+        self.assertTrue(call["return_response"])
+        self.assertEqual(len(manager.sessions), 1)
+        self.assertEqual(plain, [])
+
+    async def test_success_without_identifiers_does_not_double_send(self):
+        rule = AlarmRule.from_dict({"id": "temperature", "entity_id": "sensor.temperature", "name": "Temperature", "condition": "equal", "threshold": 1})
+        engine = SimpleNamespace(rules={rule.id: rule}, states={rule.id: AlarmRuntimeState(rule_id=rule.id, lifecycle_state="active_unack")})
+
+        class Services:
+            async def async_call(self, *args, **kwargs):
+                return {}
+
+        manager = TelegramInteractiveManager(SimpleNamespace(config=SimpleNamespace(language="en"), services=Services()), engine, {})
+        plain = []
+
+        async def send(target, message):
+            plain.append((target, message))
+
+        await TelegramNotifier(options(telegram_interactive_enabled=True), send, manager).notify(event())
+        self.assertEqual(plain, [])
+        self.assertEqual(manager.sessions, {})
+
     async def test_disabled_and_empty_targets_do_not_send(self):
         calls = []
 

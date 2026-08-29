@@ -26,6 +26,7 @@ from .const import (
     CONF_TELEGRAM_NOTIFY_UNSHELVED,
     CONF_TELEGRAM_TARGETS,
 )
+from .telegram_i18n import normalize_telegram_language, telegram_text
 from .telegram_interactive import TelegramInteractiveManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,10 +97,12 @@ class TelegramNotifier:
         options: dict[str, Any],
         notify_call: NotifyCall,
         interactive_manager: TelegramInteractiveManager | None = None,
+        language: str = "en",
     ) -> None:
         self._options = options
         self._notify_call = notify_call
         self._interactive_manager = interactive_manager
+        self._language = normalize_telegram_language(language)
 
     async def notify(self, event: AlarmEvent) -> None:
         """Send a configured lifecycle event to each available target."""
@@ -132,7 +135,7 @@ class TelegramNotifier:
         ):
             return
 
-        message = format_telegram_message(event)
+        message = format_telegram_message(event, self._language)
         if (
             event.event_type == AlarmEventType.ACTIVATED.value
             and self._options.get(CONF_TELEGRAM_INTERACTIVE_ENABLED, False)
@@ -209,28 +212,27 @@ class TelegramNotifier:
         return int(actual) >= int(minimum)
 
 
-def format_telegram_message(event: AlarmEvent) -> str:
+def format_telegram_message(event: AlarmEvent, language: str = "en") -> str:
     """Create a compact, safe plain-text message, omitting empty fields."""
 
-    priority = (event.priority or "unknown").upper()
+    language = normalize_telegram_language(language)
+    priority = telegram_text(language, f"priority_{event.priority}")
     emoji = _EVENT_EMOJI.get(event.event_type) or _PRIORITY_EMOJI.get(
         event.priority or "", "🔔"
     )
-    title = event.name or event.tag or event.entity_id or "Alarm"
-    lines = [f"{emoji} {event.event_type.upper()} — {title}", ""]
+    title = event.name or event.tag or event.entity_id or telegram_text(language, "alarm")
+    event_label = telegram_text(language, f"event_{event.event_type}")
+    lines = [f"{emoji} {event_label} — {title}", ""]
     fields = (
-        ("Priority", priority),
-        ("Area", event.area),
-        ("System", event.system),
-        ("Tag", event.tag),
-        ("State", event.source_state),
-        ("Value", event.source_value),
-        ("Operator", event.operator),
-        ("Reason", event.message),
-        ("Time", event.timestamp.astimezone().strftime("%H:%M")),
+        ("priority", priority), ("area", event.area), ("system", event.system),
+        ("tag", event.tag), ("state", event.source_state),
+        ("value", event.source_value), ("operator", event.operator),
+        ("reason", event.message),
+        ("time", event.timestamp.astimezone().strftime("%H:%M")),
     )
     lines.extend(
-        f"{label}: {value}" for label, value in fields if value not in (None, "")
+        f"{telegram_text(language, f'field_{key}')}: {value}"
+        for key, value in fields if value not in (None, "")
     )
     return "\n".join(lines)
 

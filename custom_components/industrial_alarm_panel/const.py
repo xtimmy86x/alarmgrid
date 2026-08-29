@@ -21,7 +21,7 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
 
 DOMAIN = "industrial_alarm_panel"
 NAME = "Industrial Alarm Panel"
-VERSION = "1.0.23"
+VERSION = "1.0.24"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [

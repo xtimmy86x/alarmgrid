@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from .alarm_models import (
+    UNAVAILABLE_STATES,
     AlarmCondition,
     AlarmEvaluationResult,
     AlarmRule,
-    UNAVAILABLE_STATES,
 )
 
 

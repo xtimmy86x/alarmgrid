@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
-import logging
 from typing import Any
 
 from .alarm_models import AlarmPriority

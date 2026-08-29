@@ -146,7 +146,7 @@ async def async_setup_entry(
     if options.get(CONF_TELEGRAM_INTERACTIVE_ENABLED, False):
         interactive_manager = TelegramInteractiveManager(hass, engine, options)
     notification_manager.providers.append(
-        TelegramNotifier(options, _notify_call, interactive_manager)
+        TelegramNotifier(options, _notify_call, interactive_manager, hass.config.language)
     )
 
     runtime = IndustrialAlarmPanelRuntime(

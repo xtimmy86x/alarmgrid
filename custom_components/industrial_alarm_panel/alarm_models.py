@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-import re
 from typing import Any
 
 
@@ -260,7 +260,7 @@ class AlarmRule:
         return int(PRIORITY_PROFILES[self.priority]["severity"])
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AlarmRule":
+    def from_dict(cls, data: dict[str, Any]) -> AlarmRule:
         """Create and validate a rule from stored data or service input."""
 
         rule_id = str(data.get("id") or "").strip()
@@ -426,7 +426,7 @@ class AlarmRuntimeState:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AlarmRuntimeState":
+    def from_dict(cls, data: dict[str, Any]) -> AlarmRuntimeState:
         """Deserialize runtime state."""
 
         return cls(

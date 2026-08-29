@@ -1,6 +1,8 @@
 import unittest
 
-from custom_components.industrial_alarm_panel.rule_suggestions import suggest_alarm_rules
+from custom_components.industrial_alarm_panel.rule_suggestions import (
+    suggest_alarm_rules,
+)
 
 
 class FakeState:
