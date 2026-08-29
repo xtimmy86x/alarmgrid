@@ -16,7 +16,7 @@ from .rule_management import (
     delete_rules,
     export_rules_csv,
     import_rules_csv,
-    matching_per_rule_entity_entries,
+    remove_per_rule_entity_registry_entries,
     select_suggested_rules,
 )
 from .rule_suggestions import suggest_alarm_rules
@@ -192,7 +192,7 @@ async def websocket_import_rules(
             created_ids.append(rule.id)
 
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-    hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+    await runtime.async_refresh_rules()
     connection.send_result(
         msg["id"],
         {
@@ -220,7 +220,7 @@ async def websocket_create_rule(
     runtime = _runtime(hass)
     rule = await runtime.engine.create_rule(msg["rule"])
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-    hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+    await runtime.async_refresh_rules()
     connection.send_result(msg["id"], {"rule": rule.to_dict()})
 
 
@@ -284,7 +284,7 @@ async def websocket_create_suggested_rules(
 
     if created:
         await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-        hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+        await runtime.async_refresh_rules()
 
     connection.send_result(
         msg["id"],
@@ -314,7 +314,7 @@ async def websocket_update_rule(
     runtime = _runtime(hass)
     rule = await runtime.engine.update_rule(msg["rule_id"], msg["changes"])
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-    hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+    await runtime.async_refresh_rules()
     connection.send_result(msg["id"], {"rule": rule.to_dict()})
 
 
@@ -333,9 +333,11 @@ async def websocket_delete_rule(
     """Delete an alarm rule."""
 
     runtime = _runtime(hass)
+    rule = runtime.engine.rules[msg["rule_id"]]
     await runtime.engine.delete_rule(msg["rule_id"])
+    remove_per_rule_entity_registry_entries(hass, runtime.entry_id, [rule])
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-    hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+    await runtime.async_refresh_rules()
     connection.send_result(msg["id"], {"deleted": True})
 
 
@@ -366,7 +368,7 @@ async def websocket_delete_rules(
 
     if result.deleted_rules:
         await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-        hass.async_create_task(hass.config_entries.async_reload(runtime.entry_id))
+        await runtime.async_refresh_rules()
 
     connection.send_result(
         msg["id"],
@@ -606,25 +608,3 @@ def _sensor_states(hass: HomeAssistant) -> list[Any]:
             if (state := hass.states.get(entity_id)) is not None
         ]
     return []
-
-
-def remove_per_rule_entity_registry_entries(
-    hass: HomeAssistant, entry_id: str, rules: list[Any]
-) -> list[str]:
-    """Remove entity registry entries belonging to deleted per-rule entities."""
-
-    from homeassistant.helpers import entity_registry as er
-
-    entity_registry = er.async_get(hass)
-    entries_for_config_entry = getattr(er, "async_entries_for_config_entry", None)
-    if entries_for_config_entry is not None:
-        entries = entries_for_config_entry(entity_registry, entry_id)
-    else:
-        entries = entity_registry.entities.values()
-
-    matches = matching_per_rule_entity_entries(entry_id, rules, entries)
-    removed_entity_ids = [entry.entity_id for entry in matches]
-    for entity_id in removed_entity_ids:
-        entity_registry.async_remove(entity_id)
-
-    return removed_entity_ids

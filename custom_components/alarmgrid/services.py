@@ -27,6 +27,7 @@ from .const import (
     SERVICE_UNSILENCE_HORN,
     SERVICE_UPDATE_RULE,
 )
+from .rule_management import remove_per_rule_entity_registry_entries
 
 RULE_ID = "rule_id"
 COMMENT = "comment"
@@ -145,17 +146,21 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         if call.service == SERVICE_CREATE_RULE:
             await engine.create_rule(data[RULE])
             await runtime.rule_store.async_save_rules(engine.rules.values())
-            _reload_entry(hass, runtime.entry_id)
+            await runtime.async_refresh_rules()
             return
         if call.service == SERVICE_UPDATE_RULE:
             await engine.update_rule(data[RULE_ID], data[CHANGES])
             await runtime.rule_store.async_save_rules(engine.rules.values())
-            _reload_entry(hass, runtime.entry_id)
+            await runtime.async_refresh_rules()
             return
         if call.service == SERVICE_DELETE_RULE:
+            rule = engine.rules[data[RULE_ID]]
             await engine.delete_rule(data[RULE_ID])
+            remove_per_rule_entity_registry_entries(
+                hass, runtime.entry_id, [rule]
+            )
             await runtime.rule_store.async_save_rules(engine.rules.values())
-            _reload_entry(hass, runtime.entry_id)
+            await runtime.async_refresh_rules()
             return
         if call.service == SERVICE_TEST_SOUND:
             await runtime.sound_manager.test_sound(AlarmPriority(data[PRIORITY]))
@@ -186,10 +191,6 @@ def _first_runtime(hass: HomeAssistant) -> Any:
     if not runtimes:
         raise RuntimeError("AlarmGrid is not configured")
     return runtimes[0]
-
-
-def _reload_entry(hass: HomeAssistant, entry_id: str) -> None:
-    hass.async_create_task(hass.config_entries.async_reload(entry_id))
 
 
 def _parse_datetime(value: str | None) -> datetime | None:
