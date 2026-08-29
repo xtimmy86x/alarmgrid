@@ -9,7 +9,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
+    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES,
     CONF_TELEGRAM_ENABLED,
+    CONF_TELEGRAM_INTERACTIVE_ENABLED,
     CONF_TELEGRAM_MIN_PRIORITY,
     CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED,
     CONF_TELEGRAM_NOTIFY_ACTIVATED,
@@ -35,6 +37,7 @@ async def async_get_config_entry_diagnostics(
     options = {**DEFAULT_OPTIONS, **entry.options}
     diagnostic_options = dict(entry.options)
     diagnostic_options.pop(CONF_TELEGRAM_TARGETS, None)
+    diagnostic_options.pop(CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES, None)
     return {
         "entry": {
             "title": entry.title,
@@ -52,6 +55,15 @@ async def async_get_config_entry_diagnostics(
         "telegram": {
             "enabled": bool(options[CONF_TELEGRAM_ENABLED]),
             "target_count": len(options[CONF_TELEGRAM_TARGETS]),
+            "interactive_enabled": bool(options[CONF_TELEGRAM_INTERACTIVE_ENABLED]),
+            "callback_event_entity_count": len(
+                options[CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES]
+            ),
+            "interactive_session_count": len(
+                runtime.telegram_interactive_manager.sessions
+            )
+            if runtime.telegram_interactive_manager
+            else 0,
             "minimum_priority": options[CONF_TELEGRAM_MIN_PRIORITY],
             "event_flags": {
                 key: bool(options[key])

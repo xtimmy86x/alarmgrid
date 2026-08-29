@@ -34,7 +34,12 @@ from .const import (
     CONF_SOUND_MODE,
     CONF_STORE_NORMAL_EVENTS,
     CONF_STORE_STATUS_CHANGES,
+    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES,
     CONF_TELEGRAM_ENABLED,
+    CONF_TELEGRAM_INTERACTIVE_ACK,
+    CONF_TELEGRAM_INTERACTIVE_DISABLE,
+    CONF_TELEGRAM_INTERACTIVE_ENABLED,
+    CONF_TELEGRAM_INTERACTIVE_SHELVE,
     CONF_TELEGRAM_MIN_PRIORITY,
     CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED,
     CONF_TELEGRAM_NOTIFY_ACTIVATED,
@@ -67,9 +72,30 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 user_input[CONF_MEDIA_PLAYERS] = [
                     item.strip() for item in media_players.split(",") if item.strip()
                 ]
+            errors = {}
             if user_input.get(CONF_TELEGRAM_ENABLED) and not user_input.get(
                 CONF_TELEGRAM_TARGETS
             ):
+                errors[CONF_TELEGRAM_TARGETS] = "telegram_targets_required"
+            if user_input.get(CONF_TELEGRAM_INTERACTIVE_ENABLED):
+                if not user_input.get(CONF_TELEGRAM_ENABLED):
+                    errors[CONF_TELEGRAM_INTERACTIVE_ENABLED] = "telegram_required"
+                if not user_input.get(CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES):
+                    errors[CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES] = (
+                        "telegram_callback_entities_required"
+                    )
+                if not any(
+                    user_input.get(key, False)
+                    for key in (
+                        CONF_TELEGRAM_INTERACTIVE_ACK,
+                        CONF_TELEGRAM_INTERACTIVE_SHELVE,
+                        CONF_TELEGRAM_INTERACTIVE_DISABLE,
+                    )
+                ):
+                    errors[CONF_TELEGRAM_INTERACTIVE_ENABLED] = (
+                        "telegram_action_required"
+                    )
+            if errors:
                 return self.async_show_form(
                     step_id="init",
                     data_schema=self._options_schema(
@@ -80,7 +106,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             **user_input,
                         }
                     ),
-                    errors={CONF_TELEGRAM_TARGETS: "telegram_targets_required"},
+                    errors=errors,
                 )
             return self.async_create_entry(title="", data=user_input)
 
@@ -246,6 +272,28 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_TELEGRAM_NOTIFY_ENABLED,
                     default=options[CONF_TELEGRAM_NOTIFY_ENABLED],
+                ): bool,
+                vol.Optional(
+                    CONF_TELEGRAM_INTERACTIVE_ENABLED,
+                    default=options[CONF_TELEGRAM_INTERACTIVE_ENABLED],
+                ): bool,
+                vol.Optional(
+                    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES,
+                    default=options[CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES],
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="event", multiple=True)
+                ),
+                vol.Optional(
+                    CONF_TELEGRAM_INTERACTIVE_ACK,
+                    default=options[CONF_TELEGRAM_INTERACTIVE_ACK],
+                ): bool,
+                vol.Optional(
+                    CONF_TELEGRAM_INTERACTIVE_SHELVE,
+                    default=options[CONF_TELEGRAM_INTERACTIVE_SHELVE],
+                ): bool,
+                vol.Optional(
+                    CONF_TELEGRAM_INTERACTIVE_DISABLE,
+                    default=options[CONF_TELEGRAM_INTERACTIVE_DISABLE],
                 ): bool,
             }
         )
