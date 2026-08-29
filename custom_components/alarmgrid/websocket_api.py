@@ -17,24 +17,7 @@ from .rule_management import (
     export_rules_csv,
     import_rules_csv,
     remove_per_rule_entity_registry_entries,
-    select_suggested_rules,
 )
-from .rule_suggestions import suggest_alarm_rules
-
-SUGGESTED_RULE_THRESHOLD_SCHEMA = {
-    vol.Optional("power_threshold_w", default=2000): vol.All(
-        vol.Coerce(float), vol.Range(min=1)
-    ),
-    vol.Optional("low_voltage_v", default=207): vol.All(
-        vol.Coerce(float), vol.Range(min=1)
-    ),
-    vol.Optional("high_voltage_v", default=253): vol.All(
-        vol.Coerce(float), vol.Range(min=1)
-    ),
-    vol.Optional("high_solar_water_temp_c", default=75): vol.All(
-        vol.Coerce(float), vol.Range(min=1)
-    ),
-}
 
 
 def async_register_websocket_api(hass: HomeAssistant) -> None:
@@ -47,8 +30,6 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_list_history)
     websocket_api.async_register_command(hass, websocket_list_rules)
     websocket_api.async_register_command(hass, websocket_create_rule)
-    websocket_api.async_register_command(hass, websocket_list_suggested_rules)
-    websocket_api.async_register_command(hass, websocket_create_suggested_rules)
     websocket_api.async_register_command(hass, websocket_update_rule)
     websocket_api.async_register_command(hass, websocket_delete_rule)
     websocket_api.async_register_command(hass, websocket_delete_rules)
@@ -226,78 +207,6 @@ async def websocket_create_rule(
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "alarmgrid/list_suggested_rules",
-        **SUGGESTED_RULE_THRESHOLD_SCHEMA,
-    }
-)
-@websocket_api.async_response
-async def websocket_list_suggested_rules(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Preview suggested alarm rules from current Home Assistant sensors."""
-
-    runtime = _runtime(hass)
-    suggested = suggest_alarm_rules(
-        _sensor_states(hass),
-        existing_rule_ids=set(runtime.engine.rules),
-        power_threshold_w=msg["power_threshold_w"],
-        low_voltage_v=msg["low_voltage_v"],
-        high_voltage_v=msg["high_voltage_v"],
-        high_solar_water_temp_c=msg["high_solar_water_temp_c"],
-    )
-
-    connection.send_result(msg["id"], {"suggested": suggested})
-
-
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "alarmgrid/create_suggested_rules",
-        vol.Optional("rule_ids"): [str],
-        **SUGGESTED_RULE_THRESHOLD_SCHEMA,
-    }
-)
-@websocket_api.async_response
-async def websocket_create_suggested_rules(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Create suggested alarm rules from current Home Assistant sensors."""
-
-    runtime = _runtime(hass)
-    suggested = suggest_alarm_rules(
-        _sensor_states(hass),
-        existing_rule_ids=set(runtime.engine.rules),
-        power_threshold_w=msg["power_threshold_w"],
-        low_voltage_v=msg["low_voltage_v"],
-        high_voltage_v=msg["high_voltage_v"],
-        high_solar_water_temp_c=msg["high_solar_water_temp_c"],
-    )
-    selected, skipped_rule_ids = select_suggested_rules(suggested, msg.get("rule_ids"))
-
-    created = []
-    for rule_data in selected:
-        rule = await runtime.engine.create_rule(rule_data)
-        created.append(rule.to_dict())
-
-    if created:
-        await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
-        await runtime.async_refresh_rules()
-
-    connection.send_result(
-        msg["id"],
-        {
-            "created_count": len(created),
-            "created": created,
-            "skipped_rule_ids": skipped_rule_ids,
-        },
-    )
-
-
-@websocket_api.websocket_command(
-    {
         vol.Required("type"): "alarmgrid/update_rule",
         vol.Required("rule_id"): str,
         vol.Required("changes"): dict,
@@ -344,8 +253,7 @@ async def websocket_delete_rule(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "alarmgrid/delete_rules",
-        vol.Optional("rule_ids"): [str],
-        vol.Optional("generated_only", default=False): bool,
+        vol.Required("rule_ids"): [str],
     }
 )
 @websocket_api.async_response
@@ -357,11 +265,7 @@ async def websocket_delete_rules(
     """Delete selected alarm rules."""
 
     runtime = _runtime(hass)
-    result = await delete_rules(
-        runtime.engine,
-        rule_ids=msg.get("rule_ids"),
-        generated_only=msg["generated_only"],
-    )
+    result = await delete_rules(runtime.engine, rule_ids=msg["rule_ids"])
     removed_entity_ids = remove_per_rule_entity_registry_entries(
         hass, runtime.entry_id, result.deleted_rules
     )
@@ -585,26 +489,3 @@ def _parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     return datetime.fromisoformat(value)
-
-
-def _sensor_states(hass: HomeAssistant) -> list[Any]:
-    async_all = getattr(hass.states, "async_all", None)
-    if async_all:
-        try:
-            states = async_all("sensor")
-        except TypeError:
-            states = [
-                state
-                for state in async_all()
-                if str(getattr(state, "entity_id", "")).startswith("sensor.")
-            ]
-        return list(states)
-
-    async_entity_ids = getattr(hass.states, "async_entity_ids", None)
-    if async_entity_ids:
-        return [
-            state
-            for entity_id in async_entity_ids("sensor")
-            if (state := hass.states.get(entity_id)) is not None
-        ]
-    return []

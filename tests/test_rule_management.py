@@ -10,10 +10,8 @@ from custom_components.alarmgrid.rule_management import (
     delete_rules,
     export_rules_csv,
     import_rules_csv,
-    is_generated_rule_id,
     matching_per_rule_entity_entries,
     per_rule_entity_unique_ids,
-    select_suggested_rules,
 )
 
 
@@ -110,71 +108,19 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(AlarmValidationError, "duplicate rule id r1"):
             import_rules_csv(content)
 
-    def test_generated_rule_ids_use_auto_prefix(self) -> None:
-        self.assertTrue(is_generated_rule_id("auto_sensor_main_power_unavailable"))
-        self.assertFalse(is_generated_rule_id("manual_temperature_high"))
-
-    def test_select_suggested_rules_keeps_requested_order_and_reports_skips(
-        self,
-    ) -> None:
-        suggested = [
-            {"id": "auto_a", "name": "A"},
-            {"id": "auto_b", "name": "B"},
-            {"id": "auto_c", "name": "C"},
-        ]
-
-        selected, skipped = select_suggested_rules(
-            suggested, ["auto_c", "missing", "auto_a", "auto_c"]
-        )
-
-        self.assertEqual([rule["id"] for rule in selected], ["auto_c", "auto_a"])
-        self.assertEqual(skipped, ["missing"])
-
-    def test_select_suggested_rules_omitted_ids_preserves_all_suggestions(self) -> None:
-        suggested = [{"id": "auto_a"}, {"id": "auto_b"}]
-
-        selected, skipped = select_suggested_rules(suggested, None)
-
-        self.assertEqual(selected, suggested)
-        self.assertEqual(skipped, [])
-
-    async def test_delete_generated_only_removes_only_auto_rules(self) -> None:
+    async def test_delete_selected_rules_deduplicates_and_treats_auto_ids_normally(self) -> None:
         engine = AlarmEngine(
-            [
-                make_rule("auto_sensor_power_high_consumption"),
-                make_rule("manual_temperature_high"),
-            ],
-            InMemoryHistoryStore(),
-        )
-
-        result = await delete_rules(engine, generated_only=True)
-
-        self.assertEqual(
-            result.deleted_rule_ids, ["auto_sensor_power_high_consumption"]
-        )
-        self.assertEqual(result.skipped_rule_ids, [])
-        self.assertNotIn("auto_sensor_power_high_consumption", engine.rules)
-        self.assertIn("manual_temperature_high", engine.rules)
-
-    async def test_delete_generated_only_with_explicit_ids_skips_non_generated(
-        self,
-    ) -> None:
-        engine = AlarmEngine(
-            [make_rule("auto_a"), make_rule("auto_b"), make_rule("manual_c")],
+            [make_rule("a"), make_rule("b"), make_rule("c"), make_rule("auto_legacy")],
             InMemoryHistoryStore(),
         )
 
         result = await delete_rules(
-            engine,
-            rule_ids=["auto_b", "manual_c", "missing"],
-            generated_only=True,
+            engine, rule_ids=["a", "c", "a", "missing", "auto_legacy"]
         )
 
-        self.assertEqual(result.deleted_rule_ids, ["auto_b"])
-        self.assertEqual(result.skipped_rule_ids, ["manual_c", "missing"])
-        self.assertIn("auto_a", engine.rules)
-        self.assertNotIn("auto_b", engine.rules)
-        self.assertIn("manual_c", engine.rules)
+        self.assertEqual(result.deleted_rule_ids, ["a", "c", "auto_legacy"])
+        self.assertEqual(result.skipped_rule_ids, ["missing"])
+        self.assertEqual(list(engine.rules), ["b"])
 
     async def test_delete_explicit_rules_skips_unknown_ids(self) -> None:
         engine = AlarmEngine(
@@ -197,12 +143,6 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.deleted_rule_ids, ["rule_b"])
         self.assertIn("rule_a", engine.rules)
         self.assertNotIn("rule_b", engine.rules)
-
-    async def test_delete_requires_explicit_ids_or_generated_only(self) -> None:
-        engine = AlarmEngine([], InMemoryHistoryStore())
-
-        with self.assertRaises(AlarmValidationError):
-            await delete_rules(engine)
 
     def test_per_rule_entity_unique_ids_match_existing_entity_classes(self) -> None:
         rule = make_rule("auto_sensor_powertag_main_power_high_consumption")

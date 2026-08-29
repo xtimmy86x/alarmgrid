@@ -5,8 +5,6 @@ export const commands = {
   listHistory: `${DOMAIN}/list_history`,
   listRules: `${DOMAIN}/list_rules`,
   createRule: `${DOMAIN}/create_rule`,
-  listSuggestedRules: `${DOMAIN}/list_suggested_rules`,
-  createSuggestedRules: `${DOMAIN}/create_suggested_rules`,
   deleteRules: `${DOMAIN}/delete_rules`,
   exportRules: `${DOMAIN}/export_rules`,
   importRules: `${DOMAIN}/import_rules`,
