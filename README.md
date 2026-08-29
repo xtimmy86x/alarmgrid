@@ -32,6 +32,18 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v2.1.0
+
+### Visual card editor
+
+AlarmGrid 2.1.0 adds a native Home Assistant visual editor for
+`custom:alarmgrid-card`. The editor provides a live preview and graphical
+configuration for the alarm view, header, actions, metadata, priorities, and
+advanced appearance options. YAML configuration remains fully supported.
+
+The editor also preserves open controls, expanded appearance settings, focus,
+and cursor position during Home Assistant updates.
+
 ## What's New in v2.0.0
 
 - Rebranded Industrial Alarm Panel as AlarmGrid.
@@ -173,7 +185,7 @@ AlarmGrid supports the native Home Assistant visual card editor. Go to **Dashboa
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.0.0
+url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.1.0
 type: module
 ```
 
