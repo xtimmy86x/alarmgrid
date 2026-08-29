@@ -27,6 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 Listener = Callable[[], None]
 AsyncPersist = Callable[[dict[str, AlarmRuntimeState]], Awaitable[None]]
+AsyncEventHandler = Callable[[AlarmEvent], Awaitable[None]]
 
 
 class AlarmEngine:
@@ -47,6 +48,7 @@ class AlarmEngine:
         flapping_window_seconds: int = 300,
         auto_shelve_flapping: bool = False,
         auto_shelve_minutes: int = 10,
+        event_handler: AsyncEventHandler | None = None,
     ) -> None:
         self.rules: dict[str, AlarmRule] = {rule.id: rule for rule in rules or []}
         self.states: dict[str, AlarmRuntimeState] = {
@@ -68,6 +70,7 @@ class AlarmEngine:
         self.auto_shelve_flapping = auto_shelve_flapping
         self.auto_shelve_minutes = auto_shelve_minutes
         self.last_event: AlarmEvent | None = None
+        self._event_handler = event_handler
 
     @classmethod
     async def from_store(
@@ -77,6 +80,7 @@ class AlarmEngine:
         *,
         sound_manager: AlarmSoundManager | None = None,
         now: Callable[[], datetime] | None = None,
+        event_handler: AsyncEventHandler | None = None,
     ) -> "AlarmEngine":
         """Build an engine from a rule/runtime store."""
 
@@ -89,6 +93,7 @@ class AlarmEngine:
             now=now,
             persist_states=rule_store.async_save_states,
             initial_states=states,
+            event_handler=event_handler,
         )
 
     def add_listener(self, listener: Listener) -> Callable[[], None]:
@@ -776,6 +781,7 @@ class AlarmEngine:
         )
         await self.history_store.add_event(event)
         self.last_event = event
+        await self._notify_event_handler(event)
 
     async def _record_system_event(
         self,
@@ -794,6 +800,20 @@ class AlarmEngine:
         )
         await self.history_store.add_event(event)
         self.last_event = event
+
+    async def _notify_event_handler(self, event: AlarmEvent) -> None:
+        """Run post-history integrations without changing lifecycle semantics."""
+
+        if self._event_handler is None:
+            return
+        try:
+            await self._event_handler(event)
+        except Exception:  # Notifications and other sinks are best effort.
+            _LOGGER.warning(
+                "Post-history event handler failed for %s",
+                event.event_type,
+                exc_info=True,
+            )
 
     async def async_shutdown(self) -> None:
         """Flush state before unload."""

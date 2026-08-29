@@ -7,6 +7,7 @@ from enum import StrEnum
 try:
     from homeassistant.const import Platform
 except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant installed.
+
     class Platform(StrEnum):
         """Subset of HA platform names used by this integration."""
 
@@ -17,9 +18,10 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
         SELECT = "select"
         NUMBER = "number"
 
+
 DOMAIN = "industrial_alarm_panel"
 NAME = "Industrial Alarm Panel"
-VERSION = "1.0.20"
+VERSION = "1.0.21"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [
@@ -83,6 +85,16 @@ CONF_ALARM_FLOOD_WINDOW_SECONDS = "alarm_flood_window_seconds"
 CONF_AUTO_SHELVE_FLAPPING = "auto_shelve_flapping_alarms"
 CONF_FLAPPING_DETECTION_THRESHOLD = "flapping_detection_threshold"
 CONF_GROUP_BY = "group_by"
+CONF_TELEGRAM_ENABLED = "telegram_enabled"
+CONF_TELEGRAM_TARGETS = "telegram_targets"
+CONF_TELEGRAM_MIN_PRIORITY = "telegram_min_priority"
+CONF_TELEGRAM_NOTIFY_ACTIVATED = "telegram_notify_activated"
+CONF_TELEGRAM_NOTIFY_CLEARED = "telegram_notify_cleared"
+CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED = "telegram_notify_acknowledged"
+CONF_TELEGRAM_NOTIFY_SHELVED = "telegram_notify_shelved"
+CONF_TELEGRAM_NOTIFY_UNSHELVED = "telegram_notify_unshelved"
+CONF_TELEGRAM_NOTIFY_DISABLED = "telegram_notify_disabled"
+CONF_TELEGRAM_NOTIFY_ENABLED = "telegram_notify_enabled"
 
 SOUND_MODE_NONE = "none"
 SOUND_MODE_BROWSER_ONLY = "browser_only"
@@ -120,6 +132,16 @@ DEFAULT_OPTIONS = {
     CONF_ENABLE_FLASHING: True,
     CONF_COMPACT_MODE: False,
     CONF_GROUP_BY: "priority",
+    CONF_TELEGRAM_ENABLED: False,
+    CONF_TELEGRAM_TARGETS: [],
+    CONF_TELEGRAM_MIN_PRIORITY: "high",
+    CONF_TELEGRAM_NOTIFY_ACTIVATED: True,
+    CONF_TELEGRAM_NOTIFY_CLEARED: True,
+    CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED: False,
+    CONF_TELEGRAM_NOTIFY_SHELVED: False,
+    CONF_TELEGRAM_NOTIFY_UNSHELVED: False,
+    CONF_TELEGRAM_NOTIFY_DISABLED: False,
+    CONF_TELEGRAM_NOTIFY_ENABLED: False,
 }
 
 DEFAULT_DATA = {

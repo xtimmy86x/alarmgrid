@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import logging
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .alarm_engine import AlarmEngine
+from .alarm_notifications import AlarmNotificationManager, TelegramNotifier
 from .alarm_sound import AlarmSoundManager
 from .alarm_store import HomeAssistantRuleStore, SQLiteHistoryStore
 from .const import (
@@ -39,6 +40,7 @@ class IndustrialAlarmPanelRuntime:
     rule_store: HomeAssistantRuleStore
     history_store: SQLiteHistoryStore
     sound_manager: AlarmSoundManager
+    notification_manager: AlarmNotificationManager
     engine: AlarmEngine
     remove_state_listener: Any | None = None
     remove_delay_timer: Any | None = None
@@ -76,9 +78,7 @@ async def async_setup_entry(
         media_players = options.get(CONF_MEDIA_PLAYERS) or []
         if not media_players:
             return
-        media_content_id = (
-            f"/local/industrial_alarm_panel/sounds/{priority.value}.mp3"
-        )
+        media_content_id = f"/local/industrial_alarm_panel/sounds/{priority.value}.mp3"
         await hass.services.async_call(
             "media_player",
             "play_media",
@@ -101,13 +101,32 @@ async def async_setup_entry(
         media_players=list(options.get(CONF_MEDIA_PLAYERS, [])),
         media_call=_media_call,
     )
+
+    async def _notify_call(target: str, message: str) -> None:
+        if hass.states.get(target) is None:
+            _LOGGER.warning("Telegram notify entity %s is unavailable", target)
+            return
+        await hass.services.async_call(
+            "notify",
+            "send_message",
+            service_data={"message": message},
+            target={"entity_id": target},
+            blocking=True,
+        )
+
+    notification_manager = AlarmNotificationManager(
+        [TelegramNotifier(options, _notify_call)]
+    )
     engine = await AlarmEngine.from_store(
         rule_store,
         history_store,
         sound_manager=sound_manager,
+        event_handler=notification_manager.notify,
     )
     engine.alarm_flood_threshold = int(
-        options.get(CONF_ALARM_FLOOD_THRESHOLD, DEFAULT_OPTIONS[CONF_ALARM_FLOOD_THRESHOLD])
+        options.get(
+            CONF_ALARM_FLOOD_THRESHOLD, DEFAULT_OPTIONS[CONF_ALARM_FLOOD_THRESHOLD]
+        )
     )
     engine.alarm_flood_window_seconds = int(
         options.get(
@@ -116,7 +135,9 @@ async def async_setup_entry(
         )
     )
     engine.auto_shelve_flapping = bool(
-        options.get(CONF_AUTO_SHELVE_FLAPPING, DEFAULT_OPTIONS[CONF_AUTO_SHELVE_FLAPPING])
+        options.get(
+            CONF_AUTO_SHELVE_FLAPPING, DEFAULT_OPTIONS[CONF_AUTO_SHELVE_FLAPPING]
+        )
     )
 
     runtime = IndustrialAlarmPanelRuntime(
@@ -124,6 +145,7 @@ async def async_setup_entry(
         rule_store=rule_store,
         history_store=history_store,
         sound_manager=sound_manager,
+        notification_manager=notification_manager,
         engine=engine,
     )
     entry.runtime_data = runtime

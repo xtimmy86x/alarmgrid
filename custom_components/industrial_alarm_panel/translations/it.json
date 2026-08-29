@@ -22,8 +22,24 @@
   "options": {
     "step": {
       "init": {
-        "title": "Opzioni Industrial Alarm Panel"
+        "title": "Opzioni Industrial Alarm Panel",
+        "description": "Configura il comportamento degli allarmi e il canale opzionale di notifica Telegram.",
+        "data": {
+          "telegram_enabled": "Abilita notifiche Telegram",
+          "telegram_targets": "Entità notify Telegram",
+          "telegram_min_priority": "Priorità minima Telegram",
+          "telegram_notify_activated": "Notifica attivazione",
+          "telegram_notify_cleared": "Notifica rientro",
+          "telegram_notify_acknowledged": "Notifica riconoscimento",
+          "telegram_notify_shelved": "Notifica shelving",
+          "telegram_notify_unshelved": "Notifica fine shelving",
+          "telegram_notify_disabled": "Notifica disabilitazione",
+          "telegram_notify_enabled": "Notifica abilitazione"
+        }
       }
+    },
+    "error": {
+      "telegram_targets_required": "Seleziona almeno un destinatario per le notifiche."
     }
   }
 }

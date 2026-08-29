@@ -23,6 +23,15 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v1.0.21
+
+- Added opt-in, outbound-only Telegram alarm notifications through Home Assistant
+  `notify` entities, without storing Telegram bot tokens, chat IDs, or credentials.
+- Added minimum-priority filtering, per-lifecycle-event controls, multiple notification
+  targets, and best-effort failure isolation.
+- Added English and Italian options-flow labels, privacy-conscious diagnostics, tests,
+  and setup documentation for the Telegram notification V1.
+
 ## What's New in v1.0.18
 
 - Fixed the Lovelace alarm item's per-alarm action trigger so the 44 px three-dot button remains visible beside ACK in active and unacknowledged views.
@@ -529,3 +538,28 @@ python3 -m unittest discover -s tests -v
 ```
 
 For full Home Assistant integration tests, install `requirements_test.txt` in a virtual environment and run pytest.
+
+## Telegram notifications
+
+Industrial Alarm Panel can send **outbound-only, plain-text** alarm lifecycle
+notifications through one or more Home Assistant `notify` entities. The feature is
+fully opt-in and has a default minimum priority of `high`.
+
+1. Configure the [Telegram Bot integration](https://www.home-assistant.io/integrations/telegram_bot/)
+   in Home Assistant first.
+2. Verify that Home Assistant exposes a working `notify` entity for that Telegram
+   configuration.
+3. Open **Settings → Devices & services → Industrial Alarm Panel → Configure**.
+4. Enable **Telegram notifications**.
+5. Select one or more Telegram-backed `notify` entities.
+6. Choose the minimum priority and the lifecycle event types to send.
+
+The selector intentionally lists all entities in the `notify` domain because Home
+Assistant does not expose a stable, universal way for an options selector to limit
+these entities to Telegram providers. Choose only notify entities created for your
+Telegram Bot configuration.
+
+Industrial Alarm Panel does not store or manage Telegram bot tokens. Telegram
+configuration remains owned by Home Assistant. This V1 does not provide callbacks,
+inline buttons, remote acknowledgement/shelving/disable actions, message editing,
+or Telegram polling/webhooks.

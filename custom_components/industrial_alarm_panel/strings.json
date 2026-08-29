@@ -47,9 +47,23 @@
           "default_tab": "Default tab",
           "enable_flashing": "Enable flashing",
           "enable_compact_mode": "Enable compact mode",
-          "group_by": "Group by"
-        }
+          "group_by": "Group by",
+          "telegram_enabled": "Enable Telegram notifications",
+          "telegram_targets": "Telegram notify entities",
+          "telegram_min_priority": "Telegram minimum priority",
+          "telegram_notify_activated": "Notify when activated",
+          "telegram_notify_cleared": "Notify when cleared",
+          "telegram_notify_acknowledged": "Notify when acknowledged",
+          "telegram_notify_shelved": "Notify when shelved",
+          "telegram_notify_unshelved": "Notify when unshelved",
+          "telegram_notify_disabled": "Notify when disabled",
+          "telegram_notify_enabled": "Notify when enabled"
+        },
+        "description": "Configure alarm behavior and the optional Telegram notification channel."
       }
+    },
+    "error": {
+      "telegram_targets_required": "Select at least one notification target."
     }
   },
   "issues": {
