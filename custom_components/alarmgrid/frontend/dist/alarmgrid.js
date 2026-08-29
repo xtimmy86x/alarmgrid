@@ -1122,7 +1122,7 @@ class AlarmGrid extends HTMLElement {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `industrial-alarm-rules-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `alarmgrid-rules-${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -1161,7 +1161,7 @@ class AlarmGrid extends HTMLElement {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `industrial-alarm-history-${this._historyStart.replaceAll(":", "-")}-${this._historyEnd.replaceAll(":", "-")}.csv`;
+      link.download = `alarmgrid-history-${this._historyStart.replaceAll(":", "-")}-${this._historyEnd.replaceAll(":", "-")}.csv`;
       link.click();
       URL.revokeObjectURL(url);
       this._historyExportResult = this._t("history_exported", { count: rows.length });

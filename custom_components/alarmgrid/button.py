@@ -33,7 +33,7 @@ class PerAlarmButton(PerAlarmEntity, ButtonEntity):
     def __init__(self, runtime: Any, rule_id: str, action_key: str, name: str, action: Any) -> None:
         super().__init__(runtime, rule_id, action_key, name)
         self.entity_description = ButtonEntityDescription(key=action_key, name=name)
-        self._attr_suggested_object_id = f"industrial_alarm_{action_key}"
+        self._attr_suggested_object_id = f"alarmgrid_{action_key}"
         self._action = action
 
     async def async_press(self) -> None:

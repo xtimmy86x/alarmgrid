@@ -45,7 +45,7 @@ class AlarmRuleBinarySensor(PerAlarmEntity, BinarySensorEntity):
         self.entity_description = BinarySensorEntityDescription(
             key="alarm", name=runtime.engine.rules[rule_id].name
         )
-        self._attr_suggested_object_id = f"industrial_alarm_{self.rule.slug}"
+        self._attr_suggested_object_id = f"alarmgrid_{self.rule.slug}"
 
     @property
     def is_on(self) -> bool:
