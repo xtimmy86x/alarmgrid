@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "AlarmGrid",
+        "description": "Set up the DCS-style alarm annunciator.",
+        "data": {
+          "instance_name": "Instance name",
+          "enable_panel": "Enable sidebar panel",
+          "enable_browser_sound": "Enable browser sound",
+          "enable_media_player_sound": "Enable media player sound",
+          "history_retention_days": "Default history retention days",
+          "max_active_alarms": "Default max active alarms shown",
+          "max_history_rows": "Default max history rows shown"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "AlarmGrid is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "AlarmGrid options",
+        "description": "Configure alarm behavior and the optional Telegram notification channel.",
+        "data": {
+          "telegram_enabled": "Enable Telegram notifications",
+          "telegram_targets": "Telegram notify entities",
+          "telegram_min_priority": "Telegram minimum priority",
+          "telegram_notify_activated": "Notify when activated",
+          "telegram_notify_cleared": "Notify when cleared",
+          "telegram_notify_acknowledged": "Notify when acknowledged",
+          "telegram_notify_shelved": "Notify when shelved",
+          "telegram_notify_unshelved": "Notify when unshelved",
+          "telegram_notify_disabled": "Notify when disabled",
+          "telegram_notify_enabled": "Notify when enabled",
+          "telegram_interactive_enabled": "Enable interactive Telegram actions",
+          "telegram_callback_event_entities": "Telegram callback event entities",
+          "telegram_interactive_ack": "Allow ACK",
+          "telegram_interactive_shelve": "Allow shelving",
+          "telegram_interactive_disable": "Allow disable"
+        }
+      }
+    },
+    "error": {
+      "telegram_targets_required": "Select at least one notification target.",
+      "telegram_required": "Enable Telegram notifications first.",
+      "telegram_callback_entities_required": "Select at least one Telegram callback event entity.",
+      "telegram_action_required": "Allow at least one interactive action."
+    }
+  }
+}

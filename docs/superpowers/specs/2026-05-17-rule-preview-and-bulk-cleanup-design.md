@@ -36,7 +36,7 @@ The feature needs two related outcomes:
 
 Add a preview websocket command:
 
-- `industrial_alarm_panel/list_suggested_rules`
+- `alarmgrid/list_suggested_rules`
 - Input: the same threshold fields currently accepted by
   `create_suggested_rules`.
 - Output: `suggested`, a list of rule dictionaries that are not already present
@@ -46,7 +46,7 @@ Add a preview websocket command:
 
 Update suggested-rule creation:
 
-- `industrial_alarm_panel/create_suggested_rules` should accept optional
+- `alarmgrid/create_suggested_rules` should accept optional
   `rule_ids`.
 - If `rule_ids` is omitted, preserve existing behavior for compatibility.
 - If `rule_ids` is provided, create only matching suggested rules.
@@ -54,7 +54,7 @@ Update suggested-rule creation:
 
 Add a bulk delete websocket command:
 
-- `industrial_alarm_panel/delete_rules`
+- `alarmgrid/delete_rules`
 - Input:
   - `rule_ids`: optional explicit list of rule IDs.
   - `generated_only`: optional boolean, default `false`.

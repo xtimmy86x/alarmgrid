@@ -3,8 +3,8 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from custom_components.industrial_alarm_panel.alarm_models import AlarmEvent
-from custom_components.industrial_alarm_panel.alarm_store import SQLiteHistoryStore
+from custom_components.alarmgrid.alarm_models import AlarmEvent
+from custom_components.alarmgrid.alarm_store import SQLiteHistoryStore
 
 
 class AlarmStoreTests(unittest.IsolatedAsyncioTestCase):

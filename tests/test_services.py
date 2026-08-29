@@ -8,7 +8,7 @@ import unittest
 )
 class ServicesImportTests(unittest.TestCase):
     def test_services_module_imports(self) -> None:
-        import custom_components.industrial_alarm_panel.services as services
+        import custom_components.alarmgrid.services as services
 
         self.assertIn("acknowledge_alarm", set(services.service_names()))
 

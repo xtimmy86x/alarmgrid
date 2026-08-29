@@ -1,22 +1,23 @@
-# Industrial Alarm Panel
+# AlarmGrid
+
+**Industrial Alarm Management for Home Assistant**
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://www.hacs.xyz/)
-[![GitHub release](https://img.shields.io/github/v/release/xtimmy86x/industrial-alarm-panel?display_name=tag)](https://github.com/xtimmy86x/industrial-alarm-panel/releases)
+[![GitHub release](https://img.shields.io/github/v/release/xtimmy86x/alarmgrid?display_name=tag)](https://github.com/xtimmy86x/alarmgrid/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5.svg)](https://www.home-assistant.io/)
-[![License](https://img.shields.io/github/license/xtimmy86x/industrial-alarm-panel)](LICENSE)
+[![License](https://img.shields.io/github/license/xtimmy86x/alarmgrid)](LICENSE)
 
-Industrial Alarm Panel is an independently maintained Home Assistant custom
-integration that provides a DCS-style alarm annunciator for industrial, energy,
-and equipment monitoring. Its official repository is
-[`xtimmy86x/industrial-alarm-panel`](https://github.com/xtimmy86x/industrial-alarm-panel).
+AlarmGrid is an industrial alarm management and DCS-style annunciator system for
+Home Assistant. Its official repository is
+[`xtimmy86x/alarmgrid`](https://github.com/xtimmy86x/alarmgrid).
 
-It creates Home Assistant entities, exposes services and a websocket API, persists alarm rules and runtime state, stores alarm history in SQLite, and serves a dedicated sidebar panel at `/industrial-alarms`.
+It creates Home Assistant entities, exposes services and a websocket API, persists alarm rules and runtime state, stores alarm history in SQLite, and serves a dedicated sidebar panel at `/alarmgrid`.
 
-![Industrial Alarm Panel preview](docs/images/industrial-alarm-panel-preview.png)
+![AlarmGrid preview](docs/images/alarmgrid-preview.png)
 
 ## Highlights
 
-- Dedicated Home Assistant sidebar panel at `/industrial-alarms`
+- Dedicated Home Assistant sidebar panel at `/alarmgrid`
 - DCS-style alarm lifecycle: active, acknowledged, cleared, shelved, disabled
 - Dedicated active, unacknowledged, disabled, shelved, and history views
 - Priority levels with horn behavior: `critical`, `high`, `medium`, `low`, `info`, `status`
@@ -32,18 +33,21 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
-## What's New in v1.1.0
+## What's New in v2.0.0
 
-- Industrial Alarm Panel is now independently maintained as a standalone project.
-- Updated repository ownership, documentation, HACS links, issue tracking, and
-  project metadata.
-- Preserved compatibility with existing Home Assistant installations, alarm rules,
-  entities, history, Lovelace cards, and Telegram configuration.
-- Retained attribution to the original `AlRiachi/industrial-alarm-panel` project
-  under the Apache-2.0 license.
+- Rebranded Industrial Alarm Panel as AlarmGrid.
+- Renamed the Home Assistant integration domain from `industrial_alarm_panel` to
+  `alarmgrid`.
+- Renamed the Lovelace card to `custom:alarmgrid-card`.
+- Renamed Home Assistant services to the `alarmgrid.*` namespace.
+- Renamed the sidebar console to AlarmGrid and moved it to `/alarmgrid`.
+- Renamed internal storage, frontend, websocket, event, entity unique-ID, and
+  Telegram callback namespaces for a clean standalone architecture.
+- Preserved all alarm management and Telegram functionality.
 
-This is a non-breaking maintenance release. Existing installations require no
-migration and can upgrade normally through HACS.
+This is a clean breaking release intended to establish the final AlarmGrid
+identity before public distribution. No automatic migration from the pre-release
+Industrial Alarm Panel builds is provided.
 
 ## What's New in v1.0.24
 
@@ -96,7 +100,7 @@ migration and can upgrade normally through HACS.
 - Added Italian localization: the panel and card UI follow the Home Assistant user language (English and Italian), and the config flow ships an `it.json` translation.
 - Localized alarm priorities and lifecycle states in the alarm and history tables (for example `ACTIVE_UNACK` renders as "Active, unacknowledged" / "Attivo, non riconosciuto").
 - Added an **Edit** button to each rule row: the rule form switches to edit mode with Save/Cancel and updates the rule through the existing `update_rule` WebSocket command.
-- Fixed the "Industrial Alarm Panel is not configured" traceback logged when the panel refreshed during the config entry reload that follows a rule change; the frontend now silently retries while the reload completes.
+- Fixed the "AlarmGrid is not configured" traceback logged when the panel refreshed during the config entry reload that follows a rule change; the frontend now silently retries while the reload completes.
 - Auto-filled the rule **area** from the Home Assistant area of the source entity (entity or device registry) when creating or saving a rule from the panel.
 - Added an editable **System** field to the rule form and Area/System columns to the rules table.
 
@@ -139,29 +143,29 @@ migration and can upgrade normally through HACS.
 
 ## Installation
 
-[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xtimmy86x&repository=industrial-alarm-panel&category=integration)
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xtimmy86x&repository=alarmgrid&category=integration)
 
 ### HACS
 
 1. Add this repository as a HACS custom repository with category `Integration`:
 
    ```text
-   https://github.com/xtimmy86x/industrial-alarm-panel
+   https://github.com/xtimmy86x/alarmgrid
    ```
 
-2. Install **Industrial Alarm Panel** from HACS.
+2. Install **AlarmGrid** from HACS.
 3. Restart Home Assistant.
-4. Go to **Settings > Devices & services > Add integration** and search for **Industrial Alarm Panel**.
+4. Go to **Settings > Devices & services > Add integration** and search for **AlarmGrid**.
 
 After upgrading through HACS, restart Home Assistant again. If the sidebar panel was already open, hard refresh the browser with `Ctrl+Shift+R`.
 
-The repository follows HACS integration layout rules: all runtime files are under `custom_components/industrial_alarm_panel`, with a root `hacs.json`, GitHub releases, and one integration directory under `custom_components`.
+The repository follows HACS integration layout rules: all runtime files are under `custom_components/alarmgrid`, with a root `hacs.json`, GitHub releases, and one integration directory under `custom_components`.
 
 See [INSTALLATION.md](INSTALLATION.md) for manual installation, media-player sound setup, and a test rule.
 
 ## Brand Assets
 
-This repository includes local Home Assistant brand assets in `custom_components/industrial_alarm_panel/brand/`:
+This repository includes local Home Assistant brand assets in `custom_components/alarmgrid/brand/`:
 
 - `icon.png` and `dark_icon.png`
 - `logo.png` and `dark_logo.png`
@@ -173,15 +177,15 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.1.0
+url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.0.0
 type: module
 ```
 
 If you use Lovelace YAML mode, add the resource above to `ui-lovelace.yaml` manually. Then add the card to a dashboard:
 
 ```yaml
-type: custom:industrial-alarm-panel-card
-title: Industrial Alarms
+type: custom:alarmgrid-card
+title: AlarmGrid
 view: active
 max_alarms: 5
 show_summary: true
@@ -198,7 +202,7 @@ The same dashboard-first card can also provide focused suppression views:
 
 ```yaml
 # Temporarily shelved alarms
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 title: Shelved Alarms
 view: shelved
 max_alarms: 10
@@ -207,7 +211,7 @@ show_restore_actions: true
 
 ```yaml
 # Alarms disabled until manually enabled
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 title: Disabled Alarms
 view: disabled
 max_alarms: 10
@@ -216,7 +220,7 @@ show_restore_actions: true
 
 ```yaml
 # Both categories, kept visually distinct
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 title: Suppressed Alarms
 view: inactive
 max_alarms: 10
@@ -270,7 +274,7 @@ Size options accept non-negative numeric values using `px`, `rem`, `em`, or `%`.
 Invalid values are ignored and replaced with the defaults above. For example:
 
 ```yaml
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 title: Allarmi
 view: active
 
@@ -290,7 +294,7 @@ action_font_size: 12px
 A minimal icon override only needs:
 
 ```yaml
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 view: active
 header_icon: mdi:shield-alert
 ```
@@ -298,7 +302,7 @@ header_icon: mdi:shield-alert
 To omit the icon without leaving an empty header slot:
 
 ```yaml
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 view: active
 show_header_icon: false
 ```
@@ -306,7 +310,7 @@ show_header_icon: false
 To keep per-alarm actions while showing only the icon and title in the header:
 
 ```yaml
-type: custom:industrial-alarm-panel-card
+type: custom:alarmgrid-card
 title: Allarmi
 view: active
 
@@ -333,22 +337,22 @@ The integration registers the static frontend path even when the sidebar panel o
 
 Global entities include:
 
-- `sensor.industrial_alarm_panel_active_count`
-- `sensor.industrial_alarm_panel_unacknowledged_count`
-- `sensor.industrial_alarm_panel_critical_count`
-- `sensor.industrial_alarm_panel_high_count`
-- `sensor.industrial_alarm_panel_last_alarm`
-- `sensor.industrial_alarm_panel_last_event`
-- `binary_sensor.industrial_alarm_panel_any_active`
-- `binary_sensor.industrial_alarm_panel_any_unacknowledged`
-- `binary_sensor.industrial_alarm_panel_horn_active`
-- `switch.industrial_alarm_panel_sound_enabled`
-- `button.industrial_alarm_panel_acknowledge_all`
-- `button.industrial_alarm_panel_silence_horn`
-- `button.industrial_alarm_panel_unsilence_horn`
-- `button.industrial_alarm_panel_test_sound`
-- `select.industrial_alarm_panel_filter_priority`
-- `number.industrial_alarm_panel_history_retention_days`
+- `sensor.alarmgrid_active_count`
+- `sensor.alarmgrid_unacknowledged_count`
+- `sensor.alarmgrid_critical_count`
+- `sensor.alarmgrid_high_count`
+- `sensor.alarmgrid_last_alarm`
+- `sensor.alarmgrid_last_event`
+- `binary_sensor.alarmgrid_any_active`
+- `binary_sensor.alarmgrid_any_unacknowledged`
+- `binary_sensor.alarmgrid_horn_active`
+- `switch.alarmgrid_sound_enabled`
+- `button.alarmgrid_acknowledge_all`
+- `button.alarmgrid_silence_horn`
+- `button.alarmgrid_unsilence_horn`
+- `button.alarmgrid_test_sound`
+- `select.alarmgrid_filter_priority`
+- `number.alarmgrid_history_retention_days`
 
 Every stored rule also gets a binary alarm sensor and action buttons after the integration reloads.
 
@@ -360,7 +364,7 @@ Rules use stable Home Assistant `entity_id` values. For numeric range alarms, cr
 
 ### Suggested Rules
 
-Open **Industrial Alarms > Rules > Suggested Rules** and click **Preview Suggested Rules** to scan current Home Assistant `sensor.*` entities before creating anything. Select the suggestions you want, then click **Create Selected**. **Create All** is still available after preview, but it asks for confirmation and shows the estimated Home Assistant entity count.
+Open **AlarmGrid > Rules > Suggested Rules** and click **Preview Suggested Rules** to scan current Home Assistant `sensor.*` entities before creating anything. Select the suggestions you want, then click **Create Selected**. **Create All** is still available after preview, but it asks for confirmation and shows the estimated Home Assistant entity count.
 
 Default suggested thresholds:
 
@@ -402,7 +406,7 @@ Timing fields are in seconds:
 Create a rule from Developer Tools > Services:
 
 ```yaml
-service: industrial_alarm_panel.create_rule
+service: alarmgrid.create_rule
 data:
   rule:
     id: inverter_high_temp
@@ -425,7 +429,7 @@ data:
 ### Voltage Range Rules
 
 ```yaml
-service: industrial_alarm_panel.create_rule
+service: alarmgrid.create_rule
 data:
   rule:
     id: grid_phase_a_voltage_low
@@ -442,7 +446,7 @@ data:
 ```
 
 ```yaml
-service: industrial_alarm_panel.create_rule
+service: alarmgrid.create_rule
 data:
   rule:
     id: grid_phase_a_voltage_high
@@ -461,7 +465,7 @@ data:
 ### Binary Problem Rule
 
 ```yaml
-service: industrial_alarm_panel.create_rule
+service: alarmgrid.create_rule
 data:
   rule:
     id: electric_heater_overheating
@@ -493,19 +497,19 @@ Good first rules usually monitor:
 
 The integration registers:
 
-- `industrial_alarm_panel.acknowledge_alarm`
-- `industrial_alarm_panel.acknowledge_all`
-- `industrial_alarm_panel.silence_horn`
-- `industrial_alarm_panel.unsilence_horn`
-- `industrial_alarm_panel.shelve_alarm`
-- `industrial_alarm_panel.unshelve_alarm`
-- `industrial_alarm_panel.disable_alarm`
-- `industrial_alarm_panel.enable_alarm`
-- `industrial_alarm_panel.create_rule`
-- `industrial_alarm_panel.update_rule`
-- `industrial_alarm_panel.delete_rule`
-- `industrial_alarm_panel.test_sound`
-- `industrial_alarm_panel.export_history`
+- `alarmgrid.acknowledge_alarm`
+- `alarmgrid.acknowledge_all`
+- `alarmgrid.silence_horn`
+- `alarmgrid.unsilence_horn`
+- `alarmgrid.shelve_alarm`
+- `alarmgrid.unshelve_alarm`
+- `alarmgrid.disable_alarm`
+- `alarmgrid.enable_alarm`
+- `alarmgrid.create_rule`
+- `alarmgrid.update_rule`
+- `alarmgrid.delete_rule`
+- `alarmgrid.test_sound`
+- `alarmgrid.export_history`
 
 Silence only stops horn output. Acknowledgement changes the alarm lifecycle state.
 Shelving is temporary. In the panel, choose a **Shelve for** preset before clicking a row's **Shelve** button. In service calls, set `duration_minutes`; day-based shelves use minute values such as `1440` for 1 day and `10080` for 7 days.
@@ -515,24 +519,24 @@ Shelving is temporary. In the panel, choose a **Shelve for** preset before click
 Browser sound is generated in the panel with Web Audio after the operator clicks **Enable Alarm Sound**. Media-player output uses Home Assistant `media_player.play_media` with files expected at:
 
 ```text
-/config/www/industrial_alarm_panel/sounds/
+/config/www/alarmgrid/sounds/
 ```
 
 Default filenames are `critical.mp3`, `high.mp3`, `medium.mp3`, `low.mp3`, and `info.mp3`.
 
 ## Storage
 
-Rules are stored in Home Assistant storage with key `industrial_alarm_panel.rules`.
-Runtime alarm states are stored with key `industrial_alarm_panel.state`.
-History is stored in `/config/industrial_alarm_panel_history.db`.
+Rules are stored in Home Assistant storage with key `alarmgrid.rules`.
+Runtime alarm states are stored with key `alarmgrid.state`.
+History is stored in `/config/alarmgrid_history.db`.
 
 ## Troubleshooting
 
-- If `/industrial-alarms` is blank after an update, restart Home Assistant and hard refresh the browser with `Ctrl+Shift+R`.
+- If `/alarmgrid` is blank after an update, restart Home Assistant and hard refresh the browser with `Ctrl+Shift+R`.
 - If a newly created rule does not show as an entity yet, wait for the integration reload to finish or restart Home Assistant.
 - If the horn does not play in the browser, click **Enable Alarm Sound** in the panel. Browsers block audio until a user gesture.
-- If media-player sound does not play, confirm your MP3 files exist under `/config/www/industrial_alarm_panel/sounds/`.
-- Check **Settings > System > Logs** for `industrial_alarm_panel` errors.
+- If media-player sound does not play, confirm your MP3 files exist under `/config/www/alarmgrid/sounds/`.
+- Check **Settings > System > Logs** for `alarmgrid` errors.
 
 ## Reporting Issues
 
@@ -541,18 +545,18 @@ Before opening an issue:
 1. Update to the latest release.
 2. Restart Home Assistant.
 3. Reproduce the problem.
-4. Check Home Assistant logs for `industrial_alarm_panel`.
+4. Check Home Assistant logs for `alarmgrid`.
 
 Open a GitHub issue here:
 
 ```text
-https://github.com/xtimmy86x/industrial-alarm-panel/issues/new/choose
+https://github.com/xtimmy86x/alarmgrid/issues/new/choose
 ```
 
 Please include:
 
 - Home Assistant version
-- Industrial Alarm Panel version
+- AlarmGrid version
 - install method, usually HACS custom repository
 - browser and device if the issue is panel-related
 - exact rule YAML or service data if the issue is rule-related
@@ -566,7 +570,7 @@ Pull requests are welcome. Keep changes focused, include tests for behavioral ch
 
 ```bash
 python3 -m unittest discover -s tests -v
-node --check custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js
+node --check custom_components/alarmgrid/frontend/dist/alarmgrid.js
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for repository workflow and support expectations.
@@ -585,7 +589,7 @@ For full Home Assistant integration tests, install `requirements_test.txt` in a 
 
 ## Telegram notifications
 
-Industrial Alarm Panel can send **outbound-only, plain-text** alarm lifecycle
+AlarmGrid can send **outbound-only, plain-text** alarm lifecycle
 notifications through one or more Home Assistant `notify` entities. The feature is
 fully opt-in and has a default minimum priority of `high`.
 
@@ -593,7 +597,7 @@ fully opt-in and has a default minimum priority of `high`.
    in Home Assistant first.
 2. Verify that Home Assistant exposes a working `notify` entity for that Telegram
    configuration.
-3. Open **Settings → Devices & services → Industrial Alarm Panel → Configure**.
+3. Open **Settings → Devices & services → AlarmGrid → Configure**.
 4. Enable **Telegram notifications**.
 5. Select one or more Telegram-backed `notify` entities.
 6. Choose the minimum priority and the lifecycle event types to send.
@@ -624,7 +628,7 @@ rule:
   telegram_notification_policy: always
 ```
 
-Industrial Alarm Panel does not store or manage Telegram bot tokens. Telegram
+AlarmGrid does not store or manage Telegram bot tokens. Telegram
 configuration remains owned by Home Assistant.
 
 Telegram alarm messages and interactive action labels currently support English
@@ -665,20 +669,22 @@ not retried, preventing duplicate messages.
 
 Interactive Telegram action sessions are currently stored in memory, bounded to
 1,000 entries with a seven-day TTL. Buttons on messages created before a Home
-Assistant restart may expire gracefully. This limitation is intentional in v1.1.0.
+Assistant restart may expire gracefully. This limitation is intentional in v2.0.0.
 
-## Upgrade compatibility
+## Upgrading from pre-release builds
 
-Repository ownership changes do not alter the Home Assistant integration domain,
-config entries, entity or unique IDs, services, stored alarm rules, runtime state,
-SQLite history, Lovelace configuration, or Telegram configuration. Existing users
-can upgrade normally through HACS; no migration or reinstallation is required.
+Version 2.0.0 intentionally changes the integration domain, generated unique-ID
+prefixes, services, storage keys, SQLite filename, frontend identifiers, and
+Telegram callback prefix. Remove the earlier test integration, restart Home
+Assistant, install AlarmGrid, and add it again. No migration or compatibility
+alias is provided.
 
 ## Origins and attribution
 
-Industrial Alarm Panel was originally based on
-[`AlRiachi/industrial-alarm-panel`](https://github.com/AlRiachi/industrial-alarm-panel).
+AlarmGrid originated from the open-source Industrial Alarm Panel project by
+AlRiachi.
 
-The project is now independently maintained and has significantly diverged from
-the original implementation. The original project and its contributors remain
-credited through the Git history and the Apache-2.0 license.
+The project has since evolved into an independently maintained implementation
+with its own branding, architecture and feature set. The original project and
+contributors remain credited through the Git history and Apache-2.0 licensing
+information.

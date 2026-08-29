@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in Industrial Alarm Panel.
+description: Report a reproducible problem in AlarmGrid.
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -10,7 +10,7 @@ body:
   - type: input
     id: integration_version
     attributes:
-      label: Industrial Alarm Panel version
+      label: AlarmGrid version
       description: Find this in HACS or the integration manifest.
       placeholder: v1.0.7
     validations:
@@ -73,7 +73,7 @@ body:
     id: logs
     attributes:
       label: Relevant logs
-      description: Paste Home Assistant log lines that include `industrial_alarm_panel`.
+      description: Paste Home Assistant log lines that include `alarmgrid`.
       render: text
   - type: textarea
     id: screenshots

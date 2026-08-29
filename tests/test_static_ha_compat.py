@@ -8,42 +8,42 @@ from pathlib import Path
 class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
     def test_repository_ownership_metadata_uses_standalone_repository(self) -> None:
         manifest = json.loads(
-            Path("custom_components/industrial_alarm_panel/manifest.json").read_text()
+            Path("custom_components/alarmgrid/manifest.json").read_text()
         )
         readme = Path("README.md").read_text()
         installation = Path("INSTALLATION.md").read_text()
-        repository = "xtimmy86x/industrial-alarm-panel"
+        repository = "xtimmy86x/alarmgrid"
 
         self.assertEqual(["@xtimmy86x"], manifest["codeowners"])
         self.assertIn(repository, manifest["documentation"])
         self.assertIn(repository, manifest["issue_tracker"])
-        self.assertIn("owner=xtimmy86x&repository=industrial-alarm-panel", readme)
-        self.assertIn("owner=xtimmy86x&repository=industrial-alarm-panel", installation)
+        self.assertIn("owner=xtimmy86x&repository=alarmgrid", readme)
+        self.assertIn("owner=xtimmy86x&repository=alarmgrid", installation)
 
     def test_options_flow_does_not_assign_read_only_config_entry_property(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/options_flow.py"
+            "custom_components/alarmgrid/options_flow.py"
         ).read_text()
 
         self.assertNotIn("self.config_entry =", source)
 
     def test_options_flow_uses_supported_voluptuous_list_validator(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/options_flow.py"
+            "custom_components/alarmgrid/options_flow.py"
         ).read_text()
 
         self.assertNotIn("vol.EnsureList", source)
 
     def test_frontend_registers_panel_custom_element_name(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
-        self.assertIn('customElements.define("industrial-alarm-panel"', source)
+        self.assertIn('customElements.define("alarmgrid"', source)
 
     def test_frontend_edits_and_displays_telegram_rule_policy(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn('data-new="telegram_notification_policy"', source)
@@ -57,29 +57,29 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_registration_is_safe_to_import_more_than_once(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
-        self.assertIn('customElements.get("industrial-alarm-panel")', source)
+        self.assertIn('customElements.get("alarmgrid")', source)
 
     def test_frontend_registers_lovelace_card(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
-        self.assertIn('customElements.define("industrial-alarm-panel-card"', source)
+        self.assertIn('customElements.define("alarmgrid-card"', source)
         self.assertIn("window.customCards", source)
         self.assertIn("setConfig(config = {})", source)
         self.assertIn("getStubConfig()", source)
 
     def test_lovelace_card_is_a_standalone_summary_not_the_sidebar_table(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
-        card_source = source[source.index("class IndustrialAlarmPanelCard") :]
+        card_source = source[source.index("class AlarmGridCard") :]
 
-        self.assertIn("class IndustrialAlarmPanelCard extends HTMLElement", card_source)
-        self.assertNotIn("extends IndustrialAlarmPanel", card_source)
+        self.assertIn("class AlarmGridCard extends HTMLElement", card_source)
+        self.assertNotIn("extends AlarmGrid", card_source)
         self.assertIn('class="alarm-list"', card_source)
         self.assertNotIn("<table", card_source)
         self.assertIn('window.setInterval(() => this._load(), 5000)', card_source)
@@ -87,23 +87,23 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_lovelace_card_supports_summary_configuration_and_legacy_tab(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
-        card_source = source[source.index("class IndustrialAlarmPanelCard") :]
+        card_source = source[source.index("class AlarmGridCard") :]
 
         self.assertIn("config.view ?? config.tab", card_source)
         self.assertIn("max_alarms", card_source)
         self.assertIn("config.priorities", card_source)
         self.assertIn("show_open_panel", card_source)
-        self.assertIn('history.pushState(null, "", "/industrial-alarms")', card_source)
+        self.assertIn('history.pushState(null, "", "/alarmgrid")', card_source)
         self.assertIn('new Event("location-changed")', card_source)
         self.assertIn("prefers-reduced-motion:reduce", card_source)
 
     def test_lovelace_card_supports_safe_visual_customization(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
-        card_source = source[source.index("class IndustrialAlarmPanelCard") :]
+        card_source = source[source.index("class AlarmGridCard") :]
 
         self.assertIn('header_icon: typeof config.header_icon === "string"', card_source)
         self.assertIn(': "mdi:alarm-light"', card_source)
@@ -130,8 +130,8 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
                     card_source,
                 )
                 css_property = option.replace("_", "-")
-                self.assertIn(f'"--iap-{css_property}"', card_source)
-                self.assertIn(f"var(--iap-{css_property}, {default})", card_source)
+                self.assertIn(f'"--ag-{css_property}"', card_source)
+                self.assertIn(f"var(--ag-{css_property}, {default})", card_source)
 
         # The existing min-width and wrapping guards keep larger valid values usable
         # at the card's mobile breakpoint without introducing horizontal overflow.
@@ -142,9 +142,9 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_lovelace_card_splits_header_and_item_action_visibility(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
-        card = source[source.index("class IndustrialAlarmPanelCard") :]
+        card = source[source.index("class AlarmGridCard") :]
 
         self.assertIn("const showActions = config.show_actions !== false", card)
         self.assertIn("show_actions: showActions", card)
@@ -161,7 +161,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_assets_register_even_when_sidebar_panel_disabled(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/alarm_panel.py"
+            "custom_components/alarmgrid/alarm_panel.py"
         ).read_text()
 
         static_path_index = source.index("async_register_static_paths")
@@ -170,13 +170,13 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_integration_auto_registers_lovelace_resource(self) -> None:
         init_source = Path(
-            "custom_components/industrial_alarm_panel/__init__.py"
+            "custom_components/alarmgrid/__init__.py"
         ).read_text()
         resource_source = Path(
-            "custom_components/industrial_alarm_panel/frontend_resource.py"
+            "custom_components/alarmgrid/frontend_resource.py"
         ).read_text()
         manifest = json.loads(
-            Path("custom_components/industrial_alarm_panel/manifest.json").read_text()
+            Path("custom_components/alarmgrid/manifest.json").read_text()
         )
 
         self.assertIn("async_register_lovelace_resource", init_source)
@@ -188,7 +188,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("lovelace", manifest["dependencies"])
 
     def test_panel_registration_uses_home_assistant_panel_custom_api(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/alarm_panel.py").read_text()
+        source = Path("custom_components/alarmgrid/alarm_panel.py").read_text()
 
         self.assertIn("from homeassistant.components import panel_custom", source)
         self.assertIn("await panel_custom.async_register_panel(", source)
@@ -196,12 +196,12 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertNotIn('"trust_external_script"', source)
 
     def test_frontend_module_url_is_versioned_for_browser_cache_busting(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/const.py").read_text()
+        source = Path("custom_components/alarmgrid/const.py").read_text()
 
         self.assertIn("?v={VERSION}", source)
 
     def test_integration_schedules_due_alarm_timing_transitions(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/__init__.py").read_text()
+        source = Path("custom_components/alarmgrid/__init__.py").read_text()
 
         self.assertIn("async_call_later", source)
         self.assertIn("next_due_transition_at", source)
@@ -210,18 +210,18 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_subscribes_to_alarm_update_events(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("subscribeEvents", source)
-        self.assertIn("industrial_alarm_panel_alarms_updated", source)
+        self.assertIn("alarmgrid_alarms_updated", source)
         self.assertIn("_unsubscribeUpdates", source)
 
     def test_frontend_uses_full_row_alarm_colors_and_neutral_acknowledged_rows(
         self,
     ) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("alarm-row", source)
@@ -232,7 +232,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_supports_light_and_dark_themes_for_panel_and_card(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
         readme_source = Path("README.md").read_text()
 
@@ -251,7 +251,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         
     def test_frontend_can_create_suggested_alarm_rules(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("Suggested Rules", source)
@@ -262,7 +262,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_preserves_rule_forms_while_refreshing(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("_ruleDraft", source)
@@ -272,7 +272,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_has_resizable_listing_columns(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("_wireColumnResizers", source)
@@ -284,19 +284,19 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_downloads_history_for_a_selected_time_range(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn('type="datetime-local" data-history-range="start"', source)
         self.assertIn('type="datetime-local" data-history-range="end"', source)
-        self.assertIn('type: "industrial_alarm_panel/export_history"', source)
+        self.assertIn('type: "alarmgrid/export_history"', source)
         self.assertIn("start_time: start.toISOString()", source)
         self.assertIn("end_time: end.toISOString()", source)
         self.assertIn("industrial-alarm-history-", source)
         
     def test_frontend_delays_alarm_color_and_throttles_browser_horn(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("_alarmVisualDelayMs = 2000", source)
@@ -305,9 +305,9 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("_maybePlayBrowserHorn", source)
 
     def test_release_version_metadata_is_bumped(self) -> None:
-        const_source = Path("custom_components/industrial_alarm_panel/const.py").read_text()
+        const_source = Path("custom_components/alarmgrid/const.py").read_text()
         manifest_source = Path(
-            "custom_components/industrial_alarm_panel/manifest.json"
+            "custom_components/alarmgrid/manifest.json"
         ).read_text()
         pyproject_source = Path("pyproject.toml").read_text()
         readme_source = Path("README.md").read_text()
@@ -317,10 +317,10 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIsNotNone(const_version_match)
         self.assertNotIn("Current release:", readme_source)
         const_version = const_version_match.group(1)
-        expected_version = "1.1.0"
+        expected_version = "2.0.0"
         self.assertIn(f"## What's New in v{expected_version}", readme_source)
         self.assertIn(
-            f"/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v={expected_version}",
+            f"/alarmgrid/frontend/dist/alarmgrid.js?v={expected_version}",
             readme_source,
         )
         manifest_version = json.loads(manifest_source)["version"]
@@ -333,7 +333,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         )
 
     def test_websocket_registers_suggested_rule_management_commands(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/websocket_api.py").read_text()
+        source = Path("custom_components/alarmgrid/websocket_api.py").read_text()
 
         self.assertIn("websocket_list_suggested_rules", source)
         self.assertIn("websocket_create_suggested_rules", source)
@@ -346,7 +346,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_previews_and_selects_suggested_rules(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("list_suggested_rules", source)
@@ -363,7 +363,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_can_bulk_delete_rules(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("delete_rules", source)
@@ -375,7 +375,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_preserves_table_horizontal_scroll_on_refresh(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("_tableScrollLeft", source)
@@ -386,7 +386,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_has_mobile_sidebar_toggle_button(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("_toggleSidebar", source)
@@ -397,7 +397,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_allows_operator_to_choose_shelve_duration(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("_shelveDurationMinutes", source)
@@ -410,17 +410,17 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
     def test_frontend_displays_shelve_expiry(self) -> None:
         source = Path(
-            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
         self.assertIn("Shelved Until", source)
         self.assertIn("shelve_expiry", source)
 
     def test_suppression_websocket_commands_delegate_to_engine(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/websocket_api.py").read_text()
+        source = Path("custom_components/alarmgrid/websocket_api.py").read_text()
 
         for command in ("unshelve", "disable", "enable"):
-            self.assertIn(f'"industrial_alarm_panel/{command}"', source)
+            self.assertIn(f'"alarmgrid/{command}"', source)
             self.assertIn(f"websocket_{command}", source)
             self.assertIn(f"engine.{command}_alarm(", source)
         self.assertGreaterEqual(source.count("operator=connection.user.id"), 7)
@@ -430,8 +430,8 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn('{"enabled": True}', source)
 
     def test_lovelace_card_supports_suppression_views_and_actions(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
-        card = source[source.index("class IndustrialAlarmPanelCard") :]
+        source = Path("custom_components/alarmgrid/frontend/dist/alarmgrid.js").read_text()
+        card = source[source.index("class AlarmGridCard") :]
 
         self.assertIn('["active", "unacknowledged", "shelved", "disabled", "inactive"]', card)
         self.assertIn('inactive: ["SHELVED", "DISABLED"]', card)
@@ -455,8 +455,8 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn('force-dark', card)
 
     def test_lovelace_item_action_menu_is_visible_and_not_clipped(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
-        card = source[source.index("class IndustrialAlarmPanelCard") :]
+        source = Path("custom_components/alarmgrid/frontend/dist/alarmgrid.js").read_text()
+        card = source[source.index("class AlarmGridCard") :]
 
         self.assertIn('const showActions = config.show_actions !== false', card)
         self.assertIn('show_actions: showActions', card)
@@ -466,19 +466,37 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn('alarm.acknowledged ? "disabled" : ""', card)
         self.assertIn('.icon-button { display:grid; place-items:center; width:44px; height:44px;', card)
         self.assertIn('.action-menu summary ha-icon { display:block; width:24px; height:24px; color:var(--primary-text-color);', card)
-        self.assertIn('.alarm-item { --priority:var(--iap-status); position:relative; display:flex; min-width:0;', card)
+        self.assertIn('.alarm-item { --priority:var(--ag-status); position:relative; display:flex; min-width:0;', card)
         self.assertIn('overflow:visible;', card)
         self.assertNotIn('background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 96%, var(--priority)); overflow:hidden;', card)
 
     def test_lovelace_item_action_menu_closes_cleanly(self) -> None:
-        source = Path("custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js").read_text()
-        card = source[source.index("class IndustrialAlarmPanelCard") :]
+        source = Path("custom_components/alarmgrid/frontend/dist/alarmgrid.js").read_text()
+        card = source[source.index("class AlarmGridCard") :]
 
         self.assertIn('event.key !== "Escape"', card)
         self.assertIn('document.addEventListener("pointerdown", this._closeActionMenus)', card)
         self.assertIn('document.removeEventListener("pointerdown", this._closeActionMenus)', card)
         self.assertIn('details.action-menu[open]', card)
         self.assertIn('if (other !== menu) other.open = false', card)
+
+
+class AlarmGridRebrandStaticTests(unittest.TestCase):
+    def test_alarmgrid_identity_is_consistent(self) -> None:
+        from custom_components.alarmgrid.const import DOMAIN, FRONTEND_MODULE, VERSION
+
+        manifest = json.loads(Path("custom_components/alarmgrid/manifest.json").read_text())
+        readme = Path("README.md").read_text()
+        self.assertEqual("alarmgrid", DOMAIN)
+        self.assertEqual("alarmgrid", manifest["domain"])
+        self.assertEqual("AlarmGrid", manifest["name"])
+        self.assertEqual("2.0.0", VERSION)
+        self.assertEqual("2.0.0", manifest["version"])
+        self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
+        self.assertIn("alarmgrid.js?v=2.0.0", FRONTEND_MODULE)
+        self.assertIn("custom:alarmgrid-card", readme)
+        self.assertIn("alarmgrid.create_rule", readme)
+        self.assertNotIn("custom:industrial-alarm-panel-card", readme)
 
 
 if __name__ == "__main__":

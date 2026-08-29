@@ -8,7 +8,7 @@ import unittest
 )
 class OptionsFlowImportTests(unittest.TestCase):
     def test_options_flow_module_imports(self) -> None:
-        import custom_components.industrial_alarm_panel.options_flow as options_flow
+        import custom_components.alarmgrid.options_flow as options_flow
 
         self.assertTrue(hasattr(options_flow, "OptionsFlowHandler"))
 
