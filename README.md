@@ -724,3 +724,12 @@ Expressions are a closed JSON DSL: groups must be non-empty, trees are limited
 to 64 nodes, and no scripting, templates, or per-leaf timers are evaluated.
 CSV import/export stores advanced expressions as compact JSON in the
 `condition_expression` column while retaining all legacy columns.
+
+### Test a rule before saving
+
+The Rule Editor can evaluate the current condition against live Home Assistant
+states without saving or activating the alarm. Testing has no side effects: it
+does not activate alarms, write history, send notifications, or play sound.
+Delay values are shown as information but are not waited or otherwise simulated
+during preview. A `state_changed` condition reports that its previous state is
+unavailable when AlarmGrid has no trustworthy prior value for that entity.

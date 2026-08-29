@@ -117,6 +117,9 @@ const TRANSLATIONS = {
     current_state: "Current", deadband_hysteresis: "Deadband / Hysteresis", hysteresis_help: "Prevents alarm chattering near the threshold.",
     alarm_delay: "Alarm delay", clear_delay: "Clear delay", seconds: "seconds",
     add_rule: "Add Rule",
+    test_condition: "Test condition", testing: "Testing…", condition_test: "Condition test", matched: "Matched", not_matched: "Not matched",
+    current: "Current", expected: "Expected", condition_matched: "Condition matched", condition_not_matched: "Condition not matched",
+    entity_not_found: "Entity not found", entity_unavailable: "Entity unavailable", previous_state_unavailable: "Previous state unavailable; state_changed cannot be previewed", result_outdated: "Result outdated — test again", test_failed: "Test failed",
     edit: "Edit",
     save_rule: "Save Rule",
     cancel: "Cancel",
@@ -248,6 +251,9 @@ const TRANSLATIONS = {
     current_state: "Attuale", deadband_hysteresis: "Banda morta / Isteresi", hysteresis_help: "Evita commutazioni ripetute dell’allarme vicino alla soglia.",
     alarm_delay: "Ritardo allarme", clear_delay: "Ritardo ripristino", seconds: "secondi",
     add_rule: "Aggiungi regola",
+    test_condition: "Testa condizione", testing: "Test in corso…", condition_test: "Test condizione", matched: "Verificata", not_matched: "Non verificata",
+    current: "Attuale", expected: "Atteso", condition_matched: "Condizione verificata", condition_not_matched: "Condizione non verificata",
+    entity_not_found: "Entità non trovata", entity_unavailable: "Entità non disponibile", previous_state_unavailable: "Stato precedente non disponibile; state_changed non può essere testato", result_outdated: "Risultato non aggiornato — esegui nuovamente il test", test_failed: "Test fallito",
     edit: "Modifica",
     save_rule: "Salva regola",
     cancel: "Annulla",
@@ -306,6 +312,8 @@ class AlarmGrid extends HTMLElement {
     this._selectedRuleIds = new Set();
     this._editingRuleId = null;
     this._rulesResult = null;
+    this._rulePreview = null;
+    this._rulePreviewLoading = false;
     this._builderRevision = 0;
     this._sound = {};
     this._tab = "active";
@@ -740,6 +748,7 @@ class AlarmGrid extends HTMLElement {
           <input placeholder="${this._t("placeholder_system")}" value="${this._escape(ruleDraft.system)}" data-new="system">
           <datalist id="entity-id-options">${this._entityOptions()}</datalist>
           <fieldset class="condition-builder"><legend>${this._t("condition_builder")}</legend>${this._conditionBuilder(ruleDraft)}</fieldset>
+          ${this._rulePreviewPanel()}
           <label>${this._t("alarm_delay")} <input type="number" min="0" data-new="delay_on_seconds" value="${ruleDraft.delay_on_seconds || 0}"> ${this._t("seconds")}</label>
           <label>${this._t("clear_delay")} <input type="number" min="0" data-new="delay_off_seconds" value="${ruleDraft.delay_off_seconds || 0}"> ${this._t("seconds")}</label>
           <select data-new="priority">
@@ -751,9 +760,9 @@ class AlarmGrid extends HTMLElement {
             </select>
           </label>
           ${this._editingRuleId
-            ? `<button class="primary" data-action="update-rule">${this._t("save_rule")}</button>
+            ? `<button class="secondary" data-action="test-rule" ${this._rulePreviewLoading ? "disabled" : ""}>${this._rulePreviewLoading ? this._t("testing") : this._t("test_condition")}</button><button class="primary" data-action="update-rule">${this._t("save_rule")}</button>
           <button class="secondary" data-action="cancel-edit-rule">${this._t("cancel")}</button>`
-            : `<button class="primary" data-action="create-rule">${this._t("add_rule")}</button>`}
+            : `<button class="secondary" data-action="test-rule" ${this._rulePreviewLoading ? "disabled" : ""}>${this._rulePreviewLoading ? this._t("testing") : this._t("test_condition")}</button><button class="primary" data-action="create-rule">${this._t("add_rule")}</button>`}
         </div>
         ${this._editingRuleId ? `<div class="notice">${this._t("editing_rule", { id: this._escape(this._editingRuleId) })}</div>` : ""}
         ${this._rulesResult ? `<div class="notice">${this._escape(this._rulesResult)}</div>` : ""}
@@ -781,6 +790,27 @@ class AlarmGrid extends HTMLElement {
     const it = {above:"Maggiore di",below:"Minore di",greater_or_equal:"Maggiore o uguale",less_or_equal:"Minore o uguale",equal:"Uguale",not_equal:"Diverso",contains:"Contiene",is_on:"È ON",is_off:"È OFF",state_changed:"Cambiato",unavailable:"Non disponibile",between:"Compreso tra",outside_range:"Fuori intervallo"};
     const labels = this._language() === "it" ? it : en;
     return Object.entries(labels).map(([value,label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("");
+  }
+
+  _rulePreviewPanel() {
+    const preview = this._rulePreview;
+    if (!preview && !this._rulePreviewLoading) return "";
+    if (this._rulePreviewLoading) return `<section class="rule-preview"><strong>${this._t("condition_test")}</strong><p>${this._t("testing")}</p></section>`;
+    if (preview.error) return `<section class="rule-preview error"><strong>${this._t("test_failed")}</strong><p>${this._escape(preview.error)}</p></section>`;
+    const rows = preview.conditions.map((item) => {
+      const reason = item.reason ? this._t(item.reason) : "";
+      const current = item.current_value == null ? "—" : `${this._escape(item.current_value)}${item.unit ? ` ${this._escape(item.unit)}` : ""}`;
+      return `<div class="preview-condition ${item.matched ? "preview-match" : "preview-miss"}"><strong>${item.matched ? "✓" : "✗"} ${this._escape(item.friendly_name || item.entity_id)}</strong><span>${this._t("current")}: ${current}</span><span>${this._escape(this._expectationLabel(item))}</span><b>${item.matched ? this._t("condition_matched") : this._t("condition_not_matched")}</b>${reason ? `<em>${this._escape(reason)}</em>` : ""}</div>`;
+    }).join("");
+    const delays = preview.delays || {};
+    return `<section class="rule-preview"><strong>${this._t("condition_test")}: <span class="${preview.matched ? "preview-match" : "preview-miss"}">${preview.matched ? this._t("matched") : this._t("not_matched")}</span></strong>${rows}<p>${this._escape(preview.summary)}</p><p>${this._t("alarm_delay")}: ${Number(delays.alarm_seconds || 0)} ${this._t("seconds")} · ${this._t("clear_delay")}: ${Number(delays.clear_seconds || 0)} ${this._t("seconds")}</p></section>`;
+  }
+
+  _expectationLabel(item) {
+    const value = item.expected;
+    const range = value && typeof value === "object" ? `${value.lower} – ${value.upper}` : value;
+    const labels = {above:`> ${value}`,below:`< ${value}`,greater_or_equal:`≥ ${value}`,less_or_equal:`≤ ${value}`,between:`${range}`,outside_range:`${this._language() === "it" ? "fuori" : "outside"} ${range}`,equal:`= ${value}`,not_equal:`≠ ${value}`,contains:`${this._language() === "it" ? "contiene" : "contains"} “${value}”`,is_on:"ON",is_off:"OFF",unavailable:this._t("entity_unavailable"),state_changed:this._language() === "it" ? "Cambiato" : "Changed"};
+    return labels[item.operator] || `${this._t("expected")}: ${value ?? "—"}`;
   }
 
   _conditionRow(node, path) {
@@ -872,7 +902,13 @@ class AlarmGrid extends HTMLElement {
     });
   }
 
+  _clearRulePreview() {
+    this._rulePreview = null;
+    this.shadowRoot?.querySelector(".rule-preview")?.remove();
+  }
+
   _addExpressionNode(path, addGroup) {
+    this._clearRulePreview();
     this._syncConditionBuilderFromDom();
     this._promoteSimple();
     const group = this._expressionGroup(path === "simple" ? "root" : path);
@@ -882,6 +918,7 @@ class AlarmGrid extends HTMLElement {
   }
 
   _deleteExpressionNode(path, deleteGroup) {
+    this._clearRulePreview();
     if (path === "root") return;
     this._syncConditionBuilderFromDom();
     const resolved = this._resolveExpressionParent(path);
@@ -949,6 +986,7 @@ class AlarmGrid extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='enable-audio']")?.addEventListener("click", () => this._testSound());
     this.shadowRoot.querySelector("[data-action='test-sound']")?.addEventListener("click", () => this._testSound());
     this.shadowRoot.querySelector("[data-action='create-rule']")?.addEventListener("click", () => this._createRule());
+    this.shadowRoot.querySelector("[data-action='test-rule']")?.addEventListener("click", () => this._testRule());
     this.shadowRoot.querySelector("[data-action='update-rule']")?.addEventListener("click", () => this._updateRule());
     this.shadowRoot.querySelector("[data-action='cancel-edit-rule']")?.addEventListener("click", () => this._cancelEditRule());
     this.shadowRoot.querySelectorAll("[data-edit-rule]").forEach((button) => button.addEventListener("click", () => this._startEditRule(button.dataset.editRule)));
@@ -959,6 +997,7 @@ class AlarmGrid extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-new]").forEach((field) => {
       const updateDraft = () => {
         this._ruleDraft[field.dataset.new] = field.value;
+        this._clearRulePreview();
       };
       field.addEventListener("input", updateDraft);
       field.addEventListener("change", updateDraft);
@@ -966,6 +1005,7 @@ class AlarmGrid extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-condition-field]").forEach((field) => {
       const updateConditionField = () => {
         if (builderRevision !== this._builderRevision) return;
+        this._clearRulePreview();
         const path = field.closest("[data-condition-path]")?.dataset.conditionPath;
         if (!path) return;
         if (path === "simple") { const map = {entity_id:"entity_id",operator:"condition",value:"threshold",deadband:"deadband"}; const target = map[field.dataset.conditionField]; if (target) this._ruleDraft[target] = field.value; }
@@ -983,6 +1023,7 @@ class AlarmGrid extends HTMLElement {
     });
     this.shadowRoot.querySelectorAll("[data-group-operator]").forEach((field) => field.addEventListener("change", () => {
       if (builderRevision !== this._builderRevision || !["and", "or"].includes(field.value)) return;
+      this._clearRulePreview();
       const group = this._expressionGroup(field.dataset.groupOperator); if (group) group.operator = field.value;
     }));
     this.shadowRoot.querySelectorAll("[data-add-condition],[data-add-group]").forEach((button) => button.addEventListener("click", () => {
@@ -1042,8 +1083,28 @@ class AlarmGrid extends HTMLElement {
     await this._load();
   }
 
+  async _testRule() {
+    if (this._rulePreviewLoading) return;
+    this._syncConditionBuilderFromDom();
+    const rule = structuredClone(this._ruleDraft);
+    this._normalizeConditionDraft(rule.condition_expression);
+    Object.keys(rule).forEach((key) => { if (rule[key] === "") delete rule[key]; });
+    this._rulePreviewLoading = true;
+    this._rulePreview = null;
+    this._render();
+    try {
+      this._rulePreview = await this._callWS({type:"alarmgrid/test_rule", rule, ...(this._editingRuleId ? {rule_id:this._editingRuleId} : {})});
+    } catch (err) {
+      this._rulePreview = {error: err.message || String(err)};
+    } finally {
+      this._rulePreviewLoading = false;
+      this._render();
+    }
+  }
+
   _resetRuleDraft() {
     this._editingRuleId = null;
+    this._rulePreview = null;
     this._ruleDraft = {
       id: "",
       entity_id: "",
@@ -1432,6 +1493,9 @@ class AlarmGrid extends HTMLElement {
       .notice { margin-top: 8px; color: var(--ag-notice); font-size: 13px; }
       .rule-form { margin-bottom: 12px; }
       .condition-builder { flex-basis:100%; border:1px solid var(--divider-color); border-radius:10px; padding:12px; }
+      .rule-preview { flex-basis:100%; border:1px solid var(--divider-color); border-radius:10px; padding:12px; background:var(--card-background-color); }
+      .preview-condition { display:grid; gap:3px; margin:10px 0; padding-left:10px; border-left:3px solid var(--divider-color); }
+      .preview-match { color:var(--success-color, var(--primary-color)); } .preview-miss { color:var(--error-color, var(--warning-color)); }
       .condition-group { border-left:3px solid var(--primary-color); margin:8px 0; padding:8px; background:var(--card-background-color); }
       .condition-group .condition-group { margin-left:min(18px,3vw); } .group-head,.group-actions{display:flex;gap:8px;margin-bottom:8px}
       .condition-row { display:grid;grid-template-columns:minmax(150px,2fr) minmax(120px,1fr) repeat(2,minmax(90px,1fr)) auto auto;gap:8px;align-items:end;margin:8px 0; }

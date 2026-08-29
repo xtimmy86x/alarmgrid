@@ -18,6 +18,7 @@ from .rule_management import (
     import_rules_csv,
     remove_per_rule_entity_registry_entries,
 )
+from .rule_preview import async_preview_rule
 
 
 def async_register_websocket_api(hass: HomeAssistant) -> None:
@@ -31,6 +32,7 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_list_rules)
     websocket_api.async_register_command(hass, websocket_create_rule)
     websocket_api.async_register_command(hass, websocket_update_rule)
+    websocket_api.async_register_command(hass, websocket_test_rule)
     websocket_api.async_register_command(hass, websocket_delete_rule)
     websocket_api.async_register_command(hass, websocket_delete_rules)
     websocket_api.async_register_command(hass, websocket_export_rules)
@@ -203,6 +205,31 @@ async def websocket_create_rule(
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
     await runtime.async_refresh_rules()
     connection.send_result(msg["id"], {"rule": rule.to_dict()})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "alarmgrid/test_rule",
+        vol.Required("rule"): dict,
+        vol.Optional("rule_id"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_test_rule(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Evaluate the submitted draft without saving or changing runtime state."""
+    runtime = _runtime(hass)
+    try:
+        preview = await async_preview_rule(
+            hass, runtime.engine, msg["rule"], rule_id=msg.get("rule_id")
+        )
+    except (TypeError, ValueError) as err:
+        connection.send_error(msg["id"], "invalid_rule", str(err))
+        return
+    connection.send_result(msg["id"], preview)
 
 
 @websocket_api.websocket_command(
