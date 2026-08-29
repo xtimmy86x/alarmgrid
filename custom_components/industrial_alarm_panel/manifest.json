@@ -1,12 +1,12 @@
 {
   "domain": "industrial_alarm_panel",
   "name": "Industrial Alarm Panel",
-  "codeowners": ["@AlRiachi"],
+  "codeowners": ["@xtimmy86x"],
   "config_flow": true,
   "dependencies": ["frontend", "http", "lovelace"],
-  "documentation": "https://github.com/AlRiachi/industrial-alarm-panel",
+  "documentation": "https://github.com/xtimmy86x/industrial-alarm-panel",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/AlRiachi/industrial-alarm-panel/issues",
+  "issue_tracker": "https://github.com/xtimmy86x/industrial-alarm-panel/issues",
   "requirements": [],
-  "version": "1.0.24"
+  "version": "1.1.0"
 }
