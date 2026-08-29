@@ -1296,19 +1296,42 @@ class AlarmGridCardEditor extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = {};
+    this._rendered = false;
+    this._appearanceOpen = false;
   }
 
   setConfig(config = {}) {
-    this._config = { ...config };
+    const nextConfig = { ...config };
+    if (this._rendered && this._configsEqual(this._config, nextConfig)) return;
+    this._config = nextConfig;
     // Normalize deprecated names only when the editor next emits a change.
     this._legacyView = config.view ?? config.tab;
     this._legacyShelve = config.show_shelve_action ?? config.show_shelve;
-    this._render();
+    if (!this._rendered) this._render();
+    else this._syncControlsFromConfig();
   }
 
   set hass(hass) {
+    const previousLanguage = this._language();
     this._hass = hass;
-    this._render();
+    const nextLanguage = this._language();
+    if (!this._rendered) {
+      this._render();
+    } else if (previousLanguage !== nextLanguage) {
+      this._renderPreservingUiState();
+    }
+  }
+
+  _configsEqual(left, right) {
+    const canonical = (value) => {
+      if (Array.isArray(value)) return value.map(canonical);
+      if (value && typeof value === "object") return Object.keys(value).sort().reduce((result, key) => {
+        result[key] = canonical(value[key]);
+        return result;
+      }, {});
+      return value;
+    };
+    return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
   }
 
   _language() {
@@ -1333,12 +1356,12 @@ class AlarmGridCardEditor extends HTMLElement {
     return config;
   }
 
-  _commit(config, rerender = true) {
+  _commit(config) {
     this._config = config;
     this._legacyView = config.view;
     this._legacyShelve = config.show_shelve_action;
     this._emitConfigChanged();
-    if (rerender) this._render();
+    this._syncDependentControls();
   }
 
   _setBooleanOption(name, checked, defaultValue = true) {
@@ -1347,19 +1370,19 @@ class AlarmGridCardEditor extends HTMLElement {
     this._commit(newConfig);
   }
 
-  _setStringOption(name, value, defaultValue = "", rerender = true) {
+  _setStringOption(name, value, defaultValue = "") {
     const newConfig = this._normalizedConfig();
     const normalized = value.trim();
     if (!normalized || normalized === defaultValue) delete newConfig[name]; else newConfig[name] = normalized;
-    this._commit(newConfig, rerender);
+    this._commit(newConfig);
   }
 
-  _setNumberOption(name, value, defaultValue = 5, rerender = true) {
+  _setNumberOption(name, value, defaultValue = 5) {
     const number = Math.max(0, Math.floor(Number(value)));
     if (!Number.isFinite(number)) return;
     const newConfig = this._normalizedConfig();
     if (number === defaultValue) delete newConfig[name]; else newConfig[name] = number;
-    this._commit(newConfig, rerender);
+    this._commit(newConfig);
   }
 
   _setPriority(priority, checked) {
@@ -1375,6 +1398,53 @@ class AlarmGridCardEditor extends HTMLElement {
 
   _emitConfigChanged() {
     this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config: { ...this._config } } }));
+  }
+
+  _syncControlsFromConfig() {
+    if (!this._rendered || !this.shadowRoot) return;
+    const setValue = (control, value) => {
+      const nextValue = String(value ?? "");
+      if (control && control.value !== nextValue) control.value = nextValue;
+    };
+    this.shadowRoot.querySelectorAll("[data-string]").forEach((control) => {
+      setValue(control, this._value(control.dataset.string));
+    });
+    const numberControl = this.shadowRoot.querySelector("[data-number]");
+    setValue(numberControl, this._value(numberControl?.dataset.number));
+    this.shadowRoot.querySelectorAll("[data-boolean]").forEach((control) => {
+      const checked = control.dataset.boolean === "show_header"
+        ? this._config.hide_header !== true
+        : this._value(control.dataset.boolean) !== false;
+      if (control.checked !== checked) control.checked = checked;
+    });
+    const priorities = Array.isArray(this._config.priorities) && this._config.priorities.length
+      ? this._config.priorities : CARD_PRIORITIES;
+    this.shadowRoot.querySelectorAll("[data-priority]").forEach((control) => {
+      const checked = priorities.includes(control.dataset.priority);
+      if (control.checked !== checked) control.checked = checked;
+    });
+    this.shadowRoot.querySelectorAll("[data-size]").forEach((control) => {
+      setValue(control, this._config[control.dataset.size] ?? "");
+    });
+    this._syncDependentControls();
+  }
+
+  _syncDependentControls() {
+    if (!this.shadowRoot) return;
+    const syncGroup = (names, disabled) => names.forEach((name) => {
+      const control = this.shadowRoot.querySelector(`[data-string="${name}"], [data-boolean="${name}"]`);
+      if (!control) return;
+      control.disabled = disabled;
+      control.closest(".grid, .toggle-row")?.classList.toggle("disabled", disabled);
+    });
+    syncGroup(["header_icon", "show_header_icon", "show_header_status", "show_header_actions"], this._config.hide_header === true);
+    syncGroup(["show_shelve_action", "show_disable_action", "show_restore_actions"], this._value("show_actions") === false);
+  }
+
+  _renderPreservingUiState() {
+    const appearance = this.shadowRoot?.querySelector("details.section");
+    if (appearance) this._appearanceOpen = appearance.open;
+    this._render();
   }
 
   _render() {
@@ -1401,15 +1471,18 @@ class AlarmGridCardEditor extends HTMLElement {
       </div></section>
       <section class="section"><h3 class="section-title">${this._t("editor_content")}</h3><div class="grid">${toggle("show_summary","editor_show_summary")}${toggle("show_value","editor_show_value")}${toggle("show_area","editor_show_area")}${toggle("show_system","editor_show_system")}${toggle("show_tag","editor_show_tag")}${toggle("show_open_panel","editor_show_open_panel")}</div><div class="priorities"><strong>${this._t("editor_priorities")}</strong>${CARD_PRIORITIES.map((priority) => `<label class="toggle-row"><input data-priority="${priority}" type="checkbox" ${priorities.includes(priority) ? "checked" : ""}><span>${priority[0].toUpperCase()+priority.slice(1)}</span></label>`).join("")}</div></section>
       <section class="section"><h3 class="section-title">${this._t("editor_actions")}</h3><div class="grid">${toggle("show_actions","editor_show_actions")}${toggle("show_shelve_action","editor_show_shelve",!actionsShown)}${toggle("show_disable_action","editor_show_disable",!actionsShown)}${toggle("show_restore_actions","editor_show_restore",!actionsShown)}</div></section>
-      <details class="section"><summary>${this._t("editor_appearance")}</summary><div class="grid">${sizes.map((name) => `<label class="field"><span>${sizeLabel(name)}</span><input data-size="${name}" value="${esc(this._config[name] ?? "")}" placeholder="${CARD_DEFAULTS[name]}"></label>`).join("")}</div><p class="helper">${this._t("editor_supported_units")}</p></details>
+      <details class="section" ${this._appearanceOpen ? "open" : ""}><summary>${this._t("editor_appearance")}</summary><div class="grid">${sizes.map((name) => `<label class="field"><span>${sizeLabel(name)}</span><input data-size="${name}" value="${esc(this._config[name] ?? "")}" placeholder="${CARD_DEFAULTS[name]}"></label>`).join("")}</div><p class="helper">${this._t("editor_supported_units")}</p></details>
     </div>`;
     this.shadowRoot.querySelector('[data-boolean="show_header"]')?.addEventListener("change", (event) => this._setBooleanOption("hide_header", !event.target.checked, false));
     this.shadowRoot.querySelectorAll("[data-boolean]:not([data-boolean=show_header])").forEach((control) => control.addEventListener("change", (event) => this._setBooleanOption(control.dataset.boolean, event.target.checked)));
     this.shadowRoot.querySelectorAll("select[data-string]").forEach((control) => control.addEventListener("change", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string])));
-    this.shadowRoot.querySelectorAll("input[data-string]:not([data-number])").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string], false)));
-    this.shadowRoot.querySelector("[data-number]")?.addEventListener("input", (event) => this._setNumberOption("max_alarms", event.target.value, CARD_DEFAULTS.max_alarms, false));
+    this.shadowRoot.querySelectorAll("input[data-string]:not([data-number])").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string])));
+    this.shadowRoot.querySelector("[data-number]")?.addEventListener("input", (event) => this._setNumberOption("max_alarms", event.target.value, CARD_DEFAULTS.max_alarms));
     this.shadowRoot.querySelectorAll("[data-priority]").forEach((control) => control.addEventListener("change", (event) => this._setPriority(control.dataset.priority, event.target.checked)));
-    this.shadowRoot.querySelectorAll("[data-size]").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.size, event.target.value, CARD_DEFAULTS[control.dataset.size], false)));
+    this.shadowRoot.querySelectorAll("[data-size]").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.size, event.target.value, CARD_DEFAULTS[control.dataset.size])));
+    this.shadowRoot.querySelector("details.section")?.addEventListener("toggle", (event) => { this._appearanceOpen = event.target.open; });
+    this._rendered = true;
+    this._syncDependentControls();
   }
 }
 
