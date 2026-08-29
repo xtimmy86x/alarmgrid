@@ -53,11 +53,11 @@ class AlarmGridRuntime:
     remove_panel: Any | None = None
 
 
-IndustrialAlarmConfigEntry = Any
+AlarmGridConfigEntry = Any
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: IndustrialAlarmConfigEntry
+    hass: HomeAssistant, entry: AlarmGridConfigEntry
 ) -> bool:
     """Set up AlarmGrid from a config entry."""
 
@@ -242,7 +242,7 @@ async def async_setup_entry(
 
 
 async def async_unload_entry(
-    hass: HomeAssistant, entry: IndustrialAlarmConfigEntry
+    hass: HomeAssistant, entry: AlarmGridConfigEntry
 ) -> bool:
     """Unload a config entry."""
 
@@ -268,7 +268,7 @@ async def async_unload_entry(
 
 
 async def _async_update_listener(
-    hass: HomeAssistant, entry: IndustrialAlarmConfigEntry
+    hass: HomeAssistant, entry: AlarmGridConfigEntry
 ) -> None:
     """Reload entry when options change."""
 

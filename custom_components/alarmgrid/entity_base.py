@@ -19,7 +19,7 @@ class AlarmGridEntity(Entity):
         self.runtime = runtime
         self.engine = runtime.engine
         self._attr_unique_id = f"{DOMAIN}_{runtime.entry_id}_{key}"
-        self._attr_suggested_object_id = f"industrial_alarm_{key}"
+        self._attr_suggested_object_id = f"alarmgrid_{key}"
         self._attr_translation_key = key
         self._attr_name = name
         self._remove_listener: Callable[[], None] | None = None

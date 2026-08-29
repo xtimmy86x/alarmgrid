@@ -292,7 +292,8 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn('type: "alarmgrid/export_history"', source)
         self.assertIn("start_time: start.toISOString()", source)
         self.assertIn("end_time: end.toISOString()", source)
-        self.assertIn("industrial-alarm-history-", source)
+        self.assertIn("alarmgrid-history-", source)
+        self.assertNotIn("industrial-alarm-history-", source)
         
     def test_frontend_delays_alarm_color_and_throttles_browser_horn(self) -> None:
         source = Path(
@@ -482,11 +483,51 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
 
 class AlarmGridRebrandStaticTests(unittest.TestCase):
+    def test_operational_files_do_not_contain_legacy_identifiers(self) -> None:
+        legacy_identifiers = (
+            "industrial_alarm_panel",
+            "industrial-alarm-panel-card",
+            "industrial-alarms",
+            "iap:",
+            "industrial_alarm_",
+        )
+        files = [
+            *Path("custom_components/alarmgrid").rglob("*"),
+            Path("INSTALLATION.md"),
+            Path("hacs.json"),
+            Path("pyproject.toml"),
+        ]
+        for path in files:
+            if not path.is_file() or path.suffix in {".png", ".pyc"}:
+                continue
+            source = path.read_text(errors="ignore").lower()
+            for identifier in legacy_identifiers:
+                with self.subTest(path=path, identifier=identifier):
+                    self.assertNotIn(identifier, source)
+
+        # Historical release notes and attribution intentionally retain the old
+        # project name, so scan only the current, operational README sections.
+        readme = Path("README.md").read_text()
+        current_readme = re.sub(
+            r"## What's New in v2\.0\.0.*?(?=## Installation)",
+            "",
+            readme,
+            flags=re.DOTALL,
+        )
+        current_readme = current_readme.split("## Origins and attribution", 1)[0]
+        for identifier in legacy_identifiers:
+            with self.subTest(path="README.md", identifier=identifier):
+                self.assertNotIn(identifier, current_readme.lower())
+
     def test_alarmgrid_identity_is_consistent(self) -> None:
         from custom_components.alarmgrid.const import DOMAIN, FRONTEND_MODULE, VERSION
 
         manifest = json.loads(Path("custom_components/alarmgrid/manifest.json").read_text())
         readme = Path("README.md").read_text()
+        entity_base = Path("custom_components/alarmgrid/entity_base.py").read_text()
+        frontend = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
         self.assertEqual("alarmgrid", DOMAIN)
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
@@ -496,6 +537,9 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertIn("alarmgrid.js?v=2.0.0", FRONTEND_MODULE)
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)
+        self.assertIn('f"alarmgrid_{key}"', entity_base)
+        self.assertIn("alarmgrid-history-", frontend)
+        self.assertIn("alarmgrid-rules-", frontend)
         self.assertNotIn("custom:industrial-alarm-panel-card", readme)
 
 
