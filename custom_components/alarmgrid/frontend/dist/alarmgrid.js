@@ -1,5 +1,22 @@
 const ALARMS_UPDATED_EVENT = "alarmgrid_alarms_updated";
 
+// The card and its visual editor intentionally share one source of truth.  The
+// editor omits values matching these defaults to keep storage/YAML concise.
+const CARD_DEFAULTS = Object.freeze({
+  title: "AlarmGrid", view: "active", max_alarms: 5, theme: "auto",
+  header_icon: "mdi:alarm-light", hide_header: false,
+  show_header_icon: true, show_header_status: true, show_header_actions: true,
+  show_summary: true, show_actions: true, show_shelve_action: true,
+  show_disable_action: true, show_restore_actions: true, show_value: true,
+  show_area: true, show_system: true, show_tag: true, show_open_panel: true,
+  min_height: "0px", header_icon_size: "24px", title_font_size: "1.15rem",
+  subtitle_font_size: ".85rem", summary_font_size: ".78rem",
+  alarm_name_font_size: "1rem", alarm_meta_font_size: ".78rem",
+  priority_font_size: ".7rem", action_font_size: ".78rem",
+});
+
+const CARD_PRIORITIES = ["critical", "high", "medium", "low", "info", "status"];
+
 const TRANSLATIONS = {
   en: {
     default_title: "AlarmGrid",
@@ -1253,6 +1270,150 @@ class AlarmGrid extends HTMLElement {
   }
 }
 
+const EDITOR_TRANSLATIONS = {
+  en: {
+    editor_general: "General", editor_header: "Header", editor_content: "Content", editor_actions: "Actions", editor_appearance: "Advanced appearance",
+    editor_title: "Title", editor_view: "View", editor_max_alarms: "Maximum alarms", editor_theme: "Theme", editor_show_header: "Show header",
+    editor_header_icon: "Header icon", editor_show_header_icon: "Show header icon", editor_show_header_status: "Show header status", editor_show_header_actions: "Show header actions",
+    editor_show_summary: "Show summary", editor_show_value: "Show value", editor_show_area: "Show area", editor_show_system: "Show system", editor_show_tag: "Show tag", editor_show_open_panel: "Show AlarmGrid link",
+    editor_show_actions: "Show actions", editor_show_shelve: "Show shelve action", editor_show_disable: "Show disable action", editor_show_restore: "Show restore actions",
+    editor_priorities: "Priorities", editor_min_height: "Minimum height", editor_supported_units: "Supported units: px, rem, em, %",
+    active: "Active alarms", unacknowledged: "Unacknowledged", shelved: "Shelved", disabled_view: "Disabled", inactive: "Shelved + disabled",
+  },
+  it: {
+    editor_general: "Generale", editor_header: "Header", editor_content: "Contenuto", editor_actions: "Azioni", editor_appearance: "Aspetto avanzato",
+    editor_title: "Titolo", editor_view: "Vista", editor_max_alarms: "Numero massimo di allarmi", editor_theme: "Tema", editor_show_header: "Mostra header",
+    editor_header_icon: "Icona header", editor_show_header_icon: "Mostra icona header", editor_show_header_status: "Mostra stato header", editor_show_header_actions: "Mostra azioni header",
+    editor_show_summary: "Mostra riepilogo", editor_show_value: "Mostra valore", editor_show_area: "Mostra area", editor_show_system: "Mostra sistema", editor_show_tag: "Mostra tag", editor_show_open_panel: "Mostra link ad AlarmGrid",
+    editor_show_actions: "Mostra azioni", editor_show_shelve: "Mostra azione sospendi", editor_show_disable: "Mostra azione disabilita", editor_show_restore: "Mostra azioni ripristino",
+    editor_priorities: "Priorità", editor_min_height: "Altezza minima", editor_supported_units: "Unità supportate: px, rem, em, %",
+    active: "Allarmi attivi", unacknowledged: "Non riconosciuti", shelved: "Sospesi", disabled_view: "Disabilitati", inactive: "Sospesi + disabilitati",
+  },
+};
+
+class AlarmGridCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+  }
+
+  setConfig(config = {}) {
+    this._config = { ...config };
+    // Normalize deprecated names only when the editor next emits a change.
+    this._legacyView = config.view ?? config.tab;
+    this._legacyShelve = config.show_shelve_action ?? config.show_shelve;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  _language() {
+    const language = this._hass?.locale?.language || this._hass?.language || "en";
+    return String(language).toLowerCase().split("-")[0] === "it" ? "it" : "en";
+  }
+
+  _t(key) { return EDITOR_TRANSLATIONS[this._language()][key] ?? key; }
+  _value(name) {
+    if (name === "view" && this._config.view === undefined) return this._legacyView ?? CARD_DEFAULTS.view;
+    if (name === "show_shelve_action" && this._config[name] === undefined && this._legacyShelve !== undefined) return this._legacyShelve !== false;
+    return this._config[name] ?? CARD_DEFAULTS[name];
+  }
+
+  _normalizedConfig() {
+    const config = { ...this._config };
+    if (config.view === undefined && this._legacyView !== undefined) config.view = this._legacyView;
+    if (config.show_shelve_action === undefined && this._legacyShelve !== undefined) config.show_shelve_action = this._legacyShelve !== false;
+    delete config.tab;
+    delete config.hide_tabs;
+    delete config.show_shelve;
+    return config;
+  }
+
+  _commit(config, rerender = true) {
+    this._config = config;
+    this._legacyView = config.view;
+    this._legacyShelve = config.show_shelve_action;
+    this._emitConfigChanged();
+    if (rerender) this._render();
+  }
+
+  _setBooleanOption(name, checked, defaultValue = true) {
+    const newConfig = this._normalizedConfig();
+    if (checked === defaultValue) delete newConfig[name]; else newConfig[name] = checked;
+    this._commit(newConfig);
+  }
+
+  _setStringOption(name, value, defaultValue = "", rerender = true) {
+    const newConfig = this._normalizedConfig();
+    const normalized = value.trim();
+    if (!normalized || normalized === defaultValue) delete newConfig[name]; else newConfig[name] = normalized;
+    this._commit(newConfig, rerender);
+  }
+
+  _setNumberOption(name, value, defaultValue = 5, rerender = true) {
+    const number = Math.max(0, Math.floor(Number(value)));
+    if (!Number.isFinite(number)) return;
+    const newConfig = this._normalizedConfig();
+    if (number === defaultValue) delete newConfig[name]; else newConfig[name] = number;
+    this._commit(newConfig, rerender);
+  }
+
+  _setPriority(priority, checked) {
+    const current = Array.isArray(this._config.priorities) ? this._config.priorities : CARD_PRIORITIES;
+    const selected = new Set(current);
+    checked ? selected.add(priority) : selected.delete(priority);
+    const priorities = CARD_PRIORITIES.filter((item) => selected.has(item));
+    const newConfig = this._normalizedConfig();
+    if (priorities.length === 0 || priorities.length === CARD_PRIORITIES.length) delete newConfig.priorities;
+    else newConfig.priorities = priorities;
+    this._commit(newConfig);
+  }
+
+  _emitConfigChanged() {
+    this.dispatchEvent(new CustomEvent("config-changed", { bubbles: true, composed: true, detail: { config: { ...this._config } } }));
+  }
+
+  _render() {
+    if (!this.shadowRoot) return;
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    const text = (name, label, type = "text", extra = "") => `<label class="field"><span>${this._t(label)}</span><input data-string="${name}" type="${type}" value="${esc(this._value(name))}" ${extra}></label>`;
+    const toggle = (name, label, disabled = false) => `<label class="toggle-row ${disabled ? "disabled" : ""}"><input data-boolean="${name}" type="checkbox" ${this._value(name) !== false ? "checked" : ""} ${disabled ? "disabled" : ""}><span>${this._t(label)}</span></label>`;
+    const headerShown = this._config.hide_header !== true;
+    const actionsShown = this._value("show_actions") !== false;
+    const priorities = Array.isArray(this._config.priorities) && this._config.priorities.length ? this._config.priorities : CARD_PRIORITIES;
+    const sizes = ["min_height", "header_icon_size", "title_font_size", "subtitle_font_size", "summary_font_size", "alarm_name_font_size", "alarm_meta_font_size", "priority_font_size", "action_font_size"];
+    const sizeLabel = (name) => name === "min_height" ? this._t("editor_min_height") : name.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block;font-family:inherit;color:var(--primary-text-color)} .editor{display:grid;gap:16px;background:transparent}.section{padding:14px;border:1px solid var(--divider-color);border-radius:10px}.section-title,summary{font-size:1rem;font-weight:600;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}.field{display:grid;gap:6px;color:var(--secondary-text-color);font-size:.9rem}.field input,.field select{box-sizing:border-box;width:100%;min-height:42px;padding:8px 10px;font:inherit;color:var(--primary-text-color);background:transparent;border:1px solid var(--divider-color);border-radius:8px}.field input:focus,.field select:focus{outline:2px solid var(--primary-color);outline-offset:1px}.toggle-row{display:flex;align-items:center;gap:9px;min-height:34px}.toggle-row input{width:18px;height:18px;accent-color:var(--primary-color)}.disabled{opacity:.5}.priorities{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:12px}.helper{color:var(--secondary-text-color);font-size:.8rem;margin:10px 0 0}details.section summary{cursor:pointer} @media(max-width:600px){.grid{grid-template-columns:1fr}}
+    </style><div class="editor">
+      <section class="section"><h3 class="section-title">${this._t("editor_general")}</h3><div class="grid">
+        ${text("title", "editor_title")}
+        <label class="field"><span>${this._t("editor_view")}</span><select data-string="view">${["active","unacknowledged","shelved","disabled","inactive"].map((view) => `<option value="${view}" ${this._value("view") === view ? "selected" : ""}>${this._t(view === "disabled" ? "disabled_view" : view)}</option>`).join("")}</select></label>
+        ${text("max_alarms", "editor_max_alarms", "number", 'min="0" step="1" data-number="max_alarms"')}
+        <label class="field"><span>${this._t("editor_theme")}</span><select data-string="theme">${["auto","light","dark"].map((theme) => `<option ${this._value("theme") === theme ? "selected" : ""}>${theme}</option>`).join("")}</select></label>
+      </div></section>
+      <section class="section"><h3 class="section-title">${this._t("editor_header")}</h3>${toggle("show_header", "editor_show_header")}<div class="grid ${headerShown ? "" : "disabled"}">
+        ${text("header_icon", "editor_header_icon", "text", headerShown ? "" : "disabled")}${toggle("show_header_icon", "editor_show_header_icon", !headerShown)}${toggle("show_header_status", "editor_show_header_status", !headerShown)}${toggle("show_header_actions", "editor_show_header_actions", !headerShown)}
+      </div></section>
+      <section class="section"><h3 class="section-title">${this._t("editor_content")}</h3><div class="grid">${toggle("show_summary","editor_show_summary")}${toggle("show_value","editor_show_value")}${toggle("show_area","editor_show_area")}${toggle("show_system","editor_show_system")}${toggle("show_tag","editor_show_tag")}${toggle("show_open_panel","editor_show_open_panel")}</div><div class="priorities"><strong>${this._t("editor_priorities")}</strong>${CARD_PRIORITIES.map((priority) => `<label class="toggle-row"><input data-priority="${priority}" type="checkbox" ${priorities.includes(priority) ? "checked" : ""}><span>${priority[0].toUpperCase()+priority.slice(1)}</span></label>`).join("")}</div></section>
+      <section class="section"><h3 class="section-title">${this._t("editor_actions")}</h3><div class="grid">${toggle("show_actions","editor_show_actions")}${toggle("show_shelve_action","editor_show_shelve",!actionsShown)}${toggle("show_disable_action","editor_show_disable",!actionsShown)}${toggle("show_restore_actions","editor_show_restore",!actionsShown)}</div></section>
+      <details class="section"><summary>${this._t("editor_appearance")}</summary><div class="grid">${sizes.map((name) => `<label class="field"><span>${sizeLabel(name)}</span><input data-size="${name}" value="${esc(this._config[name] ?? "")}" placeholder="${CARD_DEFAULTS[name]}"></label>`).join("")}</div><p class="helper">${this._t("editor_supported_units")}</p></details>
+    </div>`;
+    this.shadowRoot.querySelector('[data-boolean="show_header"]')?.addEventListener("change", (event) => this._setBooleanOption("hide_header", !event.target.checked, false));
+    this.shadowRoot.querySelectorAll("[data-boolean]:not([data-boolean=show_header])").forEach((control) => control.addEventListener("change", (event) => this._setBooleanOption(control.dataset.boolean, event.target.checked)));
+    this.shadowRoot.querySelectorAll("select[data-string]").forEach((control) => control.addEventListener("change", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string])));
+    this.shadowRoot.querySelectorAll("input[data-string]:not([data-number])").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string], false)));
+    this.shadowRoot.querySelector("[data-number]")?.addEventListener("input", (event) => this._setNumberOption("max_alarms", event.target.value, CARD_DEFAULTS.max_alarms, false));
+    this.shadowRoot.querySelectorAll("[data-priority]").forEach((control) => control.addEventListener("change", (event) => this._setPriority(control.dataset.priority, event.target.checked)));
+    this.shadowRoot.querySelectorAll("[data-size]").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.size, event.target.value, CARD_DEFAULTS[control.dataset.size], false)));
+  }
+}
+
+
 // The dashboard card deliberately owns its rendering and data lifecycle.  The
 // sidebar remains the full DCS console above; sharing that renderer here would
 // re-introduce its tables, tabs and desktop interaction model.
@@ -1286,21 +1447,21 @@ class AlarmGridCard extends HTMLElement {
       : null;
     this._config = {
       ...config,
-      title: config.title || "AlarmGrid",
-      header_icon: typeof config.header_icon === "string" && config.header_icon.trim() ? config.header_icon.trim() : "mdi:alarm-light",
+      title: config.title || CARD_DEFAULTS.title,
+      header_icon: typeof config.header_icon === "string" && config.header_icon.trim() ? config.header_icon.trim() : CARD_DEFAULTS.header_icon,
       show_header_icon: config.show_header_icon !== false,
       show_header_status: config.show_header_status !== false,
       show_header_actions: config.show_header_actions !== undefined ? config.show_header_actions !== false : showActions,
-      header_icon_size: this._normalizeCssSize(config.header_icon_size, "24px"),
-      title_font_size: this._normalizeCssSize(config.title_font_size, "1.15rem"),
-      subtitle_font_size: this._normalizeCssSize(config.subtitle_font_size, ".85rem"),
-      summary_font_size: this._normalizeCssSize(config.summary_font_size, ".78rem"),
-      alarm_name_font_size: this._normalizeCssSize(config.alarm_name_font_size, "1rem"),
-      alarm_meta_font_size: this._normalizeCssSize(config.alarm_meta_font_size, ".78rem"),
-      priority_font_size: this._normalizeCssSize(config.priority_font_size, ".7rem"),
-      action_font_size: this._normalizeCssSize(config.action_font_size, ".78rem"),
-      view: views.has(requestedView) ? requestedView : "active",
-      max_alarms: Math.max(0, Number.isFinite(Number(config.max_alarms)) ? Math.floor(Number(config.max_alarms)) : 5),
+      header_icon_size: this._normalizeCssSize(config.header_icon_size, CARD_DEFAULTS.header_icon_size),
+      title_font_size: this._normalizeCssSize(config.title_font_size, CARD_DEFAULTS.title_font_size),
+      subtitle_font_size: this._normalizeCssSize(config.subtitle_font_size, CARD_DEFAULTS.subtitle_font_size),
+      summary_font_size: this._normalizeCssSize(config.summary_font_size, CARD_DEFAULTS.summary_font_size),
+      alarm_name_font_size: this._normalizeCssSize(config.alarm_name_font_size, CARD_DEFAULTS.alarm_name_font_size),
+      alarm_meta_font_size: this._normalizeCssSize(config.alarm_meta_font_size, CARD_DEFAULTS.alarm_meta_font_size),
+      priority_font_size: this._normalizeCssSize(config.priority_font_size, CARD_DEFAULTS.priority_font_size),
+      action_font_size: this._normalizeCssSize(config.action_font_size, CARD_DEFAULTS.action_font_size),
+      view: views.has(requestedView) ? requestedView : CARD_DEFAULTS.view,
+      max_alarms: Math.max(0, Number.isFinite(Number(config.max_alarms)) ? Math.floor(Number(config.max_alarms)) : CARD_DEFAULTS.max_alarms),
       show_summary: config.show_summary !== false,
       show_actions: showActions,
       show_value: config.show_value !== false,
@@ -1574,15 +1735,11 @@ class AlarmGridCard extends HTMLElement {
       title: "AlarmGrid",
       view: "active",
       max_alarms: 5,
-      show_summary: true,
-      show_actions: true,
-      show_shelve_action: true,
-      show_disable_action: true,
-      show_restore_actions: true,
-      show_open_panel: true,
-      header_icon: "mdi:alarm-light",
-      theme: "auto",
     };
+  }
+
+  static getConfigElement() {
+    return document.createElement("alarmgrid-card-editor");
   }
 }
 
@@ -1594,12 +1751,17 @@ if (!customElements.get("alarmgrid-card")) {
   customElements.define("alarmgrid-card", AlarmGridCard);
 }
 
+if (!customElements.get("alarmgrid-card-editor")) {
+  customElements.define("alarmgrid-card-editor", AlarmGridCardEditor);
+}
+
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === "alarmgrid-card")) {
   window.customCards.push({
     type: "alarmgrid-card",
     name: "AlarmGrid",
     description: "Compact, responsive alarm summary for Home Assistant dashboards.",
+    documentationURL: "https://github.com/xtimmy86x/alarmgrid#lovelace-card",
     preview: true,
   });
 }

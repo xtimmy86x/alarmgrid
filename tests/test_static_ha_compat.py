@@ -101,6 +101,53 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("setConfig(config = {})", source)
         self.assertIn("getStubConfig()", source)
 
+    def test_lovelace_card_registers_visual_editor_api(self) -> None:
+        source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+        editor = source[
+            source.index("class AlarmGridCardEditor") :
+            source.index("class AlarmGridCard extends HTMLElement")
+        ]
+
+        self.assertIn("static getConfigElement()", source)
+        self.assertIn('document.createElement("alarmgrid-card-editor")', source)
+        self.assertIn('customElements.define("alarmgrid-card-editor"', source)
+        self.assertIn("setConfig(config = {})", editor)
+        self.assertIn("set hass(hass)", editor)
+        self.assertIn('new CustomEvent("config-changed"', editor)
+        self.assertIn('type: "alarmgrid-card"', source)
+
+    def test_visual_editor_covers_card_configuration_options(self) -> None:
+        source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+        editor = source[
+            source.index("class AlarmGridCardEditor") :
+            source.index("class AlarmGridCard extends HTMLElement")
+        ]
+        options = {
+            "title", "view", "max_alarms", "theme", "hide_header",
+            "show_header", "header_icon", "show_header_icon",
+            "show_header_status", "show_header_actions", "show_summary",
+            "show_actions", "show_shelve_action", "show_disable_action",
+            "show_restore_actions", "show_value", "show_area", "show_system",
+            "show_tag", "show_open_panel", "priorities", "min_height",
+            "header_icon_size", "title_font_size", "subtitle_font_size",
+            "summary_font_size", "alarm_name_font_size", "alarm_meta_font_size",
+            "priority_font_size", "action_font_size",
+        }
+        for option in options:
+            with self.subTest(option=option):
+                self.assertIn(option, editor)
+
+        self.assertIn("if (checked === defaultValue) delete newConfig[name]", editor)
+        self.assertIn("if (number === defaultValue) delete newConfig[name]", editor)
+        self.assertIn("priorities.length === CARD_PRIORITIES.length", editor)
+        self.assertIn("delete config.tab", editor)
+        self.assertIn("delete config.hide_tabs", editor)
+        self.assertIn("delete config.show_shelve", editor)
+
     def test_lovelace_card_is_a_standalone_summary_not_the_sidebar_table(self) -> None:
         source = Path(
             "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
@@ -135,7 +182,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         card_source = source[source.index("class AlarmGridCard") :]
 
         self.assertIn('header_icon: typeof config.header_icon === "string"', card_source)
-        self.assertIn(': "mdi:alarm-light"', card_source)
+        self.assertIn(": CARD_DEFAULTS.header_icon", card_source)
         self.assertIn("show_header_icon: config.show_header_icon !== false", card_source)
         self.assertIn("this._config.show_header_icon ? `<ha-icon", card_source)
         self.assertIn('icon="${this._escape(this._config.header_icon)}"', card_source)
@@ -155,7 +202,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         for option, default in defaults.items():
             with self.subTest(option=option):
                 self.assertIn(
-                    f'{option}: this._normalizeCssSize(config.{option}, "{default}")',
+                    f'{option}: this._normalizeCssSize(config.{option}, CARD_DEFAULTS.{option})',
                     card_source,
                 )
                 css_property = option.replace("_", "-")
@@ -232,10 +279,10 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         )
 
         self.assertEqual("2.0.0", VERSION)
-        self.assertEqual("20260829.2", FRONTEND_BUILD)
+        self.assertEqual("20260829.3", FRONTEND_BUILD)
         self.assertEqual(
             "/alarmgrid/frontend/dist/alarmgrid.js"
-            "?v=2.0.0&build=20260829.2",
+            "?v=2.0.0&build=20260829.3",
             FRONTEND_MODULE,
         )
 
@@ -562,11 +609,11 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
         self.assertEqual("2.0.0", VERSION)
-        self.assertEqual("20260829.2", FRONTEND_BUILD)
+        self.assertEqual("20260829.3", FRONTEND_BUILD)
         self.assertEqual("2.0.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
         self.assertIn(
-            "alarmgrid.js?v=2.0.0&build=20260829.2", FRONTEND_MODULE
+            "alarmgrid.js?v=2.0.0&build=20260829.3", FRONTEND_MODULE
         )
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)
