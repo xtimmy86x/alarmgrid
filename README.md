@@ -1,11 +1,14 @@
 # Industrial Alarm Panel
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://www.hacs.xyz/)
-[![GitHub release](https://img.shields.io/github/v/release/AlRiachi/industrial-alarm-panel?display_name=tag)](https://github.com/AlRiachi/industrial-alarm-panel/releases)
+[![GitHub release](https://img.shields.io/github/v/release/xtimmy86x/industrial-alarm-panel?display_name=tag)](https://github.com/xtimmy86x/industrial-alarm-panel/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5.svg)](https://www.home-assistant.io/)
-[![License](https://img.shields.io/github/license/AlRiachi/industrial-alarm-panel)](LICENSE)
+[![License](https://img.shields.io/github/license/xtimmy86x/industrial-alarm-panel)](LICENSE)
 
-Industrial Alarm Panel is a Home Assistant custom integration that provides a DCS-style alarm annunciator for industrial, energy, and equipment monitoring.
+Industrial Alarm Panel is an independently maintained Home Assistant custom
+integration that provides a DCS-style alarm annunciator for industrial, energy,
+and equipment monitoring. Its official repository is
+[`xtimmy86x/industrial-alarm-panel`](https://github.com/xtimmy86x/industrial-alarm-panel).
 
 It creates Home Assistant entities, exposes services and a websocket API, persists alarm rules and runtime state, stores alarm history in SQLite, and serves a dedicated sidebar panel at `/industrial-alarms`.
 
@@ -15,13 +18,32 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 
 - Dedicated Home Assistant sidebar panel at `/industrial-alarms`
 - DCS-style alarm lifecycle: active, acknowledged, cleared, shelved, disabled
+- Dedicated active, unacknowledged, disabled, shelved, and history views
 - Priority levels with horn behavior: `critical`, `high`, `medium`, `low`, `info`, `status`
 - Per-rule binary sensors and operator action buttons
 - Rule storage, runtime state persistence, and SQLite alarm history
 - Browser horn and optional media-player sound output
 - Suggested alarm rule generator for PowerTag/electrical/solar-water sensors
+- Rules editor with CSV import and export
+- Compact, configurable Lovelace alarm summary card
+- Optional Telegram notifications with per-rule policy, interactive actions, and
+  English/Italian messages
+- Downloadable diagnostics for troubleshooting
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
+
+## What's New in v1.1.0
+
+- Industrial Alarm Panel is now independently maintained as a standalone project.
+- Updated repository ownership, documentation, HACS links, issue tracking, and
+  project metadata.
+- Preserved compatibility with existing Home Assistant installations, alarm rules,
+  entities, history, Lovelace cards, and Telegram configuration.
+- Retained attribution to the original `AlRiachi/industrial-alarm-panel` project
+  under the Apache-2.0 license.
+
+This is a non-breaking maintenance release. Existing installations require no
+migration and can upgrade normally through HACS.
 
 ## What's New in v1.0.24
 
@@ -117,14 +139,14 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 
 ## Installation
 
-[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlRiachi&repository=industrial-alarm-panel&category=integration)
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xtimmy86x&repository=industrial-alarm-panel&category=integration)
 
 ### HACS
 
 1. Add this repository as a HACS custom repository with category `Integration`:
 
    ```text
-   https://github.com/AlRiachi/industrial-alarm-panel
+   https://github.com/xtimmy86x/industrial-alarm-panel
    ```
 
 2. Install **Industrial Alarm Panel** from HACS.
@@ -151,7 +173,7 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.24
+url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.1.0
 type: module
 ```
 
@@ -524,7 +546,7 @@ Before opening an issue:
 Open a GitHub issue here:
 
 ```text
-https://github.com/AlRiachi/industrial-alarm-panel/issues/new/choose
+https://github.com/xtimmy86x/industrial-alarm-panel/issues/new/choose
 ```
 
 Please include:
@@ -643,4 +665,20 @@ not retried, preventing duplicate messages.
 
 Interactive Telegram action sessions are currently stored in memory, bounded to
 1,000 entries with a seven-day TTL. Buttons on messages created before a Home
-Assistant restart may expire gracefully. This limitation is intentional in v1.0.24.
+Assistant restart may expire gracefully. This limitation is intentional in v1.1.0.
+
+## Upgrade compatibility
+
+Repository ownership changes do not alter the Home Assistant integration domain,
+config entries, entity or unique IDs, services, stored alarm rules, runtime state,
+SQLite history, Lovelace configuration, or Telegram configuration. Existing users
+can upgrade normally through HACS; no migration or reinstallation is required.
+
+## Origins and attribution
+
+Industrial Alarm Panel was originally based on
+[`AlRiachi/industrial-alarm-panel`](https://github.com/AlRiachi/industrial-alarm-panel).
+
+The project is now independently maintained and has significantly diverged from
+the original implementation. The original project and its contributors remain
+credited through the Git history and the Apache-2.0 license.

@@ -8,7 +8,10 @@ Security fixes target the latest released version of Industrial Alarm Panel.
 
 Do not open a public GitHub issue for a security vulnerability.
 
-Use GitHub private vulnerability reporting if it is available on the repository. If private reporting is unavailable, open a minimal public issue that says you need a private contact path, without exploit details, secrets, logs, or screenshots.
+Use [GitHub private vulnerability reporting](https://github.com/xtimmy86x/industrial-alarm-panel/security/advisories/new)
+if it is available on the repository. If private reporting is unavailable, open a
+minimal public issue that says you need a private contact path, without exploit
+details, secrets, logs, or screenshots.
 
 Please include:
 

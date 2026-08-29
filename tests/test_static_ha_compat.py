@@ -6,6 +6,20 @@ from pathlib import Path
 
 
 class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
+    def test_repository_ownership_metadata_uses_standalone_repository(self) -> None:
+        manifest = json.loads(
+            Path("custom_components/industrial_alarm_panel/manifest.json").read_text()
+        )
+        readme = Path("README.md").read_text()
+        installation = Path("INSTALLATION.md").read_text()
+        repository = "xtimmy86x/industrial-alarm-panel"
+
+        self.assertEqual(["@xtimmy86x"], manifest["codeowners"])
+        self.assertIn(repository, manifest["documentation"])
+        self.assertIn(repository, manifest["issue_tracker"])
+        self.assertIn("owner=xtimmy86x&repository=industrial-alarm-panel", readme)
+        self.assertIn("owner=xtimmy86x&repository=industrial-alarm-panel", installation)
+
     def test_options_flow_does_not_assign_read_only_config_entry_property(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/options_flow.py"
@@ -303,7 +317,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIsNotNone(const_version_match)
         self.assertNotIn("Current release:", readme_source)
         const_version = const_version_match.group(1)
-        expected_version = const_version
+        expected_version = "1.1.0"
         self.assertIn(f"## What's New in v{expected_version}", readme_source)
         self.assertIn(
             f"/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v={expected_version}",

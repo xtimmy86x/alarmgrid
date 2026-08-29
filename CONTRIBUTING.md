@@ -2,9 +2,13 @@
 
 Thanks for helping improve Industrial Alarm Panel.
 
+This is the official contribution guide for
+[`xtimmy86x/industrial-alarm-panel`](https://github.com/xtimmy86x/industrial-alarm-panel).
+
 ## Before You Open A PR
 
-1. Search existing issues and pull requests.
+1. Search the [existing issues](https://github.com/xtimmy86x/industrial-alarm-panel/issues)
+   and [pull requests](https://github.com/xtimmy86x/industrial-alarm-panel/pulls).
 2. Keep the change focused on one bug, feature, or documentation improvement.
 3. Add or update tests when behavior changes.
 4. Update `README.md` or `INSTALLATION.md` when the user-facing workflow changes.

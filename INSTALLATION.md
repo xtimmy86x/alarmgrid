@@ -4,7 +4,7 @@ This repository is a HACS custom integration for Home Assistant.
 
 ## HACS Installation
 
-[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AlRiachi&repository=industrial-alarm-panel&category=integration)
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xtimmy86x&repository=industrial-alarm-panel&category=integration)
 
 1. Open Home Assistant.
 2. Go to **HACS > Integrations**.
@@ -12,7 +12,7 @@ This repository is a HACS custom integration for Home Assistant.
 4. Add this repository URL:
 
    ```text
-   https://github.com/AlRiachi/industrial-alarm-panel
+   https://github.com/xtimmy86x/industrial-alarm-panel
    ```
 
 5. Select category **Integration**.
