@@ -34,12 +34,20 @@
           "telegram_notify_shelved": "Notifica shelving",
           "telegram_notify_unshelved": "Notifica fine shelving",
           "telegram_notify_disabled": "Notifica disabilitazione",
-          "telegram_notify_enabled": "Notifica abilitazione"
+          "telegram_notify_enabled": "Notifica abilitazione",
+          "telegram_interactive_enabled": "Abilita azioni Telegram interattive",
+          "telegram_callback_event_entities": "Event entity callback Telegram",
+          "telegram_interactive_ack": "Consenti ACK",
+          "telegram_interactive_shelve": "Consenti sospensione",
+          "telegram_interactive_disable": "Consenti disabilitazione"
         }
       }
     },
     "error": {
-      "telegram_targets_required": "Seleziona almeno un destinatario per le notifiche."
+      "telegram_targets_required": "Seleziona almeno un destinatario per le notifiche.",
+      "telegram_required": "Abilita prima le notifiche Telegram.",
+      "telegram_callback_entities_required": "Seleziona almeno una event entity callback Telegram.",
+      "telegram_action_required": "Consenti almeno una azione interattiva."
     }
   }
 }

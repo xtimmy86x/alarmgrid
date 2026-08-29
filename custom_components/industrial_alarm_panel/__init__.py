@@ -19,12 +19,15 @@ from .const import (
     CONF_MEDIA_PLAYERS,
     CONF_REPEAT_INTERVAL_SECONDS,
     CONF_SOUND_MODE,
+    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES,
+    CONF_TELEGRAM_INTERACTIVE_ENABLED,
     DEFAULT_OPTIONS,
     DOMAIN,
     PLATFORMS,
     RULES_STORAGE_KEY,
     STATE_STORAGE_KEY,
 )
+from .telegram_interactive import TelegramInteractiveManager
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -45,6 +48,8 @@ class IndustrialAlarmPanelRuntime:
     remove_state_listener: Any | None = None
     remove_delay_timer: Any | None = None
     remove_frontend_update_listener: Any | None = None
+    telegram_interactive_manager: TelegramInteractiveManager | None = None
+    remove_telegram_callback_listener: Any | None = None
     remove_panel: Any | None = None
 
 
@@ -114,9 +119,7 @@ async def async_setup_entry(
             blocking=True,
         )
 
-    notification_manager = AlarmNotificationManager(
-        [TelegramNotifier(options, _notify_call)]
-    )
+    notification_manager = AlarmNotificationManager()
     engine = await AlarmEngine.from_store(
         rule_store,
         history_store,
@@ -139,6 +142,12 @@ async def async_setup_entry(
             CONF_AUTO_SHELVE_FLAPPING, DEFAULT_OPTIONS[CONF_AUTO_SHELVE_FLAPPING]
         )
     )
+    interactive_manager = None
+    if options.get(CONF_TELEGRAM_INTERACTIVE_ENABLED, False):
+        interactive_manager = TelegramInteractiveManager(hass, engine, options)
+    notification_manager.providers.append(
+        TelegramNotifier(options, _notify_call, interactive_manager)
+    )
 
     runtime = IndustrialAlarmPanelRuntime(
         entry_id=entry.entry_id,
@@ -147,12 +156,32 @@ async def async_setup_entry(
         sound_manager=sound_manager,
         notification_manager=notification_manager,
         engine=engine,
+        telegram_interactive_manager=interactive_manager,
     )
     entry.runtime_data = runtime
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = runtime
     runtime.remove_frontend_update_listener = attach_alarm_update_event_listener(
         hass, entry.entry_id, engine
     )
+
+    callback_entities = list(options.get(CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES) or [])
+    if interactive_manager is not None and callback_entities:
+
+        @callback
+        def _telegram_event_changed(event: Event) -> None:
+            new_state = event.data.get("new_state")
+            if (
+                new_state is None
+                or new_state.attributes.get("event_type") != "telegram_callback"
+            ):
+                return
+            hass.async_create_task(
+                interactive_manager.handle_callback(dict(new_state.attributes))
+            )
+
+        runtime.remove_telegram_callback_listener = async_track_state_change_event(
+            hass, callback_entities, _telegram_event_changed
+        )
 
     def _reschedule_delay_timer() -> None:
         if runtime.remove_delay_timer:
@@ -226,6 +255,8 @@ async def async_unload_entry(
             runtime.remove_delay_timer()
         if runtime.remove_frontend_update_listener:
             runtime.remove_frontend_update_listener()
+        if runtime.remove_telegram_callback_listener:
+            runtime.remove_telegram_callback_listener()
         if runtime.remove_panel:
             try:
                 runtime.remove_panel()

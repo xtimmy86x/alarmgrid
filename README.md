@@ -23,6 +23,14 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v1.0.23
+
+- Added opt-in interactive Telegram actions for ACK, temporary shelving, disable,
+  unshelve, and enable using Home Assistant's native `telegram_bot` actions.
+- Added Telegram callback event entity configuration, inline keyboards, bounded
+  runtime sessions, and strict callback validation.
+- Kept the outbound-only v1 notification path unchanged when interactivity is off.
+
 ## What's New in v1.0.22
 
 - Added per-rule Telegram notification policies: inherit global settings, always notify, or never notify.
@@ -135,7 +143,7 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.16
+url: /industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v=1.0.23
 type: module
 ```
 
@@ -587,6 +595,40 @@ rule:
 ```
 
 Industrial Alarm Panel does not store or manage Telegram bot tokens. Telegram
-configuration remains owned by Home Assistant. This V1 does not provide callbacks,
-inline buttons, remote acknowledgement/shelving/disable actions, message editing,
-or Telegram polling/webhooks.
+configuration remains owned by Home Assistant.
+
+### Interactive Telegram actions
+
+Interactive actions extend the existing V1 setup and are disabled by default. The
+Telegram bot must use **Polling** or **Webhooks**; **Broadcast** bots are send-only and
+continue to receive ordinary outbound notifications but cannot deliver callbacks.
+In the integration options, enable interactive actions, select the Telegram Bot
+`event` entity that reports callbacks, and choose whether to allow ACK, shelving,
+and disable. The event selector shows all `event.*` entities, so select the entity
+created by the Telegram Bot integration rather than relying on its name.
+
+The equivalent internal option names are illustrated below (normal configuration is
+through the UI):
+
+```yaml
+telegram_enabled: true
+telegram_interactive_enabled: true
+telegram_targets:
+  - notify.telegram_operations
+telegram_callback_event_entities:
+  - event.telegram_bot_update
+telegram_interactive_ack: true
+telegram_interactive_shelve: true
+telegram_interactive_disable: true
+```
+
+Activation messages use Home Assistant's native `telegram_bot.send_message` action.
+Callbacks arrive through the selected event entities and execute the existing alarm
+engine actions; no raw Telegram HTTP API, credentials, or user identity is handled.
+If an interactive send definitely fails, the integration attempts one plain V1
+notification without buttons. A successful send with incomplete response data is
+not retried, preventing duplicate messages.
+
+Interactive Telegram action sessions are currently stored in memory, bounded to
+1,000 entries with a seven-day TTL. Buttons on messages created before a Home
+Assistant restart may expire gracefully. This limitation is intentional in v1.0.23.

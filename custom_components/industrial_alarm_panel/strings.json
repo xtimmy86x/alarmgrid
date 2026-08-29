@@ -57,13 +57,21 @@
           "telegram_notify_shelved": "Notify when shelved",
           "telegram_notify_unshelved": "Notify when unshelved",
           "telegram_notify_disabled": "Notify when disabled",
-          "telegram_notify_enabled": "Notify when enabled"
+          "telegram_notify_enabled": "Notify when enabled",
+          "telegram_interactive_enabled": "Enable interactive Telegram actions",
+          "telegram_callback_event_entities": "Telegram callback event entities",
+          "telegram_interactive_ack": "Allow ACK",
+          "telegram_interactive_shelve": "Allow shelving",
+          "telegram_interactive_disable": "Allow disable"
         },
         "description": "Configure alarm behavior and the optional Telegram notification channel."
       }
     },
     "error": {
-      "telegram_targets_required": "Select at least one notification target."
+      "telegram_targets_required": "Select at least one notification target.",
+      "telegram_required": "Enable Telegram notifications first.",
+      "telegram_callback_entities_required": "Select at least one Telegram callback event entity.",
+      "telegram_action_required": "Allow at least one interactive action."
     }
   },
   "issues": {

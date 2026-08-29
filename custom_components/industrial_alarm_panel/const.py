@@ -21,7 +21,7 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
 
 DOMAIN = "industrial_alarm_panel"
 NAME = "Industrial Alarm Panel"
-VERSION = "1.0.22"
+VERSION = "1.0.23"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [
@@ -95,6 +95,11 @@ CONF_TELEGRAM_NOTIFY_SHELVED = "telegram_notify_shelved"
 CONF_TELEGRAM_NOTIFY_UNSHELVED = "telegram_notify_unshelved"
 CONF_TELEGRAM_NOTIFY_DISABLED = "telegram_notify_disabled"
 CONF_TELEGRAM_NOTIFY_ENABLED = "telegram_notify_enabled"
+CONF_TELEGRAM_INTERACTIVE_ENABLED = "telegram_interactive_enabled"
+CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES = "telegram_callback_event_entities"
+CONF_TELEGRAM_INTERACTIVE_ACK = "telegram_interactive_ack"
+CONF_TELEGRAM_INTERACTIVE_SHELVE = "telegram_interactive_shelve"
+CONF_TELEGRAM_INTERACTIVE_DISABLE = "telegram_interactive_disable"
 
 SOUND_MODE_NONE = "none"
 SOUND_MODE_BROWSER_ONLY = "browser_only"
@@ -142,6 +147,11 @@ DEFAULT_OPTIONS = {
     CONF_TELEGRAM_NOTIFY_UNSHELVED: False,
     CONF_TELEGRAM_NOTIFY_DISABLED: False,
     CONF_TELEGRAM_NOTIFY_ENABLED: False,
+    CONF_TELEGRAM_INTERACTIVE_ENABLED: False,
+    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES: [],
+    CONF_TELEGRAM_INTERACTIVE_ACK: True,
+    CONF_TELEGRAM_INTERACTIVE_SHELVE: True,
+    CONF_TELEGRAM_INTERACTIVE_DISABLE: True,
 }
 
 DEFAULT_DATA = {

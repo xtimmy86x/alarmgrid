@@ -298,14 +298,17 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         pyproject_source = Path("pyproject.toml").read_text()
         readme_source = Path("README.md").read_text()
 
-        expected_version = "1.0.22"
         const_version_match = re.search(r'^VERSION = "([^"]+)"$', const_source, re.MULTILINE)
 
         self.assertIsNotNone(const_version_match)
         self.assertNotIn("Current release:", readme_source)
-        self.assertIn(f"## What's New in v{expected_version}", readme_source)
-
         const_version = const_version_match.group(1)
+        expected_version = const_version
+        self.assertIn(f"## What's New in v{expected_version}", readme_source)
+        self.assertIn(
+            f"/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js?v={expected_version}",
+            readme_source,
+        )
         manifest_version = json.loads(manifest_source)["version"]
         pyproject_version = tomllib.loads(pyproject_source)["project"]["version"]
 
