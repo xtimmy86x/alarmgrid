@@ -39,7 +39,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
             "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
-        self.assertIn('customElements.define("alarmgrid"', source)
+        self.assertIn('customElements.define("alarmgrid-panel"', source)
 
     def test_frontend_edits_and_displays_telegram_rule_policy(self) -> None:
         source = Path(
@@ -60,7 +60,36 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
             "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
-        self.assertIn('customElements.get("alarmgrid")', source)
+        self.assertIn('customElements.get("alarmgrid-panel")', source)
+
+    def test_panel_route_and_custom_element_names_remain_distinct(self) -> None:
+        panel_source = Path("custom_components/alarmgrid/alarm_panel.py").read_text()
+        constants_source = Path("custom_components/alarmgrid/const.py").read_text()
+        bundle_source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+        readme = Path("README.md").read_text()
+
+        self.assertIn('webcomponent_name="alarmgrid-panel"', panel_source)
+        self.assertNotIn('webcomponent_name="alarmgrid"', panel_source)
+        self.assertIn('PANEL_URL = "alarmgrid"', constants_source)
+        self.assertIn('customElements.define("alarmgrid-panel"', bundle_source)
+        self.assertIn('customElements.define("alarmgrid-card"', bundle_source)
+        self.assertNotIn('customElements.define("alarmgrid",', bundle_source)
+        self.assertIn('type: "alarmgrid-card"', bundle_source)
+        self.assertIn('name: "AlarmGrid"', bundle_source)
+        self.assertIn("type: custom:alarmgrid-card", readme)
+
+    def test_all_bundled_custom_element_names_contain_a_hyphen(self) -> None:
+        source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+        custom_element_names = re.findall(
+            r'customElements\.define\(["\']([^"\']+)["\']', source
+        )
+
+        self.assertTrue(custom_element_names)
+        self.assertTrue(all("-" in name for name in custom_element_names))
 
     def test_frontend_registers_lovelace_card(self) -> None:
         source = Path(
