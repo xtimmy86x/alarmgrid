@@ -50,7 +50,7 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> Any |
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL,
-        webcomponent_name="alarmgrid",
+        webcomponent_name="alarmgrid-panel",
         sidebar_title=options.get(CONF_PANEL_TITLE, PANEL_TITLE),
         sidebar_icon=PANEL_ICON,
         module_url=FRONTEND_MODULE,

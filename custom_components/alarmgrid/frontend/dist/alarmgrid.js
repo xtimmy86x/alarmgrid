@@ -1789,8 +1789,8 @@ class AlarmGridCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("alarmgrid")) {
-  customElements.define("alarmgrid", AlarmGrid);
+if (!customElements.get("alarmgrid-panel")) {
+  customElements.define("alarmgrid-panel", AlarmGrid);
 }
 
 if (!customElements.get("alarmgrid-card")) {
