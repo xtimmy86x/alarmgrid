@@ -6,7 +6,13 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
-from .alarm_models import PRIORITY_PROFILES, AlarmEvent, AlarmEventType, AlarmPriority
+from .alarm_models import (
+    PRIORITY_PROFILES,
+    AlarmEvent,
+    AlarmEventType,
+    AlarmPriority,
+    TelegramNotificationPolicy,
+)
 from .const import (
     CONF_TELEGRAM_ENABLED,
     CONF_TELEGRAM_MIN_PRIORITY,
@@ -100,7 +106,22 @@ class TelegramNotifier:
             or not self._options.get(event_option, False)
         ):
             return
-        if not self._meets_minimum_priority(event.priority):
+        try:
+            policy = TelegramNotificationPolicy(
+                event.metadata.get(
+                    "telegram_notification_policy",
+                    TelegramNotificationPolicy.INHERIT.value,
+                )
+            )
+        except ValueError:
+            _LOGGER.warning("Invalid Telegram notification policy in alarm event")
+            policy = TelegramNotificationPolicy.INHERIT
+        if policy == TelegramNotificationPolicy.NEVER:
+            return
+        if (
+            policy == TelegramNotificationPolicy.INHERIT
+            and not self._meets_minimum_priority(event.priority)
+        ):
             return
 
         message = format_telegram_message(event)

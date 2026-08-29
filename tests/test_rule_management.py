@@ -60,6 +60,7 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
                 "priority": "high",
                 "enabled": False,
                 "audible": False,
+                "telegram_notification_policy": "always",
             }
         )
 
@@ -67,6 +68,33 @@ class RuleManagementTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(imported), 1)
         self.assertEqual(imported[0].to_dict(), rule.to_dict())
+
+    def test_legacy_and_empty_policy_csv_default_to_inherit(self) -> None:
+        legacy = (
+            "id,entity_id,name,condition,threshold\n"
+            "legacy,sensor.one,Legacy,above,1\n"
+        )
+        empty = (
+            "id,entity_id,name,condition,threshold,telegram_notification_policy\n"
+            "empty,sensor.two,Empty,above,2,\n"
+        )
+
+        self.assertEqual(
+            import_rules_csv(legacy)[0].telegram_notification_policy.value, "inherit"
+        )
+        self.assertEqual(
+            import_rules_csv(empty)[0].telegram_notification_policy.value, "inherit"
+        )
+
+    def test_rules_csv_rejects_invalid_policy(self) -> None:
+        content = (
+            "id,entity_id,name,condition,threshold,telegram_notification_policy\n"
+            "bad,sensor.one,Bad,above,1,sometimes\n"
+        )
+        with self.assertRaisesRegex(
+            AlarmValidationError, "Unsupported Telegram notification policy"
+        ):
+            import_rules_csv(content)
 
     def test_rules_csv_rejects_missing_columns(self) -> None:
         with self.assertRaisesRegex(AlarmValidationError, "missing required columns"):

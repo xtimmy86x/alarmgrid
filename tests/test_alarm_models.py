@@ -6,6 +6,7 @@ from custom_components.industrial_alarm_panel.alarm_models import (
     AlarmRule,
     AlarmRuntimeState,
     AlarmValidationError,
+    TelegramNotificationPolicy,
 )
 
 
@@ -28,6 +29,57 @@ class AlarmModelTests(unittest.TestCase):
         self.assertTrue(rule.requires_ack)
         self.assertTrue(rule.audible)
         self.assertEqual(rule.slug, "inverter_high_temp")
+        self.assertEqual(
+            rule.telegram_notification_policy, TelegramNotificationPolicy.INHERIT
+        )
+
+    def test_alarm_rule_accepts_each_telegram_notification_policy(self) -> None:
+        for value in ("inherit", "always", "never"):
+            with self.subTest(policy=value):
+                rule = AlarmRule.from_dict(
+                    {
+                        "id": f"policy_{value}",
+                        "entity_id": "sensor.value",
+                        "name": "Policy rule",
+                        "condition": "above",
+                        "threshold": 10,
+                        "telegram_notification_policy": value,
+                    }
+                )
+                self.assertEqual(rule.telegram_notification_policy.value, value)
+
+    def test_alarm_rule_rejects_invalid_telegram_notification_policy(self) -> None:
+        with self.assertRaisesRegex(
+            AlarmValidationError, "Unsupported Telegram notification policy: sometimes"
+        ):
+            AlarmRule.from_dict(
+                {
+                    "id": "bad_policy",
+                    "entity_id": "sensor.value",
+                    "name": "Bad policy",
+                    "condition": "above",
+                    "threshold": 10,
+                    "telegram_notification_policy": "sometimes",
+                }
+            )
+
+    def test_alarm_rule_telegram_policy_serialization_round_trip(self) -> None:
+        rule = AlarmRule.from_dict(
+            {
+                "id": "always_notify",
+                "entity_id": "sensor.value",
+                "name": "Always notify",
+                "condition": "above",
+                "threshold": 10,
+                "telegram_notification_policy": "always",
+            }
+        )
+
+        serialized = rule.to_dict()
+        loaded = AlarmRule.from_dict(serialized)
+
+        self.assertEqual(serialized["telegram_notification_policy"], "always")
+        self.assertEqual(loaded.to_dict(), serialized)
 
     def test_alarm_rule_rejects_invalid_priority(self) -> None:
         with self.assertRaisesRegex(AlarmValidationError, "priority"):

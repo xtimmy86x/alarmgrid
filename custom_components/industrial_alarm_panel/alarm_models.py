@@ -24,6 +24,14 @@ class AlarmPriority(StrEnum):
     STATUS = "status"
 
 
+class TelegramNotificationPolicy(StrEnum):
+    """Per-rule override for Telegram minimum-priority filtering."""
+
+    INHERIT = "inherit"
+    ALWAYS = "always"
+    NEVER = "never"
+
+
 class AlarmLifecycleState(StrEnum):
     """DCS alarm lifecycle states."""
 
@@ -157,6 +165,21 @@ def _coerce_priority(value: str | AlarmPriority | None) -> AlarmPriority:
         raise AlarmValidationError(f"Unsupported priority: {value}") from exc
 
 
+def _coerce_telegram_notification_policy(
+    value: str | TelegramNotificationPolicy | None,
+) -> TelegramNotificationPolicy:
+    if value is None or value == "":
+        return TelegramNotificationPolicy.INHERIT
+    if isinstance(value, TelegramNotificationPolicy):
+        return value
+    try:
+        return TelegramNotificationPolicy(str(value))
+    except ValueError as exc:
+        raise AlarmValidationError(
+            f"Unsupported Telegram notification policy: {value}"
+        ) from exc
+
+
 def _coerce_condition(value: str | AlarmCondition | None) -> AlarmCondition:
     if value is None:
         raise AlarmValidationError("condition is required")
@@ -205,6 +228,9 @@ class AlarmRule:
     threshold: float | str | None = None
     deadband: float = 0.0
     priority: AlarmPriority = AlarmPriority.MEDIUM
+    telegram_notification_policy: TelegramNotificationPolicy = (
+        TelegramNotificationPolicy.INHERIT
+    )
     requires_ack: bool = True
     audible: bool = True
     sound_profile: str | None = None
@@ -242,6 +268,9 @@ class AlarmRule:
         name = str(data.get("name") or "").strip()
         condition = _coerce_condition(data.get("condition"))
         priority = _coerce_priority(data.get("priority"))
+        telegram_notification_policy = _coerce_telegram_notification_policy(
+            data.get("telegram_notification_policy")
+        )
         threshold = data.get("threshold")
 
         if not rule_id:
@@ -270,6 +299,7 @@ class AlarmRule:
             threshold=numeric_threshold if numeric_threshold is not None else threshold,
             deadband=deadband,
             priority=priority,
+            telegram_notification_policy=telegram_notification_policy,
             requires_ack=bool(
                 data.get("requires_ack", PRIORITY_PROFILES[priority]["requires_ack"])
             ),
@@ -309,6 +339,7 @@ class AlarmRule:
             "threshold": self.threshold,
             "deadband": self.deadband,
             "priority": self.priority.value,
+            "telegram_notification_policy": self.telegram_notification_policy.value,
             "requires_ack": self.requires_ack,
             "audible": self.audible,
             "sound_profile": self.sound_profile,
