@@ -62,6 +62,10 @@ class AlarmEngine:
         self._persist_states = persist_states
         self._listeners: list[Listener] = []
         self._previous_entity_states: dict[str, str] = {}
+        self._current_entity_states: dict[str, str] = {}
+        self._dependency_index: dict[str, set[str]] = {}
+        self._evaluation_details: dict[str, dict[str, Any]] = {}
+        self._rebuild_dependency_index()
         self._recent_activations: deque[datetime] = deque()
         self.alarm_flood_threshold = alarm_flood_threshold
         self.alarm_flood_window_seconds = alarm_flood_window_seconds
@@ -133,11 +137,26 @@ class AlarmEngine:
     async def process_state(self, entity_id: str, new_state: Any) -> None:
         """Evaluate all rules tied to an entity state change."""
 
-        previous = self._previous_entity_states.get(entity_id)
-        self._previous_entity_states[entity_id] = "" if new_state is None else str(new_state)
-        for rule in list(self.rules.values()):
-            if rule.entity_id == entity_id:
-                await self.evaluate_rule(rule.id, new_state, previous)
+        state = "" if new_state is None else str(new_state)
+        previous = self._current_entity_states.get(entity_id)
+        if previous is not None:
+            self._previous_entity_states[entity_id] = previous
+        self._current_entity_states[entity_id] = state
+        for rule_id in list(self._dependency_index.get(entity_id, ())):
+            await self.evaluate_rule(rule_id, state, previous)
+
+    def seed_entity_states(self, states: dict[str, Any]) -> None:
+        """Seed the multi-entity cache from the currently tracked HA states."""
+        self._current_entity_states.update(
+            {entity_id: str(getattr(value, "state", value)) for entity_id, value in states.items() if value is not None}
+        )
+
+    def _rebuild_dependency_index(self) -> None:
+        """Rebuild entity-to-rule dependencies after rule CRUD changes."""
+        self._dependency_index = {}
+        for rule in self.rules.values():
+            for entity_id in rule.source_entity_ids:
+                self._dependency_index.setdefault(entity_id, set()).add(rule.id)
 
     async def process_due_transitions(self) -> None:
         """Evaluate delayed alarm transitions that are due at the current time."""
@@ -199,14 +218,24 @@ class AlarmEngine:
                     False, str(new_state), new_state, reason="shelved"
                 )
 
-        result = evaluate_rule(
-            rule,
-            new_state,
-            previous_state,
-            currently_active=runtime.is_active,
-        )
+        if rule.condition_expression is not None:
+            from .condition_expression import evaluate_condition_expression
+
+            expression_result = evaluate_condition_expression(
+                rule.condition_expression, self._current_entity_states,
+                self._previous_entity_states, currently_active=runtime.is_active,
+            )
+            details = expression_result.details
+            summary = f"{details['matched_conditions']}/{details['total_conditions']} conditions matched"
+            result = AlarmEvaluationResult(expression_result.matched, summary, summary, message=f"{rule.name}: {summary}", evaluation_details=details)
+        else:
+            result = evaluate_rule(
+                rule, new_state, previous_state, currently_active=runtime.is_active,
+            )
         runtime.last_state = result.source_state
         runtime.last_value = result.source_value
+        if result.evaluation_details is not None:
+            self._evaluation_details[rule_id] = result.evaluation_details
 
         if result.matched:
             await self._handle_matched_evaluation(rule, runtime, result, now)
@@ -526,6 +555,7 @@ class AlarmEngine:
         if rule.id in self.rules:
             raise AlarmValidationError(f"rule already exists: {rule.id}")
         self.rules[rule.id] = rule
+        self._rebuild_dependency_index()
         self.states[rule.id] = AlarmRuntimeState(rule_id=rule.id)
         await self._record_event(rule, AlarmEventType.RULE_CREATED)
         await self._persist()
@@ -542,6 +572,7 @@ class AlarmEngine:
         data["id"] = rule_id
         rule = AlarmRule.from_dict(data)
         self.rules[rule_id] = rule
+        self._rebuild_dependency_index()
         await self._record_event(rule, AlarmEventType.RULE_UPDATED)
         self._notify()
         return rule
@@ -551,6 +582,8 @@ class AlarmEngine:
 
         rule = self.rules.pop(rule_id)
         self.states.pop(rule_id, None)
+        self._evaluation_details.pop(rule_id, None)
+        self._rebuild_dependency_index()
         await self._record_event(rule, AlarmEventType.RULE_DELETED)
         await self._persist()
 
@@ -681,6 +714,7 @@ class AlarmEngine:
     ) -> dict[str, Any]:
         """Serialize alarm state for frontend and entity attributes."""
 
+        evaluation_details = self._evaluation_details.get(rule.id, {})
         return {
             "id": rule.id,
             "entity_id": rule.entity_id,
@@ -691,7 +725,10 @@ class AlarmEngine:
             "description": rule.description,
             "priority": rule.priority.value,
             "severity": rule.severity,
-            "condition": rule.condition.value,
+            "condition": rule.condition.value if rule.condition else None,
+            "condition_expression": rule.condition_expression,
+            "condition_mode": "advanced" if rule.condition_expression else "simple",
+            "source_entities": sorted(rule.source_entity_ids),
             "threshold": rule.threshold,
             "deadband": rule.deadband,
             "requires_ack": rule.requires_ack,
@@ -717,6 +754,10 @@ class AlarmEngine:
             else None,
             "last_value": runtime.last_value,
             "last_source_state": runtime.last_state,
+            "condition_summary": runtime.last_state if rule.condition_expression else None,
+            "matched_conditions": evaluation_details.get("matched_conditions"),
+            "total_conditions": evaluation_details.get("total_conditions"),
+            "condition_details": evaluation_details.get("conditions"),
         }
 
     async def _record_activation_protections(

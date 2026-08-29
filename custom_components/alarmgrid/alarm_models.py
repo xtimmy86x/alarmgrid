@@ -219,7 +219,7 @@ class AlarmRule:
     id: str
     entity_id: str
     name: str
-    condition: AlarmCondition
+    condition: AlarmCondition | None
     enabled: bool = True
     tag: str | None = None
     area: str | None = None
@@ -246,6 +246,7 @@ class AlarmRule:
     template: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    condition_expression: dict[str, Any] | None = None
 
     @property
     def slug(self) -> str:
@@ -259,6 +260,15 @@ class AlarmRule:
 
         return int(PRIORITY_PROFILES[self.priority]["severity"])
 
+    @property
+    def source_entity_ids(self) -> set[str]:
+        """Return all Home Assistant entities which can trigger this rule."""
+        if self.condition_expression is not None:
+            from .condition_expression import expression_entity_ids
+
+            return expression_entity_ids(self.condition_expression)
+        return {self.entity_id} if self.entity_id else set()
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AlarmRule:
         """Create and validate a rule from stored data or service input."""
@@ -266,7 +276,17 @@ class AlarmRule:
         rule_id = str(data.get("id") or "").strip()
         entity_id = str(data.get("entity_id") or "").strip()
         name = str(data.get("name") or "").strip()
-        condition = _coerce_condition(data.get("condition"))
+        raw_expression = data.get("condition_expression")
+        condition_expression = None
+        if raw_expression is not None:
+            from .condition_expression import validate_condition_expression
+
+            condition_expression = validate_condition_expression(raw_expression)
+        condition = (
+            _coerce_condition(data.get("condition"))
+            if condition_expression is None or data.get("condition") not in (None, "")
+            else None
+        )
         priority = _coerce_priority(data.get("priority"))
         telegram_notification_policy = _coerce_telegram_notification_policy(
             data.get("telegram_notification_policy")
@@ -275,11 +295,11 @@ class AlarmRule:
 
         if not rule_id:
             raise AlarmValidationError("id is required")
-        if condition != AlarmCondition.MANUAL and not entity_id:
+        if condition_expression is None and condition != AlarmCondition.MANUAL and not entity_id:
             raise AlarmValidationError("entity_id is required")
         if not name:
             raise AlarmValidationError("name is required")
-        if condition in NUMERIC_CONDITIONS and threshold is None:
+        if condition_expression is None and condition in NUMERIC_CONDITIONS and threshold is None:
             raise AlarmValidationError("threshold is required for numeric conditions")
 
         numeric_threshold = _coerce_float(threshold, "threshold")
@@ -321,6 +341,7 @@ class AlarmRule:
             template=data.get("template"),
             created_at=_parse_datetime(data.get("created_at")),
             updated_at=_parse_datetime(data.get("updated_at")),
+            condition_expression=condition_expression,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -335,7 +356,8 @@ class AlarmRule:
             "area": self.area,
             "system": self.system,
             "description": self.description,
-            "condition": self.condition.value,
+            "condition": self.condition.value if self.condition else None,
+            "condition_expression": self.condition_expression,
             "threshold": self.threshold,
             "deadband": self.deadband,
             "priority": self.priority.value,
@@ -459,6 +481,7 @@ class AlarmEvaluationResult:
     source_value: Any = None
     message: str | None = None
     reason: str | None = None
+    evaluation_details: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)

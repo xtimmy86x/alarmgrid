@@ -71,7 +71,15 @@ AlarmGridConfigEntry = Any
 def rule_source_entity_ids(engine: AlarmEngine) -> list[str]:
     """Return the source entities needed by the current rule collection."""
 
-    return sorted({rule.entity_id for rule in engine.rules.values() if rule.entity_id})
+    return sorted(
+        {
+            entity_id
+            for rule in engine.rules.values()
+            for entity_id in getattr(
+                rule, "source_entity_ids", {rule.entity_id} if rule.entity_id else set()
+            )
+        }
+    )
 
 
 async def async_setup_entry(
@@ -245,6 +253,9 @@ async def async_setup_entry(
         tracked_entities = rule_source_entity_ids(engine)
         if not tracked_entities:
             return
+        engine.seed_entity_states(
+            {entity_id: hass.states.get(entity_id) for entity_id in tracked_entities}
+        )
         runtime.remove_state_listener = async_track_state_change_event(
             hass, tracked_entities, _state_changed
         )
