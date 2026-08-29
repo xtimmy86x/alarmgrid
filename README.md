@@ -168,6 +168,8 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 
 ## Lovelace Card
 
+AlarmGrid supports the native Home Assistant visual card editor. Go to **Dashboard → Edit dashboard → Add card** (or edit an existing card), choose **AlarmGrid**, and configure the card graphically with a live preview. YAML configuration remains fully supported, including existing dashboards.
+
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
