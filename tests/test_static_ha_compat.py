@@ -81,6 +81,23 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertNotIn("this._expressionNode(field.dataset.groupOperator).operator", source)
         self.assertNotIn("parent.conditions[index].conditions", source)
 
+    def test_condition_builder_flushes_raw_input_before_mutations_and_save(self) -> None:
+        source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+
+        self.assertIn("_syncConditionBuilderFromDom()", source)
+        self.assertIn('field.addEventListener("input", updateConditionField)', source)
+        self.assertNotIn("node[field.dataset.conditionField] = [", source)
+        for method in (
+            "_addExpressionNode(path, addGroup)",
+            "_deleteExpressionNode(path, deleteGroup)",
+            "async _createRule()",
+            "async _updateRule()",
+        ):
+            body = source.split(method, 1)[1].split("\n  }", 1)[0]
+            self.assertIn("this._syncConditionBuilderFromDom();", body)
+
     def test_panel_route_and_custom_element_names_remain_distinct(self) -> None:
         panel_source = Path("custom_components/alarmgrid/alarm_panel.py").read_text()
         constants_source = Path("custom_components/alarmgrid/const.py").read_text()
@@ -320,10 +337,10 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         )
 
         self.assertEqual("2.1.0", VERSION)
-        self.assertEqual("20260829.6", FRONTEND_BUILD)
+        self.assertEqual("20260829.7", FRONTEND_BUILD)
         self.assertEqual(
             "/alarmgrid/frontend/dist/alarmgrid.js"
-            "?v=2.1.0&build=20260829.6",
+            "?v=2.1.0&build=20260829.7",
             FRONTEND_MODULE,
         )
 
@@ -650,11 +667,11 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
         self.assertEqual("2.1.0", VERSION)
-        self.assertEqual("20260829.6", FRONTEND_BUILD)
+        self.assertEqual("20260829.7", FRONTEND_BUILD)
         self.assertEqual("2.1.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
         self.assertIn(
-            "alarmgrid.js?v=2.1.0&build=20260829.6", FRONTEND_MODULE
+            "alarmgrid.js?v=2.1.0&build=20260829.7", FRONTEND_MODULE
         )
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)
