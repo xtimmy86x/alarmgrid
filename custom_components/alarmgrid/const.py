@@ -34,6 +34,11 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
 ]
 
+RULE_ENTITY_PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+]
+
 RULES_STORAGE_KEY = f"{DOMAIN}.rules"
 STATE_STORAGE_KEY = f"{DOMAIN}.state"
 RULES_STORAGE_VERSION = 1

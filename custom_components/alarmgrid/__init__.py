@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from asyncio import Lock
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -24,6 +25,7 @@ from .const import (
     DEFAULT_OPTIONS,
     DOMAIN,
     PLATFORMS,
+    RULE_ENTITY_PLATFORMS,
     RULES_STORAGE_KEY,
     STATE_STORAGE_KEY,
 )
@@ -51,9 +53,25 @@ class AlarmGridRuntime:
     telegram_interactive_manager: TelegramInteractiveManager | None = None
     remove_telegram_callback_listener: Any | None = None
     remove_panel: Any | None = None
+    refresh_rule_runtime: Any | None = None
+    rule_refresh_lock: Lock = field(default_factory=Lock)
+
+    async def async_refresh_rules(self) -> None:
+        """Refresh only runtime resources that depend on the rule collection."""
+
+        if self.refresh_rule_runtime is None:
+            raise RuntimeError("AlarmGrid rule refresh is not initialized")
+        async with self.rule_refresh_lock:
+            await self.refresh_rule_runtime()
 
 
 AlarmGridConfigEntry = Any
+
+
+def rule_source_entity_ids(engine: AlarmEngine) -> list[str]:
+    """Return the source entities needed by the current rule collection."""
+
+    return sorted({rule.entity_id for rule in engine.rules.values() if rule.entity_id})
 
 
 async def async_setup_entry(
@@ -210,24 +228,41 @@ async def async_setup_entry(
         await engine.process_state(entity_id, state)
         _reschedule_delay_timer()
 
-    tracked_entities = sorted(
-        {rule.entity_id for rule in engine.rules.values() if rule.entity_id}
-    )
-    if tracked_entities:
+    @callback
+    def _state_changed(event: Event) -> None:
+        new_state = event.data.get("new_state")
+        if new_state is None:
+            return
+        hass.async_create_task(
+            _process_state_change(new_state.entity_id, new_state.state)
+        )
 
-        @callback
-        def _state_changed(event: Event) -> None:
-            new_state = event.data.get("new_state")
-            if new_state is None:
-                return
-            hass.async_create_task(
-                _process_state_change(new_state.entity_id, new_state.state)
-            )
+    def _refresh_state_listener() -> None:
+        if runtime.remove_state_listener:
+            runtime.remove_state_listener()
+            runtime.remove_state_listener = None
 
+        tracked_entities = rule_source_entity_ids(engine)
+        if not tracked_entities:
+            return
         runtime.remove_state_listener = async_track_state_change_event(
             hass, tracked_entities, _state_changed
         )
 
+    async def _refresh_rule_runtime() -> None:
+        _refresh_state_listener()
+        _reschedule_delay_timer()
+        unloaded = await hass.config_entries.async_unload_platforms(
+            entry, RULE_ENTITY_PLATFORMS
+        )
+        if not unloaded:
+            raise RuntimeError("Unable to unload AlarmGrid rule entity platforms")
+        await hass.config_entries.async_forward_entry_setups(
+            entry, RULE_ENTITY_PLATFORMS
+        )
+
+    runtime.refresh_rule_runtime = _refresh_rule_runtime
+    _refresh_state_listener()
     _reschedule_delay_timer()
 
     await async_setup_services(hass)

@@ -223,6 +223,28 @@ def matching_per_rule_entity_entries(
     ]
 
 
+def remove_per_rule_entity_registry_entries(
+    hass: Any, entry_id: str, rules: Iterable[AlarmRule]
+) -> list[str]:
+    """Remove registry entries belonging to deleted per-rule entities."""
+
+    from homeassistant.helpers import entity_registry as er
+
+    entity_registry = er.async_get(hass)
+    entries_for_config_entry = getattr(er, "async_entries_for_config_entry", None)
+    if entries_for_config_entry is not None:
+        entries = entries_for_config_entry(entity_registry, entry_id)
+    else:
+        entries = entity_registry.entities.values()
+
+    matches = matching_per_rule_entity_entries(entry_id, rules, entries)
+    removed_entity_ids = [entry.entity_id for entry in matches]
+    for entity_id in removed_entity_ids:
+        entity_registry.async_remove(entity_id)
+
+    return removed_entity_ids
+
+
 def _deduplicate(rule_ids: Sequence[str]) -> list[str]:
     seen: set[str] = set()
     deduplicated: list[str] = []
