@@ -224,10 +224,20 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("trust_external=False", source)
         self.assertNotIn('"trust_external_script"', source)
 
-    def test_frontend_module_url_is_versioned_for_browser_cache_busting(self) -> None:
-        source = Path("custom_components/alarmgrid/const.py").read_text()
+    def test_frontend_module_url_has_release_and_build_cache_busting(self) -> None:
+        from custom_components.alarmgrid.const import (
+            FRONTEND_BUILD,
+            FRONTEND_MODULE,
+            VERSION,
+        )
 
-        self.assertIn("?v={VERSION}", source)
+        self.assertEqual("2.0.0", VERSION)
+        self.assertEqual("20260829.1", FRONTEND_BUILD)
+        self.assertEqual(
+            "/alarmgrid/frontend/dist/alarmgrid.js"
+            "?v=2.0.0&build=20260829.1",
+            FRONTEND_MODULE,
+        )
 
     def test_integration_schedules_due_alarm_timing_transitions(self) -> None:
         source = Path("custom_components/alarmgrid/__init__.py").read_text()
@@ -549,7 +559,12 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
                 self.assertNotIn(identifier, current_readme.lower())
 
     def test_alarmgrid_identity_is_consistent(self) -> None:
-        from custom_components.alarmgrid.const import DOMAIN, FRONTEND_MODULE, VERSION
+        from custom_components.alarmgrid.const import (
+            DOMAIN,
+            FRONTEND_BUILD,
+            FRONTEND_MODULE,
+            VERSION,
+        )
 
         manifest = json.loads(Path("custom_components/alarmgrid/manifest.json").read_text())
         readme = Path("README.md").read_text()
@@ -561,9 +576,12 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
         self.assertEqual("2.0.0", VERSION)
+        self.assertEqual("20260829.1", FRONTEND_BUILD)
         self.assertEqual("2.0.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
-        self.assertIn("alarmgrid.js?v=2.0.0", FRONTEND_MODULE)
+        self.assertIn(
+            "alarmgrid.js?v=2.0.0&build=20260829.1", FRONTEND_MODULE
+        )
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)
         self.assertIn('f"alarmgrid_{key}"', entity_base)
