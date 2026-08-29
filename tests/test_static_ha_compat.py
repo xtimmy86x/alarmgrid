@@ -148,6 +148,28 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("delete config.hide_tabs", editor)
         self.assertIn("delete config.show_shelve", editor)
 
+    def test_visual_editor_preserves_controls_across_hass_and_config_echoes(self) -> None:
+        source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+        editor = source[
+            source.index("class AlarmGridCardEditor") :
+            source.index("class AlarmGridCard extends HTMLElement")
+        ]
+        hass_setter = editor[
+            editor.index("set hass(hass)") : editor.index("\n  _language() {")
+        ]
+        commit = editor[editor.index("_commit(config)") : editor.index("_setBooleanOption")]
+
+        self.assertIn("if (!this._rendered)", hass_setter)
+        self.assertIn("previousLanguage !== nextLanguage", hass_setter)
+        self.assertNotIn("this._hass = hass;\n    this._render();", hass_setter)
+        self.assertIn("_configsEqual(left, right)", editor)
+        self.assertIn("_syncControlsFromConfig()", editor)
+        self.assertIn("_syncDependentControls()", editor)
+        self.assertNotIn("this._render()", commit)
+        self.assertIn("this._appearanceOpen", editor)
+
     def test_lovelace_card_is_a_standalone_summary_not_the_sidebar_table(self) -> None:
         source = Path(
             "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
@@ -279,10 +301,10 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         )
 
         self.assertEqual("2.0.0", VERSION)
-        self.assertEqual("20260829.3", FRONTEND_BUILD)
+        self.assertEqual("20260829.4", FRONTEND_BUILD)
         self.assertEqual(
             "/alarmgrid/frontend/dist/alarmgrid.js"
-            "?v=2.0.0&build=20260829.3",
+            "?v=2.0.0&build=20260829.4",
             FRONTEND_MODULE,
         )
 
@@ -609,11 +631,11 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
         self.assertEqual("2.0.0", VERSION)
-        self.assertEqual("20260829.3", FRONTEND_BUILD)
+        self.assertEqual("20260829.4", FRONTEND_BUILD)
         self.assertEqual("2.0.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
         self.assertIn(
-            "alarmgrid.js?v=2.0.0&build=20260829.3", FRONTEND_MODULE
+            "alarmgrid.js?v=2.0.0&build=20260829.4", FRONTEND_MODULE
         )
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)
