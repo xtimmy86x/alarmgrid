@@ -1,4 +1,4 @@
-"""Pure helpers for suggested rule selection and bulk rule cleanup."""
+"""Helpers for rule import, export, and bulk cleanup."""
 
 from __future__ import annotations
 
@@ -123,67 +123,22 @@ def import_rules_csv(content: str) -> list[AlarmRule]:
         raise AlarmValidationError("CSV contains no rules")
     return rules
 
-def is_generated_rule_id(rule_id: str) -> bool:
-    """Return whether a rule ID belongs to generated suggestions."""
-
-    return rule_id.startswith("auto_")
-
-
-def select_suggested_rules(
-    suggested_rules: Sequence[dict[str, Any]], rule_ids: Sequence[str] | None
-) -> tuple[list[dict[str, Any]], list[str]]:
-    """Select suggested rules by ID while preserving request order."""
-
-    if rule_ids is None:
-        return list(suggested_rules), []
-
-    suggested_by_id = {str(rule["id"]): rule for rule in suggested_rules}
-    selected: list[dict[str, Any]] = []
-    skipped: list[str] = []
-    seen: set[str] = set()
-
-    for rule_id in rule_ids:
-        if rule_id in seen:
-            continue
-        seen.add(rule_id)
-
-        rule = suggested_by_id.get(rule_id)
-        if rule is None:
-            skipped.append(rule_id)
-            continue
-        selected.append(rule)
-
-    return selected, skipped
-
 
 async def delete_rules(
     engine: Any,
     *,
-    generated_only: bool = False,
-    rule_ids: Sequence[str] | None = None,
+    rule_ids: Sequence[str],
 ) -> RuleDeletionResult:
     """Delete selected rules from an alarm engine."""
 
-    if not generated_only and rule_ids is None:
-        raise AlarmValidationError(
-            "delete_rules requires rule_ids or generated_only=True"
-        )
-
-    requested_rule_ids = _deduplicate(rule_ids) if rule_ids is not None else None
+    requested_rule_ids = _deduplicate(rule_ids)
     skipped_rule_ids: list[str] = []
-
-    if requested_rule_ids is None:
-        target_rule_ids = [
-            rule_id for rule_id in engine.rules if is_generated_rule_id(rule_id)
-        ]
-    else:
-        target_rule_ids = []
-        for rule_id in requested_rule_ids:
-            rule = engine.rules.get(rule_id)
-            if rule is None or (generated_only and not is_generated_rule_id(rule_id)):
-                skipped_rule_ids.append(rule_id)
-                continue
-            target_rule_ids.append(rule_id)
+    target_rule_ids = []
+    for rule_id in requested_rule_ids:
+        if rule_id not in engine.rules:
+            skipped_rule_ids.append(rule_id)
+            continue
+        target_rule_ids.append(rule_id)
 
     deleted_rules: list[AlarmRule] = []
     for rule_id in target_rule_ids:

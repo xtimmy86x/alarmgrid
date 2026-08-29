@@ -85,24 +85,11 @@ const TRANSLATIONS = {
     no_alarms: "No alarms in this view",
     no_history: "No history rows",
     no_rules: "No rules configured",
-    suggested_rules: "Suggested Rules",
-    label_high_w: "High W",
-    label_low_v: "Low V",
-    label_high_v: "High V",
-    label_solar_c: "Solar C",
-    preview_suggested: "Preview Suggested Rules",
     select_all: "Select All",
     deselect_all: "Deselect All",
-    create_selected: "Create Selected",
-    create_all: "Create All",
-    remove_auto: "Remove Auto-Generated Rules",
-    n_suggested: "{count} suggested",
     n_selected: "{count} selected",
     n_estimated_entities: "{count} estimated entities",
-    n_generated_estimated: "{count} generated estimated entities",
     n_rules: "{count} rules",
-    n_auto_generated: "{count} auto-generated",
-    n_auto_generated_estimated: "{count} auto-generated estimated entities",
     placeholder_rule_id: "Rule id",
     placeholder_entity_id: "Entity id",
     placeholder_name: "Name",
@@ -128,16 +115,8 @@ const TRANSLATIONS = {
     test_sound: "Test Sound",
     enabled: "enabled",
     disabled: "disabled",
-    previewing_suggested: "Previewing {count} suggested rules, {entities} estimated entities",
-    no_suggested_found: "No suggested rules found",
-    select_before_create: "Select suggested rules before creating them",
-    confirm_create_suggested: "Create {count} suggested rules and about {entities} entities?",
-    created_suggested: "Created {count} suggested rules, {entities} estimated entities",
     skipped_suffix: ", skipped {count}",
-    no_new_suggested: "No new suggested alarm rules",
-    preview_again: "Preview suggested rules again after changing thresholds",
     label_selected_rules: "selected rules",
-    label_auto_rules: "auto-generated rules",
     no_items_to_delete: "No {label} to delete",
     confirm_delete_rules: "Delete {count} {label} and about {entities} entities? Source entities will not be removed.",
     deleted_rules: "Deleted {count} rules and {entities} entities",
@@ -233,24 +212,11 @@ const TRANSLATIONS = {
     no_alarms: "Nessun allarme in questa vista",
     no_history: "Nessun evento nello storico",
     no_rules: "Nessuna regola configurata",
-    suggested_rules: "Regole suggerite",
-    label_high_w: "W max",
-    label_low_v: "V min",
-    label_high_v: "V max",
-    label_solar_c: "Solare °C",
-    preview_suggested: "Anteprima regole suggerite",
     select_all: "Seleziona tutte",
     deselect_all: "Deseleziona tutte",
-    create_selected: "Crea selezionate",
-    create_all: "Crea tutte",
-    remove_auto: "Rimuovi regole auto-generate",
-    n_suggested: "{count} suggerite",
     n_selected: "{count} selezionate",
     n_estimated_entities: "{count} entità stimate",
-    n_generated_estimated: "{count} entità stimate generate",
     n_rules: "{count} regole",
-    n_auto_generated: "{count} auto-generate",
-    n_auto_generated_estimated: "{count} entità stimate auto-generate",
     placeholder_rule_id: "ID regola",
     placeholder_entity_id: "ID entità",
     placeholder_name: "Nome",
@@ -276,16 +242,8 @@ const TRANSLATIONS = {
     test_sound: "Prova suono",
     enabled: "abilitato",
     disabled: "disabilitato",
-    previewing_suggested: "Anteprima di {count} regole suggerite, {entities} entità stimate",
-    no_suggested_found: "Nessuna regola suggerita trovata",
-    select_before_create: "Seleziona le regole suggerite prima di crearle",
-    confirm_create_suggested: "Creare {count} regole suggerite e circa {entities} entità?",
-    created_suggested: "Create {count} regole suggerite, {entities} entità stimate",
     skipped_suffix: ", saltate {count}",
-    no_new_suggested: "Nessuna nuova regola di allarme suggerita",
-    preview_again: "Rigenera l'anteprima delle regole suggerite dopo aver cambiato le soglie",
     label_selected_rules: "regole selezionate",
-    label_auto_rules: "regole auto-generate",
     no_items_to_delete: "Nessuna {label} da eliminare",
     confirm_delete_rules: "Eliminare {count} {label} e circa {entities} entità? Le entità sorgente non verranno rimosse.",
     deleted_rules: "Eliminate {count} regole e {entities} entità",
@@ -319,18 +277,9 @@ class AlarmGrid extends HTMLElement {
       telegram_notification_policy: "inherit",
       system: "",
     };
-    this._suggestionDraft = {
-      power_threshold_w: 2000,
-      low_voltage_v: 207,
-      high_voltage_v: 253,
-      high_solar_water_temp_c: 75,
-    };
-    this._suggestedRules = [];
-    this._selectedSuggestedRuleIds = new Set();
     this._selectedRuleIds = new Set();
     this._editingRuleId = null;
     this._rulesResult = null;
-    this._suggestedRulesResult = null;
     this._sound = {};
     this._tab = "active";
     this._themeMode = "auto";
@@ -456,9 +405,6 @@ class AlarmGrid extends HTMLElement {
       this._rules = rules?.rules || [];
       const ruleIds = new Set(this._rules.map((rule) => rule.id));
       this._selectedRuleIds = new Set([...this._selectedRuleIds].filter((id) => ruleIds.has(id)));
-      this._suggestedRules = this._suggestedRules.filter((rule) => !ruleIds.has(rule.id));
-      const suggestedRuleIds = new Set(this._suggestedRules.map((rule) => rule.id));
-      this._selectedSuggestedRuleIds = new Set([...this._selectedSuggestedRuleIds].filter((id) => suggestedRuleIds.has(id)));
       this._error = undefined;
       this._maybePlayBrowserHorn();
       if (!this._isEditingRulesForm()) this._render();
@@ -757,51 +703,9 @@ class AlarmGrid extends HTMLElement {
 
   _rulesView() {
     const ruleDraft = this._ruleDraft;
-    const suggestionDraft = this._suggestionDraft;
-    const selectedSuggestedCount = this._selectedSuggestedRuleIds.size;
     const selectedRuleCount = this._selectedRuleIds.size;
-    const autoGeneratedCount = this._rules.filter((rule) => String(rule.id || "").startsWith("auto_")).length;
     return `
       <section class="rules">
-        <div class="suggested-rules">
-          <h2>${this._t("suggested_rules")}</h2>
-          <div class="suggested-rules-controls">
-            <label>${this._t("label_high_w")} <input type="number" min="1" step="50" value="${this._escape(suggestionDraft.power_threshold_w)}" data-suggest="power_threshold_w"></label>
-            <label>${this._t("label_low_v")} <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.low_voltage_v)}" data-suggest="low_voltage_v"></label>
-            <label>${this._t("label_high_v")} <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.high_voltage_v)}" data-suggest="high_voltage_v"></label>
-            <label>${this._t("label_solar_c")} <input type="number" min="1" step="1" value="${this._escape(suggestionDraft.high_solar_water_temp_c)}" data-suggest="high_solar_water_temp_c"></label>
-            <button class="secondary" data-action="preview-suggested-rules">${this._t("preview_suggested")}</button>
-            <button class="secondary" data-action="select-all-suggested-rules" ${this._suggestedRules.length && selectedSuggestedCount !== this._suggestedRules.length ? "" : "disabled"}>${this._t("select_all")}</button>
-            <button class="secondary" data-action="deselect-all-suggested-rules" ${selectedSuggestedCount ? "" : "disabled"}>${this._t("deselect_all")}</button>
-            <button class="primary" data-action="create-selected-suggested-rules" ${selectedSuggestedCount ? "" : "disabled"}>${this._t("create_selected")}</button>
-            <button class="primary" data-action="create-all-suggested-rules" ${this._suggestedRules.length ? "" : "disabled"}>${this._t("create_all")}</button>
-            <button class="danger" data-action="remove-auto-generated-rules" ${autoGeneratedCount ? "" : "disabled"}>${this._t("remove_auto")}</button>
-          </div>
-          <div class="bulk-summary">
-            <span>${this._t("n_suggested", { count: this._suggestedRules.length })}</span>
-            <span>${this._t("n_selected", { count: selectedSuggestedCount })}</span>
-            <span>${this._t("n_estimated_entities", { count: selectedSuggestedCount * 4 })}</span>
-            <span>${this._t("n_generated_estimated", { count: this._suggestedRules.length * 4 })}</span>
-          </div>
-          ${this._suggestedRulesResult ? `<div class="notice">${this._escape(this._suggestedRulesResult)}</div>` : ""}
-          ${this._suggestedRules.length ? `
-            <div class="table-shell suggested-preview">
-              <table data-table-id="suggested-rules">
-                <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_threshold")}</th><th>${this._t("col_priority")}</th></tr></thead>
-                <tbody>${this._suggestedRules.map((rule) => `
-                  <tr>
-                    <td><input class="row-select" type="checkbox" data-suggested-select="${this._escape(rule.id)}" ${this._selectedSuggestedRuleIds.has(rule.id) ? "checked" : ""}></td>
-                    <td>${this._escape(rule.id)}</td>
-                    <td>${this._escape(rule.entity_id)}</td>
-                    <td>${this._escape(rule.name)}</td>
-                    <td>${this._escape(rule.condition)}</td>
-                    <td>${this._escape(rule.threshold ?? "")}</td>
-                    <td>${this._escape(rule.priority)}</td>
-                  </tr>`).join("")}</tbody>
-              </table>
-            </div>
-          ` : ""}
-        </div>
         <div class="rule-form">
           <input placeholder="${this._t("placeholder_rule_id")}" value="${this._escape(ruleDraft.id)}" data-new="id" ${this._editingRuleId ? "disabled" : ""}>
           <input placeholder="${this._t("placeholder_entity_id")}" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
@@ -830,9 +734,7 @@ class AlarmGrid extends HTMLElement {
         <div class="bulk-actions">
           <span>${this._t("n_rules", { count: this._rules.length })}</span>
           <span>${this._t("n_selected", { count: selectedRuleCount })}</span>
-          <span>${this._t("n_auto_generated", { count: autoGeneratedCount })}</span>
           <span>${this._t("n_estimated_entities", { count: selectedRuleCount * 4 })}</span>
-          <span>${this._t("n_auto_generated_estimated", { count: autoGeneratedCount * 4 })}</span>
           <button class="danger" data-action="delete-selected-rules" ${selectedRuleCount ? "" : "disabled"}>${this._t("delete_selected")}</button>
           <button class="secondary" data-action="export-rules" ${this._rules.length ? "" : "disabled"}>${this._t("export_rules")}</button>
           <button class="secondary" data-action="choose-rules-csv">${this._t("import_rules")}</button>
@@ -901,27 +803,13 @@ class AlarmGrid extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='update-rule']")?.addEventListener("click", () => this._updateRule());
     this.shadowRoot.querySelector("[data-action='cancel-edit-rule']")?.addEventListener("click", () => this._cancelEditRule());
     this.shadowRoot.querySelectorAll("[data-edit-rule]").forEach((button) => button.addEventListener("click", () => this._startEditRule(button.dataset.editRule)));
-    this.shadowRoot.querySelector("[data-action='preview-suggested-rules']")?.addEventListener("click", () => this._previewSuggestedRules());
-    this.shadowRoot.querySelector("[data-action='select-all-suggested-rules']")?.addEventListener("click", () => this._selectAllSuggestedRules());
-    this.shadowRoot.querySelector("[data-action='deselect-all-suggested-rules']")?.addEventListener("click", () => this._deselectAllSuggestedRules());
-    this.shadowRoot.querySelector("[data-action='create-selected-suggested-rules']")?.addEventListener("click", () => this._createSelectedSuggestedRules());
-    this.shadowRoot.querySelector("[data-action='create-all-suggested-rules']")?.addEventListener("click", () => this._createAllSuggestedRules());
     this.shadowRoot.querySelector("[data-action='delete-selected-rules']")?.addEventListener("click", () => this._deleteSelectedRules());
     this.shadowRoot.querySelector("[data-action='export-rules']")?.addEventListener("click", () => this._exportRules());
     this.shadowRoot.querySelector("[data-action='choose-rules-csv']")?.addEventListener("click", () => this.shadowRoot.querySelector("[data-rules-csv]")?.click());
     this.shadowRoot.querySelector("[data-rules-csv]")?.addEventListener("change", (event) => this._importRules(event.target.files?.[0]));
-    this.shadowRoot.querySelector("[data-action='remove-auto-generated-rules']")?.addEventListener("click", () => this._removeAutoGeneratedRules());
     this.shadowRoot.querySelectorAll("[data-new]").forEach((field) => {
       const updateDraft = () => {
         this._ruleDraft[field.dataset.new] = field.value;
-      };
-      field.addEventListener("input", updateDraft);
-      field.addEventListener("change", updateDraft);
-    });
-    this.shadowRoot.querySelectorAll("[data-suggest]").forEach((field) => {
-      const updateDraft = () => {
-        this._suggestionDraft[field.dataset.suggest] = field.value;
-        this._clearSuggestedPreview();
       };
       field.addEventListener("input", updateDraft);
       field.addEventListener("change", updateDraft);
@@ -931,12 +819,6 @@ class AlarmGrid extends HTMLElement {
         if (field.dataset.historyRange === "start") this._historyStart = field.value;
         else this._historyEnd = field.value;
         this._historyExportResult = "";
-      });
-    });
-    this.shadowRoot.querySelectorAll("[data-suggested-select]").forEach((field) => {
-      field.addEventListener("change", () => {
-        this._setMembership(this._selectedSuggestedRuleIds, field.dataset.suggestedSelect, field.checked);
-        this._render();
       });
     });
     this.shadowRoot.querySelectorAll("[data-rule-select]").forEach((field) => {
@@ -1047,68 +929,6 @@ class AlarmGrid extends HTMLElement {
     }));
   }
 
-  async _previewSuggestedRules() {
-    try {
-      const result = await this._callWS({
-        type: "alarmgrid/list_suggested_rules",
-        ...this._suggestionPayload(),
-      });
-      this._suggestedRules = result?.suggested || [];
-      this._selectedSuggestedRuleIds = new Set(this._suggestedRules.map((rule) => rule.id));
-      this._suggestedRulesResult = this._suggestedRules.length
-        ? this._t("previewing_suggested", { count: this._suggestedRules.length, entities: this._suggestedRules.length * 4 })
-        : this._t("no_suggested_found");
-    } catch (err) {
-      this._suggestedRulesResult = err.message || String(err);
-    }
-    this._render();
-  }
-
-  async _createSelectedSuggestedRules() {
-    await this._createSuggestedRules([...this._selectedSuggestedRuleIds]);
-  }
-
-  async _createAllSuggestedRules() {
-    await this._createSuggestedRules(this._suggestedRules.map((rule) => rule.id));
-  }
-
-  _selectAllSuggestedRules() {
-    this._selectedSuggestedRuleIds = new Set(this._suggestedRules.map((rule) => rule.id));
-    this._render();
-  }
-
-  _deselectAllSuggestedRules() {
-    this._selectedSuggestedRuleIds = new Set();
-    this._render();
-  }
-
-  async _createSuggestedRules(ruleIds) {
-    const count = ruleIds.length;
-    if (!count) {
-      this._suggestedRulesResult = this._t("select_before_create");
-      this._render();
-      return;
-    }
-    const estimatedEntities = count * 4;
-    if (!window.confirm(this._t("confirm_create_suggested", { count, entities: estimatedEntities }))) return;
-    try {
-      const result = await this._callWS({
-        type: "alarmgrid/create_suggested_rules",
-        ...this._suggestionPayload(),
-        rule_ids: ruleIds,
-      });
-      const createdCount = result?.created_count || 0;
-      const skippedCount = result?.skipped_rule_ids?.length || 0;
-      this._suggestedRulesResult = createdCount
-        ? `${this._t("created_suggested", { count: createdCount, entities: createdCount * 4 })}${skippedCount ? this._t("skipped_suffix", { count: skippedCount }) : ""}`
-        : this._t("no_new_suggested");
-      this._selectedSuggestedRuleIds = new Set();
-      await this._load();
-    } catch (err) {
-      this._suggestedRulesResult = err.message || String(err);
-      this._render();
-    }
-  }
 
   async _deleteSelectedRules() {
     const ruleIds = [...this._selectedRuleIds];
@@ -1194,10 +1014,6 @@ class AlarmGrid extends HTMLElement {
     }
   }
 
-  async _removeAutoGeneratedRules() {
-    const count = this._rules.filter((rule) => String(rule.id || "").startsWith("auto_")).length;
-    await this._deleteRules({ generated_only: true }, count, this._t("label_auto_rules"));
-  }
 
   async _deleteRules(payload, count, label) {
     if (!count) {
@@ -1224,19 +1040,6 @@ class AlarmGrid extends HTMLElement {
     }
   }
 
-  _suggestionPayload() {
-    const fields = {};
-    Object.entries(this._suggestionDraft).forEach(([key, value]) => {
-      if (value !== "") fields[key] = Number(value);
-    });
-    return fields;
-  }
-
-  _clearSuggestedPreview() {
-    this._suggestedRules = [];
-    this._selectedSuggestedRuleIds = new Set();
-    this._suggestedRulesResult = this._t("preview_again");
-  }
 
   _setMembership(set, value, selected) {
     if (!value) return;
@@ -1247,7 +1050,7 @@ class AlarmGrid extends HTMLElement {
   _isEditingRulesForm() {
     const active = this.shadowRoot?.activeElement;
     if (this._tab !== "rules" || !active) return false;
-    return Boolean(active.matches("[data-new], [data-suggest]"));
+    return Boolean(active.matches("[data-new]"));
   }
 
   _alarmStateClass(alarm) {
@@ -1425,15 +1228,9 @@ class AlarmGrid extends HTMLElement {
       .empty, .error { color: var(--ag-muted); padding: 18px; }
       .error { margin: 12px 18px; color: var(--ag-error-text); background: var(--ag-error-bg); border: 1px solid var(--ag-error-border); }
       .rules, .settings { padding: 12px 18px 18px; }
-      .suggested-rules { margin-bottom: 12px; padding: 10px; border: 1px solid var(--ag-border); background: var(--ag-surface); }
-      .suggested-rules h2 { margin: 0 0 8px; font-size: 15px; font-weight: 700; letter-spacing: 0; color: var(--ag-text); }
-      .suggested-rules-controls { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
-      .suggested-rules label { display: grid; gap: 4px; color: var(--ag-heading-muted); font-size: 12px; }
-      .suggested-rules input { min-width: 90px; width: 110px; }
       .file-input { display: none; }
       .bulk-actions, .bulk-summary { margin-top: 8px; color: var(--ag-heading-muted); font-size: 13px; }
       .bulk-actions { margin-bottom: 10px; }
-      .suggested-preview { margin-top: 8px; padding: 0; }
       .row-select { min-width: 0; width: 16px; height: 16px; padding: 0; }
       .notice { margin-top: 8px; color: var(--ag-notice); font-size: 13px; }
       .rule-form { margin-bottom: 12px; }

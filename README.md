@@ -24,7 +24,6 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Per-rule binary sensors and operator action buttons
 - Rule storage, runtime state persistence, and SQLite alarm history
 - Browser horn and optional media-player sound output
-- Suggested alarm rule generator for PowerTag/electrical/solar-water sensors
 - Rules editor with CSV import and export
 - Compact, configurable Lovelace alarm summary card
 - Optional Telegram notifications with per-rule policy, interactive actions, and
@@ -120,22 +119,17 @@ Industrial Alarm Panel builds is provided.
 
 ## What's New in v1.0.11
 
-- Added **Select All** and **Deselect All** controls to Suggested Rules previews.
 - Added a mobile panel menu button so operators can open the Home Assistant sidebar when edge-swipe is blocked by the panel.
-- Preserved horizontal table scroll during alarm, history, rules, and suggested-rule refreshes so wide tables stay on the inspected columns.
 - Bumped the frontend cache-busting version and package metadata for the new release.
 
 ## What's New in v1.0.9
 
-- Added resizable columns to the alarm, history, rules, and suggested-rule listings.
 - Added a 2-second delay before new unacknowledged alarms receive full DCS row coloring, reducing transient visual noise.
 - Throttled browser and media-player horn output so repeated Home Assistant refreshes or alarm floods do not stack noisy tones.
 - Bumped the frontend cache-busting version and package metadata for the new release.
 
 ## What's New in v1.0.8
 
-- Added **Suggested Rules** in the panel Rules tab.
-- Suggested rules can create high-consumption, low-voltage, high-voltage, high solar-water temperature, and unavailable-sensor alarms.
 - Added full-row DCS-style alarm colors, with acknowledged alarms shown in neutral gray.
 - Added event-driven alarm refresh so new alarms appear faster than the polling fallback.
 - Fixed Rules tab form inputs being cleared by automatic refresh while an operator is typing.
@@ -361,21 +355,6 @@ Every stored rule also gets a binary alarm sensor and action buttons after the i
 Create and manage rules from **Developer Tools > Services**, automations, scripts, or the panel's rule editor.
 
 Rules use stable Home Assistant `entity_id` values. For numeric range alarms, create two rules: one `below` rule and one `above` rule.
-
-### Suggested Rules
-
-Open **AlarmGrid > Rules > Suggested Rules** and click **Preview Suggested Rules** to scan current Home Assistant `sensor.*` entities before creating anything. Select the suggestions you want, then click **Create Selected**. **Create All** is still available after preview, but it asks for confirmation and shows the estimated Home Assistant entity count.
-
-Default suggested thresholds:
-
-- `High W`: `2000 W` for power/high-consumption sensors
-- `Low V`: `207 V`
-- `High V`: `253 V`
-- `Solar C`: `75 C` for solar water/tank/boiler temperature sensors
-
-The generator detects candidates from `device_class`, unit of measurement, entity ID, and friendly name. It skips generated rule IDs that already exist so repeated previews or creates do not duplicate rules. Generated suggested rules use IDs beginning with `auto_`.
-
-If too many suggested rules were created, use **Remove Auto-Generated Rules** in the same section. It removes stored `auto_` rules and the per-rule alarm/button entities created by this integration, but it does not remove the original source sensors. For manual cleanup, select rows in the Rules table and click **Delete Selected**.
 
 ### Rule Fields
 

@@ -91,7 +91,6 @@ class RuleRuntimeRefreshTests(unittest.IsolatedAsyncioTestCase):
             "websocket_update_rule": 1,
             "websocket_delete_rule": 1,
             "websocket_import_rules": 1,
-            "websocket_create_suggested_rules": 1,
             "websocket_delete_rules": 1,
         }
         for function_name, expected in expected_refreshes.items():
