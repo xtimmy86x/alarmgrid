@@ -681,3 +681,46 @@ The project has since evolved into an independently maintained implementation
 with its own branding, architecture and feature set. The original project and
 contributors remain credited through the Git history and Apache-2.0 licensing
 information.
+
+## Advanced Condition Builder (future 2.2.0)
+
+AlarmGrid supports both the existing single-entity rule format and an optional,
+structured `condition_expression`. The visual rule editor can combine multiple
+Home Assistant entities with **ALL** (`and`) or **ANY** (`or`) groups, nested up
+to four levels. Existing rules remain simple and require no migration; choosing
+**Add condition** or **Add group** converts the editor draft (not stored data)
+to the advanced format.
+
+For example, an **Oven Safety** rule can require ALL of:
+
+- `sensor.oven_temperature` Above `180` °C, with a per-condition deadband;
+- `switch.extraction_fan` Is OFF.
+
+An alarm delay of 10 seconds means the final combined result must stay true for
+10 continuous seconds. Clear delay likewise applies to the final result, not to
+individual leaves.
+
+Numeric operators are `above`, `below`, `greater_or_equal`,
+`less_or_equal`, `between`, and `outside_range`. Activation uses strict
+boundaries for above/below/outside and inclusive boundaries for at-or-above,
+at-or-below/between. While the alarm is active, deadband expands the matched
+region for above, below, and between. For outside-range it moves each clearing
+boundary into the configured range. This hysteresis prevents repeated alarm
+chattering near thresholds. State operators include `equal`, `not_equal`,
+`contains`, `is_on`, `is_off`, `state_changed`, and `unavailable`.
+
+```json
+{
+  "type": "group",
+  "operator": "and",
+  "conditions": [
+    {"type":"condition","entity_id":"sensor.oven_temperature","operator":"above","value":180,"deadband":5},
+    {"type":"condition","entity_id":"switch.extraction_fan","operator":"is_off"}
+  ]
+}
+```
+
+Expressions are a closed JSON DSL: groups must be non-empty, trees are limited
+to 64 nodes, and no scripting, templates, or per-leaf timers are evaluated.
+CSV import/export stores advanced expressions as compact JSON in the
+`condition_expression` column while retaining all legacy columns.

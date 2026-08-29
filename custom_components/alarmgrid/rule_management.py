@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from io import StringIO
@@ -21,6 +22,7 @@ RULE_CSV_FIELDS = (
     "system",
     "description",
     "condition",
+    "condition_expression",
     "threshold",
     "deadband",
     "priority",
@@ -77,7 +79,12 @@ def export_rules_csv(rules: Iterable[AlarmRule]) -> str:
     writer = csv.DictWriter(output, fieldnames=RULE_CSV_FIELDS, extrasaction="ignore")
     writer.writeheader()
     for rule in rules:
-        writer.writerow(rule.to_dict())
+        data = rule.to_dict()
+        data["condition_expression"] = (
+            json.dumps(rule.condition_expression, separators=(",", ":"))
+            if rule.condition_expression is not None else ""
+        )
+        writer.writerow(data)
     return output.getvalue()
 
 
@@ -90,7 +97,9 @@ def import_rules_csv(content: str) -> list[AlarmRule]:
         reader = csv.DictReader(StringIO(content.lstrip("\ufeff")))
         if reader.fieldnames is None:
             raise AlarmValidationError("CSV header is missing")
-        missing = {"id", "entity_id", "name", "condition"} - set(reader.fieldnames)
+        missing = {"id", "name"} - set(reader.fieldnames)
+        if "condition_expression" not in reader.fieldnames:
+            missing.update({"entity_id", "condition"} - set(reader.fieldnames))
         if missing:
             raise AlarmValidationError(
                 f"CSV is missing required columns: {', '.join(sorted(missing))}"
@@ -102,6 +111,17 @@ def import_rules_csv(content: str) -> list[AlarmRule]:
             if None in row:
                 raise AlarmValidationError(f"CSV row {row_number} has extra columns")
             data = {key: value for key, value in row.items() if value != ""}
+            if "condition_expression" in data:
+                try:
+                    data["condition_expression"] = json.loads(data["condition_expression"])
+                except json.JSONDecodeError as exc:
+                    raise AlarmValidationError(
+                        f"CSV row {row_number}: invalid condition_expression JSON"
+                    ) from exc
+            elif not data.get("entity_id") or not data.get("condition"):
+                raise AlarmValidationError(
+                    f"CSV row {row_number}: entity_id + condition or condition_expression is required"
+                )
             for field_name in _BOOLEAN_CSV_FIELDS & data.keys():
                 value = data[field_name].strip().lower()
                 if value not in {"true", "false", "1", "0", "yes", "no"}:
@@ -109,7 +129,12 @@ def import_rules_csv(content: str) -> list[AlarmRule]:
                         f"CSV row {row_number}: {field_name} must be true or false"
                     )
                 data[field_name] = value in {"true", "1", "yes"}
-            rule = AlarmRule.from_dict(data)
+            try:
+                rule = AlarmRule.from_dict(data)
+            except AlarmValidationError as exc:
+                if str(exc).startswith("CSV row"):
+                    raise
+                raise AlarmValidationError(f"CSV row {row_number}: {exc}") from exc
             if rule.id in seen:
                 raise AlarmValidationError(
                     f"CSV row {row_number}: duplicate rule id {rule.id}"

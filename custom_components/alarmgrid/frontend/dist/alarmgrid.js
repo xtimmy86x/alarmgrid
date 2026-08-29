@@ -112,6 +112,10 @@ const TRANSLATIONS = {
     placeholder_name: "Name",
     placeholder_system: "System",
     placeholder_threshold: "Threshold",
+    condition_builder: "Condition Builder", match: "Match", all_conditions: "ALL conditions", any_condition: "ANY condition",
+    add_condition: "+ Add condition", add_group: "+ Add group", delete_condition: "Delete condition", delete_group: "Delete group",
+    current_state: "Current", deadband_hysteresis: "Deadband / Hysteresis", hysteresis_help: "Prevents alarm chattering near the threshold.",
+    alarm_delay: "Alarm delay", clear_delay: "Clear delay", seconds: "seconds",
     add_rule: "Add Rule",
     edit: "Edit",
     save_rule: "Save Rule",
@@ -239,6 +243,10 @@ const TRANSLATIONS = {
     placeholder_name: "Nome",
     placeholder_system: "Sistema",
     placeholder_threshold: "Soglia",
+    condition_builder: "Costruttore condizioni", match: "Corrispondenza", all_conditions: "Tutte le condizioni", any_condition: "Almeno una condizione",
+    add_condition: "+ Aggiungi condizione", add_group: "+ Aggiungi gruppo", delete_condition: "Elimina condizione", delete_group: "Elimina gruppo",
+    current_state: "Attuale", deadband_hysteresis: "Banda morta / Isteresi", hysteresis_help: "Evita commutazioni ripetute dell’allarme vicino alla soglia.",
+    alarm_delay: "Ritardo allarme", clear_delay: "Ritardo ripristino", seconds: "secondi",
     add_rule: "Aggiungi regola",
     edit: "Modifica",
     save_rule: "Salva regola",
@@ -293,6 +301,7 @@ class AlarmGrid extends HTMLElement {
       priority: "medium",
       telegram_notification_policy: "inherit",
       system: "",
+      deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
     };
     this._selectedRuleIds = new Set();
     this._editingRuleId = null;
@@ -725,14 +734,12 @@ class AlarmGrid extends HTMLElement {
       <section class="rules">
         <div class="rule-form">
           <input placeholder="${this._t("placeholder_rule_id")}" value="${this._escape(ruleDraft.id)}" data-new="id" ${this._editingRuleId ? "disabled" : ""}>
-          <input placeholder="${this._t("placeholder_entity_id")}" value="${this._escape(ruleDraft.entity_id)}" data-new="entity_id" list="entity-id-options" autocomplete="off">
-          <datalist id="entity-id-options">${this._entityOptions()}</datalist>
           <input placeholder="${this._t("placeholder_name")}" value="${this._escape(ruleDraft.name)}" data-new="name">
           <input placeholder="${this._t("placeholder_system")}" value="${this._escape(ruleDraft.system)}" data-new="system">
-          <select data-new="condition">
-            ${["above", "below", "equal", "not_equal", "contains", "is_on", "is_off", "state_changed", "unavailable", "unavailable_for", "unknown_for", "manual"].map((c) => `<option value="${c}" ${ruleDraft.condition === c ? "selected" : ""}>${c}</option>`).join("")}
-          </select>
-          <input placeholder="${this._t("placeholder_threshold")}" value="${this._escape(ruleDraft.threshold)}" data-new="threshold">
+          <datalist id="entity-id-options">${this._entityOptions()}</datalist>
+          <fieldset class="condition-builder"><legend>${this._t("condition_builder")}</legend>${this._conditionBuilder(ruleDraft)}</fieldset>
+          <label>${this._t("alarm_delay")} <input type="number" min="0" data-new="delay_on_seconds" value="${ruleDraft.delay_on_seconds || 0}"> ${this._t("seconds")}</label>
+          <label>${this._t("clear_delay")} <input type="number" min="0" data-new="delay_off_seconds" value="${ruleDraft.delay_off_seconds || 0}"> ${this._t("seconds")}</label>
           <select data-new="priority">
             ${["critical", "high", "medium", "low", "info", "status"].map((p) => `<option value="${p}" ${ruleDraft.priority === p ? "selected" : ""}>${this._t(`priority_${p}`)}</option>`).join("")}
           </select>
@@ -760,11 +767,58 @@ class AlarmGrid extends HTMLElement {
         <div class="table-shell">
           <table data-table-id="rules">
             <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_telegram")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
-            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.area || "")}</td><td>${this._escape(rule.system || "")}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${this._t(`telegram_table_${rule.telegram_notification_policy || "inherit"}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="11" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
+            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.area || "")}</td><td>${this._escape(rule.system || "")}</td><td>${this._escape(this._conditionSummary(rule))}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${this._t(`telegram_table_${rule.telegram_notification_policy || "inherit"}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="11" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
           </table>
         </div>
       </section>
     `;
+  }
+
+  _operatorOptions(selected) {
+    const en = {above:"Above",below:"Below",greater_or_equal:"At or above",less_or_equal:"At or below",equal:"Equal",not_equal:"Not equal",contains:"Contains",is_on:"Is ON",is_off:"Is OFF",state_changed:"Changed",unavailable:"Unavailable",between:"Between",outside_range:"Outside range"};
+    const it = {above:"Maggiore di",below:"Minore di",greater_or_equal:"Maggiore o uguale",less_or_equal:"Minore o uguale",equal:"Uguale",not_equal:"Diverso",contains:"Contiene",is_on:"È ON",is_off:"È OFF",state_changed:"Cambiato",unavailable:"Non disponibile",between:"Compreso tra",outside_range:"Fuori intervallo"};
+    const labels = this._language() === "it" ? it : en;
+    return Object.entries(labels).map(([value,label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("");
+  }
+
+  _conditionRow(node, path) {
+    const needsValue = !["is_on","is_off","state_changed","unavailable"].includes(node.operator);
+    const range = ["between","outside_range"].includes(node.operator);
+    const numeric = ["above","below","greater_or_equal","less_or_equal","between","outside_range"].includes(node.operator);
+    const state = this._hass?.states?.[node.entity_id];
+    const current = state ? `${state.state}${state.attributes?.unit_of_measurement ? ` ${state.attributes.unit_of_measurement}` : ""}` : "—";
+    return `<div class="condition-row" data-condition-path="${path}">
+      <input aria-label="Entity" list="entity-id-options" value="${this._escape(node.entity_id || "")}" data-condition-field="entity_id">
+      <select aria-label="Operator" data-condition-field="operator">${this._operatorOptions(node.operator)}</select>
+      ${needsValue ? range ? `<input type="number" aria-label="Lower" value="${node.lower ?? ""}" data-condition-field="lower"><input type="number" aria-label="Upper" value="${node.upper ?? ""}" data-condition-field="upper">` : `<input aria-label="Value" value="${node.value ?? ""}" data-condition-field="value">` : ""}
+      ${numeric ? `<label>${this._t("deadband_hysteresis")}<input type="number" min="0" step="any" value="${node.deadband || 0}" data-condition-field="deadband" title="${this._t("hysteresis_help")}"></label>` : ""}
+      <small>${this._t("current_state")}: ${this._escape(current)}</small><button type="button" data-delete-condition="${path}" title="${this._t("delete_condition")}">×</button></div>`;
+  }
+
+  _groupBuilder(group, path="root") {
+    return `<div class="condition-group ${path === "root" ? "root" : ""}" data-group-path="${path}"><div class="group-head"><select data-group-operator="${path}"><option value="and" ${group.operator === "and" ? "selected" : ""}>${this._t("all_conditions")}</option><option value="or" ${group.operator === "or" ? "selected" : ""}>${this._t("any_condition")}</option></select>${path === "root" ? "" : `<button type="button" data-delete-group="${path}">${this._t("delete_group")}</button>`}</div>${group.conditions.map((node,index) => node.type === "group" ? this._groupBuilder(node, `${path}.${index}`) : this._conditionRow(node, `${path}.${index}`)).join("")}<div class="group-actions"><button type="button" data-add-condition="${path}">${this._t("add_condition")}</button><button type="button" data-add-group="${path}">${this._t("add_group")}</button></div></div>`;
+  }
+
+  _conditionBuilder(draft) {
+    if (draft.condition_expression) return this._groupBuilder(draft.condition_expression);
+    const leaf = {entity_id:draft.entity_id,operator:draft.condition,value:draft.threshold,deadband:draft.deadband || 0};
+    return `${this._conditionRow(leaf, "simple")}<button type="button" data-add-condition="simple">${this._t("add_condition")}</button><button type="button" data-add-group="simple">${this._t("add_group")}</button>`;
+  }
+
+  _conditionSummary(rule) {
+    if (!rule.condition_expression) return `${rule.entity_id || ""} ${rule.condition || ""} ${rule.threshold ?? ""}`.trim();
+    const count = (node) => node.type === "condition" ? 1 : node.conditions.reduce((total, child) => total + count(child), 0);
+    return `${count(rule.condition_expression)} conditions · ${rule.condition_expression.operator.toUpperCase()}`;
+  }
+
+  _expressionNode(path) {
+    let node = this._ruleDraft.condition_expression;
+    for (const index of path.split(".").slice(1)) node = node.conditions[Number(index)];
+    return node;
+  }
+
+  _promoteSimple() {
+    if (!this._ruleDraft.condition_expression) this._ruleDraft.condition_expression = {type:"group",operator:"and",conditions:[{type:"condition",entity_id:this._ruleDraft.entity_id,operator:this._ruleDraft.condition,value:this._ruleDraft.threshold,deadband:Number(this._ruleDraft.deadband || 0)}]};
   }
 
   _entityOptions() {
@@ -831,6 +885,21 @@ class AlarmGrid extends HTMLElement {
       field.addEventListener("input", updateDraft);
       field.addEventListener("change", updateDraft);
     });
+    this.shadowRoot.querySelectorAll("[data-condition-field]").forEach((field) => field.addEventListener("change", () => {
+      const path = field.closest("[data-condition-path]").dataset.conditionPath;
+      if (path === "simple") { const map = {value:"threshold"}; this._ruleDraft[map[field.dataset.conditionField] || field.dataset.conditionField] = field.value; return; }
+      const node = this._expressionNode(path); node[field.dataset.conditionField] = ["lower","upper","deadband"].includes(field.dataset.conditionField) ? Number(field.value) : field.value;
+    }));
+    this.shadowRoot.querySelectorAll("[data-group-operator]").forEach((field) => field.addEventListener("change", () => { this._expressionNode(field.dataset.groupOperator).operator = field.value; }));
+    this.shadowRoot.querySelectorAll("[data-add-condition],[data-add-group]").forEach((button) => button.addEventListener("click", () => {
+      const path = button.dataset.addCondition ?? button.dataset.addGroup; this._promoteSimple(); const group = path === "simple" ? this._ruleDraft.condition_expression : this._expressionNode(path);
+      group.conditions.push(button.dataset.addGroup !== undefined ? {type:"group",operator:"and",conditions:[{type:"condition",entity_id:"",operator:"above",value:"",deadband:0}]} : {type:"condition",entity_id:"",operator:"above",value:"",deadband:0}); this._render();
+    }));
+    this.shadowRoot.querySelectorAll("[data-delete-condition],[data-delete-group]").forEach((button) => button.addEventListener("click", () => {
+      const path = button.dataset.deleteCondition ?? button.dataset.deleteGroup; const parts=path.split("."); const index=Number(parts.pop()); const parent=this._expressionNode(parts.join("."));
+      if (button.dataset.deleteGroup !== undefined && parent.conditions[index].conditions.length > 1 && !confirm(this._t("delete_group"))) return;
+      parent.conditions.splice(index,1); this._render();
+    }));
     this.shadowRoot.querySelectorAll("[data-history-range]").forEach((field) => {
       field.addEventListener("change", () => {
         if (field.dataset.historyRange === "start") this._historyStart = field.value;
@@ -886,6 +955,7 @@ class AlarmGrid extends HTMLElement {
       priority: "medium",
       telegram_notification_policy: "inherit",
       system: "",
+      deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
     };
   }
 
@@ -902,6 +972,8 @@ class AlarmGrid extends HTMLElement {
       priority: rule.priority || "medium",
       telegram_notification_policy: rule.telegram_notification_policy || "inherit",
       system: rule.system || "",
+      deadband: rule.deadband || 0, delay_on_seconds: rule.delay_on_seconds || 0, delay_off_seconds: rule.delay_off_seconds || 0,
+      condition_expression: rule.condition_expression ? structuredClone(rule.condition_expression) : null,
     };
     this._render();
     this.shadowRoot.querySelector("[data-new='entity_id']")?.focus();
@@ -1251,6 +1323,12 @@ class AlarmGrid extends HTMLElement {
       .row-select { min-width: 0; width: 16px; height: 16px; padding: 0; }
       .notice { margin-top: 8px; color: var(--ag-notice); font-size: 13px; }
       .rule-form { margin-bottom: 12px; }
+      .condition-builder { flex-basis:100%; border:1px solid var(--divider-color); border-radius:10px; padding:12px; }
+      .condition-group { border-left:3px solid var(--primary-color); margin:8px 0; padding:8px; background:var(--card-background-color); }
+      .condition-group .condition-group { margin-left:min(18px,3vw); } .group-head,.group-actions{display:flex;gap:8px;margin-bottom:8px}
+      .condition-row { display:grid;grid-template-columns:minmax(150px,2fr) minmax(120px,1fr) repeat(2,minmax(90px,1fr)) auto auto;gap:8px;align-items:end;margin:8px 0; }
+      .condition-row label{display:grid;font-size:.75rem}.condition-row small{align-self:center}
+      @media(max-width:720px){.condition-row{grid-template-columns:1fr}.condition-group .condition-group{margin-left:8px}}
       .settings dl { display: grid; grid-template-columns: max-content minmax(120px, 1fr); gap: 10px 18px; max-width: 560px; }
       .settings dt { color: var(--ag-muted); }
       .settings dd { margin: 0; }
