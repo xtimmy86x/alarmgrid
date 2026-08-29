@@ -72,6 +72,14 @@ const TRANSLATIONS = {
     col_condition: "Condition",
     col_threshold: "Threshold",
     col_enabled: "Enabled",
+    col_telegram: "Telegram",
+    telegram_notifications: "Telegram notifications",
+    telegram_policy_inherit: "Use global settings",
+    telegram_policy_always: "Always notify",
+    telegram_policy_never: "Never notify",
+    telegram_table_inherit: "Global",
+    telegram_table_always: "Always",
+    telegram_table_never: "Never",
     ack: "Ack",
     shelve: "Shelve",
     no_alarms: "No alarms in this view",
@@ -212,6 +220,14 @@ const TRANSLATIONS = {
     col_condition: "Condizione",
     col_threshold: "Soglia",
     col_enabled: "Abilitata",
+    col_telegram: "Telegram",
+    telegram_notifications: "Notifiche Telegram",
+    telegram_policy_inherit: "Usa impostazioni globali",
+    telegram_policy_always: "Notifica sempre",
+    telegram_policy_never: "Non notificare mai",
+    telegram_table_inherit: "Globale",
+    telegram_table_always: "Sempre",
+    telegram_table_never: "Mai",
     ack: "Riconosci",
     shelve: "Sospendi",
     no_alarms: "Nessun allarme in questa vista",
@@ -300,6 +316,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       condition: "above",
       threshold: "",
       priority: "medium",
+      telegram_notification_policy: "inherit",
       system: "",
     };
     this._suggestionDraft = {
@@ -798,6 +815,11 @@ class IndustrialAlarmPanel extends HTMLElement {
           <select data-new="priority">
             ${["critical", "high", "medium", "low", "info", "status"].map((p) => `<option value="${p}" ${ruleDraft.priority === p ? "selected" : ""}>${this._t(`priority_${p}`)}</option>`).join("")}
           </select>
+          <label>${this._t("telegram_notifications")}
+            <select data-new="telegram_notification_policy">
+              ${["inherit", "always", "never"].map((policy) => `<option value="${policy}" ${ruleDraft.telegram_notification_policy === policy ? "selected" : ""}>${this._t(`telegram_policy_${policy}`)}</option>`).join("")}
+            </select>
+          </label>
           ${this._editingRuleId
             ? `<button class="primary" data-action="update-rule">${this._t("save_rule")}</button>
           <button class="secondary" data-action="cancel-edit-rule">${this._t("cancel")}</button>`
@@ -818,8 +840,8 @@ class IndustrialAlarmPanel extends HTMLElement {
           </div>
         <div class="table-shell">
           <table data-table-id="rules">
-            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
-            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.area || "")}</td><td>${this._escape(rule.system || "")}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="10" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
+            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_telegram")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
+            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.area || "")}</td><td>${this._escape(rule.system || "")}</td><td>${this._escape(rule.condition)}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${this._t(`telegram_table_${rule.telegram_notification_policy || "inherit"}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="11" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
           </table>
         </div>
       </section>
@@ -963,6 +985,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       condition: "above",
       threshold: "",
       priority: "medium",
+      telegram_notification_policy: "inherit",
       system: "",
     };
   }
@@ -978,6 +1001,7 @@ class IndustrialAlarmPanel extends HTMLElement {
       condition: rule.condition || "above",
       threshold: rule.threshold ?? "",
       priority: rule.priority || "medium",
+      telegram_notification_policy: rule.telegram_notification_policy || "inherit",
       system: rule.system || "",
     };
     this._render();

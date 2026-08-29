@@ -27,6 +27,20 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
         self.assertIn('customElements.define("industrial-alarm-panel"', source)
 
+    def test_frontend_edits_and_displays_telegram_rule_policy(self) -> None:
+        source = Path(
+            "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
+        ).read_text()
+
+        self.assertIn('data-new="telegram_notification_policy"', source)
+        self.assertIn('telegram_notification_policy: "inherit"', source)
+        self.assertIn(
+            'rule.telegram_notification_policy || "inherit"', source
+        )
+        self.assertIn('telegram_table_${rule.telegram_notification_policy', source)
+        self.assertIn('telegram_policy_always: "Always notify"', source)
+        self.assertIn('telegram_policy_never: "Non notificare mai"', source)
+
     def test_frontend_registration_is_safe_to_import_more_than_once(self) -> None:
         source = Path(
             "custom_components/industrial_alarm_panel/frontend/dist/industrial-alarm-panel.js"
@@ -284,7 +298,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         pyproject_source = Path("pyproject.toml").read_text()
         readme_source = Path("README.md").read_text()
 
-        expected_version = "1.0.21"
+        expected_version = "1.0.22"
         const_version_match = re.search(r'^VERSION = "([^"]+)"$', const_source, re.MULTILINE)
 
         self.assertIsNotNone(const_version_match)

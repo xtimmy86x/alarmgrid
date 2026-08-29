@@ -24,6 +24,7 @@ RULE_CSV_FIELDS = (
     "threshold",
     "deadband",
     "priority",
+    "telegram_notification_policy",
     "requires_ack",
     "audible",
     "sound_profile",

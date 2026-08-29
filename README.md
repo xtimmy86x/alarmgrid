@@ -23,6 +23,12 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v1.0.22
+
+- Added per-rule Telegram notification policies: inherit global settings, always notify, or never notify.
+- Added Telegram policy controls to the Rules editor and Rules table.
+- Preserved backward compatibility for existing rules, which default to global Telegram settings.
+
 ## What's New in v1.0.21
 
 - Added opt-in, outbound-only Telegram alarm notifications through Home Assistant
@@ -558,6 +564,27 @@ The selector intentionally lists all entities in the `notify` domain because Hom
 Assistant does not expose a stable, universal way for an options selector to limit
 these entities to Telegram providers. Choose only notify entities created for your
 Telegram Bot configuration.
+
+Each alarm rule can refine the global minimum-priority behavior with
+`telegram_notification_policy`:
+
+- `inherit` (default) uses the global Telegram minimum-priority and lifecycle-event settings.
+- `always` bypasses **only** the global minimum-priority filter. Telegram must still be
+  globally enabled, have at least one target, and enable the event type being delivered.
+- `never` suppresses all Telegram notifications for that rule.
+
+Existing and legacy-imported rules without the field automatically use `inherit`. For example:
+
+```yaml
+rule:
+  id: inverter_temperature_high
+  entity_id: sensor.inverter_temperature
+  name: Inverter Temperature High
+  condition: above
+  threshold: 80
+  priority: medium
+  telegram_notification_policy: always
+```
 
 Industrial Alarm Panel does not store or manage Telegram bot tokens. Telegram
 configuration remains owned by Home Assistant. This V1 does not provide callbacks,

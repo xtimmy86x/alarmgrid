@@ -28,6 +28,13 @@ def event(event_type: str = "activated", priority: str = "critical", **values):
     )
 
 
+def policy_event(policy: str, **values):
+    return event(
+        metadata={"telegram_notification_policy": policy},
+        **values,
+    )
+
+
 def options(**overrides):
     return {
         **DEFAULT_OPTIONS,
@@ -106,6 +113,53 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
         await notifier.notify(event(priority="medium"))
         self.assertEqual(len(calls), 2)
 
+    async def test_per_rule_policy_controls_priority_filter_only(self):
+        calls = []
+
+        async def send(target, message):
+            calls.append((target, message))
+
+        notifier = TelegramNotifier(options(telegram_min_priority="high"), send)
+        await notifier.notify(policy_event("inherit", priority="medium"))
+        await notifier.notify(policy_event("always", priority="medium"))
+        await notifier.notify(policy_event("never", priority="critical"))
+        self.assertEqual(len(calls), 1)
+
+    async def test_always_still_respects_global_and_event_switches(self):
+        calls = []
+
+        async def send(target, message):
+            calls.append((target, message))
+
+        alarm_event = policy_event("always", priority="medium")
+        await TelegramNotifier(options(telegram_enabled=False), send).notify(alarm_event)
+        await TelegramNotifier(
+            options(telegram_notify_activated=False), send
+        ).notify(alarm_event)
+        self.assertEqual(calls, [])
+
+    async def test_never_suppresses_when_all_global_settings_allow(self):
+        calls = []
+
+        async def send(target, message):
+            calls.append((target, message))
+
+        await TelegramNotifier(
+            options(telegram_min_priority="status"), send
+        ).notify(policy_event("never", priority="critical"))
+        self.assertEqual(calls, [])
+
+    async def test_missing_policy_metadata_inherits_global_threshold(self):
+        calls = []
+
+        async def send(target, message):
+            calls.append((target, message))
+
+        await TelegramNotifier(
+            options(telegram_min_priority="high"), send
+        ).notify(event(priority="medium"))
+        self.assertEqual(calls, [])
+
     async def test_multiple_targets_continue_after_one_failure(self):
         calls = []
 
@@ -143,6 +197,39 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
 
 
 class NotificationLifecycleTests(unittest.IsolatedAsyncioTestCase):
+    async def test_rule_policy_reaches_notification_flow(self):
+        delivered = []
+
+        async def handler(alarm_event):
+            delivered.append(alarm_event)
+
+        for policy in ("always", "never"):
+            rule = AlarmRule.from_dict(
+                {
+                    "id": policy,
+                    "entity_id": f"binary_sensor.{policy}",
+                    "name": policy.title(),
+                    "condition": "is_on",
+                    "telegram_notification_policy": policy,
+                }
+            )
+            engine = AlarmEngine([rule], event_handler=handler)
+            await engine.process_state(rule.entity_id, "on")
+
+        self.assertEqual(
+            [item.metadata["telegram_notification_policy"] for item in delivered],
+            ["always", "never"],
+        )
+
+        calls = []
+
+        async def send(target, message):
+            calls.append((target, message))
+
+        notifier = TelegramNotifier(options(telegram_min_priority="critical"), send)
+        for alarm_event in delivered:
+            await notifier.notify(alarm_event)
+        self.assertEqual(len(calls), 1)
     async def test_failure_does_not_interrupt_activation_or_history(self):
         async def broken_handler(alarm_event):
             raise RuntimeError("Telegram unavailable")

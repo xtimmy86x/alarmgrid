@@ -778,6 +778,9 @@ class AlarmEngine:
             message=message,
             operator=operator,
             timestamp=self._now(),
+            metadata={
+                "telegram_notification_policy": rule.telegram_notification_policy.value
+            },
         )
         await self.history_store.add_event(event)
         self.last_event = event
