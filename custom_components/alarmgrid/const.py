@@ -22,7 +22,7 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
 DOMAIN = "alarmgrid"
 NAME = "AlarmGrid"
 VERSION = "2.1.0"
-FRONTEND_BUILD = "20260829.8"
+FRONTEND_BUILD = "20261028.1"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [
