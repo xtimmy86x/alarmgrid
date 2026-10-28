@@ -1142,7 +1142,7 @@ class AlarmGrid extends HTMLElement {
       condition_expression: rule.condition_expression ? structuredClone(rule.condition_expression) : null,
     };
     this._render();
-    this.shadowRoot.querySelector("[data-new='entity_id']")?.focus();
+    this.shadowRoot.querySelector("[data-condition-field='entity_id']")?.focus();
   }
 
   _cancelEditRule() {
@@ -1308,7 +1308,10 @@ class AlarmGrid extends HTMLElement {
   _isEditingRulesForm() {
     const active = this.shadowRoot?.activeElement;
     if (this._tab !== "rules" || !active) return false;
-    return Boolean(active.matches("[data-new]"));
+    // Include condition-builder inputs and selects, also inside nested groups.
+    // Replacing the DOM while they have focus closes native datalist/select menus.
+    // Buttons must still allow refreshes after actions such as saving a rule.
+    return Boolean(active.closest(".rule-form") && active.matches("input, select, textarea"));
   }
 
   _alarmStateClass(alarm) {
