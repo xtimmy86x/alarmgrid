@@ -54,12 +54,12 @@ jobs:
       - name: Check out validated release
         uses: actions/checkout@v4
         with:
-          ref: 215ccc1b0f76559459f4f4affd67b7bef50739be
+          ref: b5a2ce60f5fe627ab86494215da46b6023898fd1
       - name: Publish 2.1.1
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create 2.1.1 \
-            --target 215ccc1b0f76559459f4f4affd67b7bef50739be \
+            --target b5a2ce60f5fe627ab86494215da46b6023898fd1 \
             --title "AlarmGrid 2.1.1" \
             --notes-file RELEASE_NOTES.md
