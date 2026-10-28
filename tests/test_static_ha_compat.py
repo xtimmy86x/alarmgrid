@@ -206,6 +206,19 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertNotIn("this._render()", commit)
         self.assertIn("this._appearanceOpen", editor)
 
+    def test_card_shelve_and_disable_dialog_survive_alarm_refreshes(self) -> None:
+        source = Path(
+            "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
+        ).read_text()
+        card = source[source.index("class AlarmGridCard extends HTMLElement"):]
+
+        self.assertIn('cardRoot.innerHTML = `<style>', card)
+        self.assertIn('dialogRoot.innerHTML = this._dialogMarkup();', card)
+        self.assertIn('dialogRoot.querySelector("dialog")', card)
+        self.assertIn('if (dialog && !dialog._alarmGridHandlersBound)', card)
+        self.assertIn('this.shadowRoot.replaceChildren(cardRoot, dialogRoot)', card)
+        self.assertNotIn('this.shadowRoot.innerHTML = `<style>', card)
+
     def test_lovelace_card_is_a_standalone_summary_not_the_sidebar_table(self) -> None:
         source = Path(
             "custom_components/alarmgrid/frontend/dist/alarmgrid.js"

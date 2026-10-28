@@ -1983,14 +1983,30 @@ class AlarmGridCard extends HTMLElement {
     const disabled = this._alarms.filter((alarm) => alarm.lifecycle_state === "DISABLED").length;
     const count = (priority) => this._alarms.filter((alarm) => alarm.priority === priority && ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
     const themeClass = this._config.theme === "auto" ? "" : ` force-${this._config.theme}`;
-    this.shadowRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
+    // Keep the modal outside the frequently refreshed card subtree. A websocket
+    // update or periodic poll must not remove an open <dialog> from the DOM.
+    let cardRoot = this.shadowRoot.querySelector("[data-card-root]");
+    let dialogRoot = this.shadowRoot.querySelector("[data-dialog-root]");
+    if (!cardRoot || !dialogRoot) {
+      cardRoot = document.createElement("div");
+      cardRoot.dataset.cardRoot = "";
+      dialogRoot = document.createElement("div");
+      dialogRoot.dataset.dialogRoot = "";
+      this.shadowRoot.replaceChildren(cardRoot, dialogRoot);
+    }
+    cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
       ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
       ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>💤 ${shelved}</b></span><span class="chip"><b>🚫 ${disabled}</b></span></section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
       ${visible.length > shown.length ? `<button class="more" data-action="open-panel">+${visible.length - shown.length} more alarms</button>` : ""}
       ${this._config.show_open_panel ? `<footer><button data-action="open-panel">Open AlarmGrid <span aria-hidden="true">→</span></button></footer>` : ""}
-    </ha-card>${this._dialogMarkup()}`;
+    </ha-card>`;
+    if (this._dialog && !dialogRoot.querySelector("dialog")) {
+      dialogRoot.innerHTML = this._dialogMarkup();
+    } else if (!this._dialog && dialogRoot.firstChild) {
+      dialogRoot.replaceChildren();
+    }
     this.shadowRoot.querySelector("[data-action='silence']")?.addEventListener("click", () => this._action("silence"));
     this.shadowRoot.querySelector("[data-action='ack-all']")?.addEventListener("click", () => this._action("acknowledge_all"));
     this.shadowRoot.querySelectorAll("[data-ack]").forEach((button) => button.addEventListener("click", () => this._action("acknowledge", button.dataset.ack)));
@@ -2002,11 +2018,15 @@ class AlarmGridCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-open-disable]").forEach((button) => button.addEventListener("click", () => this._showDisableDialog(this._alarms.find((alarm) => alarm.id === button.dataset.openDisable))));
     this.shadowRoot.querySelectorAll("[data-unshelve]").forEach((button) => button.addEventListener("click", () => this._action("unshelve", button.dataset.unshelve)));
     this.shadowRoot.querySelectorAll("[data-enable]").forEach((button) => button.addEventListener("click", () => this._action("enable", button.dataset.enable)));
-    const dialog = this.shadowRoot.querySelector("dialog");
-    dialog?.addEventListener("close", () => { this._dialog = undefined; this._render(); });
-    dialog?.querySelector("[name=preset]")?.addEventListener("change", (event) => { dialog.querySelector(".custom-duration").hidden = event.target.value !== "custom"; });
-    dialog?.querySelector("[data-confirm-shelve]")?.addEventListener("click", async (event) => { const duration_minutes = this._durationMinutes(dialog); if (!duration_minutes) { event.preventDefault(); dialog.querySelector(".validation").textContent = this._t("duration_invalid"); return; } const comment = dialog.querySelector("[name=comment]").value.trim(); await this._action("shelve", this._dialog.alarm.id, { duration_minutes, ...(comment ? { comment } : {}) }); });
-    dialog?.querySelector("[data-confirm-disable]")?.addEventListener("click", async () => { const comment = dialog.querySelector("[name=comment]").value.trim(); await this._action("disable", this._dialog.alarm.id, comment ? { comment } : {}); });
+    const dialog = dialogRoot.querySelector("dialog");
+    // A dialog can survive many live card renders: bind its listeners only once.
+    if (dialog && !dialog._alarmGridHandlersBound) {
+      dialog._alarmGridHandlersBound = true;
+      dialog.addEventListener("close", () => { this._dialog = undefined; this._render(); });
+      dialog.querySelector("[name=preset]")?.addEventListener("change", (event) => { dialog.querySelector(".custom-duration").hidden = event.target.value !== "custom"; });
+      dialog.querySelector("[data-confirm-shelve]")?.addEventListener("click", async (event) => { const duration_minutes = this._durationMinutes(dialog); if (!duration_minutes) { event.preventDefault(); dialog.querySelector(".validation").textContent = this._t("duration_invalid"); return; } const comment = dialog.querySelector("[name=comment]").value.trim(); await this._action("shelve", this._dialog.alarm.id, { duration_minutes, ...(comment ? { comment } : {}) }); });
+      dialog.querySelector("[data-confirm-disable]")?.addEventListener("click", async () => { const comment = dialog.querySelector("[name=comment]").value.trim(); await this._action("disable", this._dialog.alarm.id, comment ? { comment } : {}); });
+    }
     this.shadowRoot.querySelectorAll("[data-action='open-panel']").forEach((button) => button.addEventListener("click", () => this._openPanel()));
     this._rendered = true;
   }
