@@ -17,6 +17,7 @@ from .const import (
     CONF_ALARM_FLOOD_THRESHOLD,
     CONF_ALARM_FLOOD_WINDOW_SECONDS,
     CONF_AUTO_SHELVE_FLAPPING,
+    CONF_CREATE_RULE_BUTTONS,
     CONF_MEDIA_PLAYERS,
     CONF_REPEAT_INTERVAL_SECONDS,
     CONF_SOUND_MODE,
@@ -47,6 +48,7 @@ class AlarmGridRuntime:
     sound_manager: AlarmSoundManager
     notification_manager: AlarmNotificationManager
     engine: AlarmEngine
+    create_rule_buttons: bool = True
     remove_state_listener: Any | None = None
     remove_delay_timer: Any | None = None
     remove_frontend_update_listener: Any | None = None
@@ -177,6 +179,7 @@ async def async_setup_entry(
 
     runtime = AlarmGridRuntime(
         entry_id=entry.entry_id,
+        create_rule_buttons=options[CONF_CREATE_RULE_BUTTONS],
         rule_store=rule_store,
         history_store=history_store,
         sound_manager=sound_manager,

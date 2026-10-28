@@ -376,6 +376,7 @@ class AlarmGrid extends HTMLElement {
     this._historyEnd = "";
     this._historyExportResult = "";
     this._rules = [];
+    this._entitiesPerRule = 4;
     this._ruleDraft = {
       id: "",
       entity_id: "",
@@ -534,6 +535,7 @@ class AlarmGrid extends HTMLElement {
       this._sound = alarms?.sound || {};
       this._history = history?.events || [];
       this._rules = rules?.rules || [];
+      this._entitiesPerRule = rules?.entities_per_rule ?? 4;
       const ruleIds = new Set(this._rules.map((rule) => rule.id));
       this._selectedRuleIds = new Set([...this._selectedRuleIds].filter((id) => ruleIds.has(id)));
       this._error = undefined;
@@ -992,7 +994,7 @@ class AlarmGrid extends HTMLElement {
             <input type="search" aria-label="${this._t("search_rules")}" placeholder="${this._t("search_rules")}" value="${this._escape(this._ruleSearch)}" data-field="rule-search">
           </div>
         </section>
-        ${selectedRuleCount ? `<div class="notice-bar bulk-actions" role="region" aria-label="${this._t("n_selected", { count: selectedRuleCount })}"><span>${this._t("rules_selected_bar", { count: selectedRuleCount, entities: selectedRuleCount * 4 })}</span><span class="actions"><button data-action="clear-rule-selection">${this._t("clear_selection")}</button><button class="danger" data-action="delete-selected-rules">${this._t("delete_selected")}</button></span></div>` : ""}
+        ${selectedRuleCount ? `<div class="notice-bar bulk-actions" role="region" aria-label="${this._t("n_selected", { count: selectedRuleCount })}"><span>${this._t("rules_selected_bar", { count: selectedRuleCount, entities: selectedRuleCount * this._entitiesPerRule })}</span><span class="actions"><button data-action="clear-rule-selection">${this._t("clear_selection")}</button><button class="danger" data-action="delete-selected-rules">${this._t("delete_selected")}</button></span></div>` : ""}
         <div class="table-shell">
           <table data-table-id="rules">
             <thead><tr><th class="select-col"><input class="row-select" type="checkbox" data-action="select-all-rules" aria-label="${this._t(allSelected ? "deselect_all" : "select_all")}" ${allSelected ? "checked" : ""} ${rules.length ? "" : "disabled"}></th><th>${this._t("col_rule")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_area_system")}</th><th>${this._t("col_telegram")}</th><th>${this._t("col_enabled")}</th><th><span class="visually-hidden">${this._t("edit")}</span></th></tr></thead>
@@ -1740,7 +1742,7 @@ class AlarmGrid extends HTMLElement {
       this._render();
       return;
     }
-    const estimatedEntities = count * 4;
+    const estimatedEntities = count * this._entitiesPerRule;
     if (!window.confirm(this._t("confirm_delete_rules", { count, label, entities: estimatedEntities }))) return;
     try {
       const result = await this._callWS({

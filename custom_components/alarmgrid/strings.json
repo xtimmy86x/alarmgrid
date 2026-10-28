@@ -24,6 +24,7 @@
       "init": {
         "title": "AlarmGrid options",
         "data": {
+          "create_rule_buttons": "Create buttons for each rule",
           "max_active_alarms": "Max active alarms shown",
           "max_history_rows": "Max history rows shown",
           "history_retention_days": "History retention days",
@@ -64,7 +65,10 @@
           "telegram_interactive_shelve": "Allow shelving",
           "telegram_interactive_disable": "Allow disable"
         },
-        "description": "Configure alarm behavior and the optional Telegram notification channel."
+        "description": "Configure alarm behavior and the optional Telegram notification channel.",
+        "data_description": {
+          "create_rule_buttons": "Create acknowledge, shelve, and disable buttons for every rule. Turning this off removes existing per-rule buttons; global buttons remain available."
+        }
       }
     },
     "error": {

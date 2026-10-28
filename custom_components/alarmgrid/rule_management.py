@@ -174,39 +174,60 @@ async def delete_rules(
     return RuleDeletionResult(deleted_rules, skipped_rule_ids)
 
 
-def per_rule_entity_unique_ids(entry_id: str, rule: AlarmRule) -> set[str]:
-    """Return unique IDs used by per-rule entities for a rule."""
+def per_rule_button_unique_ids(entry_id: str, rule: AlarmRule) -> set[str]:
+    """Return unique IDs used by the three per-rule action buttons."""
 
     return {
-        f"{DOMAIN}_{entry_id}_alarm_{rule.id}",
         f"{DOMAIN}_{entry_id}_ack_{rule.slug}_{rule.id}",
         f"{DOMAIN}_{entry_id}_shelve_{rule.slug}_{rule.id}",
         f"{DOMAIN}_{entry_id}_disable_{rule.slug}_{rule.id}",
     }
 
 
+def per_rule_entity_unique_ids(entry_id: str, rule: AlarmRule) -> set[str]:
+    """Return unique IDs used by per-rule entities for a rule."""
+
+    return {
+        f"{DOMAIN}_{entry_id}_alarm_{rule.id}",
+        *per_rule_button_unique_ids(entry_id, rule),
+    }
+
+
 def matching_per_rule_entity_entries(
-    entry_id: str, rules: Iterable[AlarmRule], entries: Iterable[_RegistryEntry]
+    entry_id: str,
+    rules: Iterable[AlarmRule],
+    entries: Iterable[_RegistryEntry],
+    *,
+    buttons_only: bool = False,
 ) -> list[_RegistryEntry]:
     """Return registry entries for current per-rule entities in one config entry."""
 
+    unique_ids_for_rule = (
+        per_rule_button_unique_ids if buttons_only else per_rule_entity_unique_ids
+    )
     unique_ids = {
         unique_id
         for rule in rules
-        for unique_id in per_rule_entity_unique_ids(entry_id, rule)
+        for unique_id in unique_ids_for_rule(entry_id, rule)
     }
 
     return [
         entry
         for entry in entries
-        if entry.config_entry_id == entry_id and entry.unique_id in unique_ids
+        if entry.config_entry_id == entry_id
+        and entry.unique_id in unique_ids
+        and (not buttons_only or entry.entity_id.startswith("button."))
     ]
 
 
 def remove_per_rule_entity_registry_entries(
-    hass: Any, entry_id: str, rules: Iterable[AlarmRule]
+    hass: Any,
+    entry_id: str,
+    rules: Iterable[AlarmRule],
+    *,
+    buttons_only: bool = False,
 ) -> list[str]:
-    """Remove registry entries belonging to deleted per-rule entities."""
+    """Remove deleted per-rule entities, or just their deselected buttons."""
 
     from homeassistant.helpers import entity_registry as er
 
@@ -217,7 +238,9 @@ def remove_per_rule_entity_registry_entries(
     else:
         entries = entity_registry.entities.values()
 
-    matches = matching_per_rule_entity_entries(entry_id, rules, entries)
+    matches = matching_per_rule_entity_entries(
+        entry_id, rules, entries, buttons_only=buttons_only
+    )
     removed_entity_ids = [entry.entity_id for entry in matches]
     for entity_id in removed_entity_ids:
         entity_registry.async_remove(entity_id)

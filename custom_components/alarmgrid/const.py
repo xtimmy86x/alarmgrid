@@ -22,7 +22,7 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
 DOMAIN = "alarmgrid"
 NAME = "AlarmGrid"
 VERSION = "2.1.1"
-FRONTEND_BUILD = "20261028.1"
+FRONTEND_BUILD = "20261028.2"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [
@@ -70,6 +70,7 @@ CONF_INSTANCE_NAME = "instance_name"
 CONF_ENABLE_PANEL = "enable_panel"
 CONF_ENABLE_BROWSER_SOUND = "enable_browser_sound"
 CONF_ENABLE_MEDIA_PLAYER_SOUND = "enable_media_player_sound"
+CONF_CREATE_RULE_BUTTONS = "create_rule_buttons"
 CONF_HISTORY_RETENTION_DAYS = "history_retention_days"
 CONF_MAX_ACTIVE_ALARMS = "max_active_alarms"
 CONF_MAX_HISTORY_ROWS = "max_history_rows"
@@ -122,6 +123,7 @@ SOUND_MODES = [
 ]
 
 DEFAULT_OPTIONS = {
+    CONF_CREATE_RULE_BUTTONS: True,
     CONF_MAX_ACTIVE_ALARMS: 250,
     CONF_MAX_HISTORY_ROWS: 1000,
     CONF_HISTORY_RETENTION_DAYS: 90,

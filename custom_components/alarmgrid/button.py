@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity_base import AlarmGridEntity, PerAlarmEntity
+from .rule_management import remove_per_rule_entity_registry_entries
 
 
 class AlarmActionButton(AlarmGridEntity, ButtonEntity):
@@ -82,6 +83,15 @@ async def async_setup_entry(
             _test_sound,
         ),
     ]
+    if not runtime.create_rule_buttons:
+        # Options changes reload the platforms. Remove old registry entries too,
+        # so deselected buttons do not remain as unavailable/orphaned entities.
+        remove_per_rule_entity_registry_entries(
+            hass, entry.entry_id, engine.rules.values(), buttons_only=True
+        )
+        async_add_entities(entities)
+        return
+
     for rule_id, rule in engine.rules.items():
         entities.extend(
             [
