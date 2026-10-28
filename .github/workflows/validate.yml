@@ -42,24 +42,3 @@ jobs:
 
       - name: Check frontend bundle syntax
         run: node --check custom_components/alarmgrid/frontend/dist/alarmgrid.js
-
-  publish_211:
-    name: Publish AlarmGrid 2.1.1
-    needs: [hacs, tests]
-    if: "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'chore: publish AlarmGrid 2.1.1' }}"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Check out validated release
-        uses: actions/checkout@v4
-        with:
-          ref: b5a2ce60f5fe627ab86494215da46b6023898fd1
-      - name: Publish 2.1.1
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create 2.1.1 \
-            --target b5a2ce60f5fe627ab86494215da46b6023898fd1 \
-            --title "AlarmGrid 2.1.1" \
-            --notes-file RELEASE_NOTES.md
