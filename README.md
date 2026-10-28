@@ -32,6 +32,19 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v2.2.0
+
+- Redesigned the panel and Lovelace card, including rule editing, alarm details,
+  status badges, and clearer visual distinction between alarm states.
+- Fixed rule entity lists closing during automatic updates, including nested
+  AND/OR conditions.
+- Recorded Telegram operators by name in alarm history and CSV exports.
+- Added **Create buttons for each rule** in the integration options, enabled by
+  default. Turning it off removes per-rule action buttons while keeping alarm
+  sensors, global buttons, and panel/card/Telegram actions available.
+- Updated frontend cache busting and entity-count estimates.
+- Existing configuration, rules, and history remain compatible.
+
 ## What's New in v2.1.1
 
 - Fixed the **Suspend** and **Disable** confirmation dialogs unexpectedly disappearing when live alarm updates refresh the Lovelace card.
@@ -191,7 +204,7 @@ AlarmGrid supports the native Home Assistant visual card editor. Go to **Dashboa
 The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
 
 ```yaml
-url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.1.1
+url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.2.0
 type: module
 ```
 
