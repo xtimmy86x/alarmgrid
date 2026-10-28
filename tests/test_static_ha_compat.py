@@ -544,13 +544,20 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
             "custom_components/alarmgrid/frontend/dist/alarmgrid.js"
         ).read_text()
 
-        self.assertIn("_shelveDurationMinutes", source)
-        self.assertIn("_shelveDurationOptions", source)
-        self.assertIn("data-field=\"shelve-duration\"", source)
+        panel = source[
+            source.index("class AlarmGrid extends HTMLElement") :
+            source.index("const EDITOR_TRANSLATIONS")
+        ]
+
+        # The duration is chosen per alarm in the shelve dialog, not globally.
+        self.assertIn("_shelveDurationOptions", panel)
+        self.assertIn("_alarmDialogMarkup()", panel)
+        self.assertIn("_dialogDurationMinutes(dialog)", panel)
+        self.assertIn('_alarmAction("shelve", this._dialog.alarm.id, { duration_minutes', panel)
+        self.assertNotIn("_shelveDurationMinutes", panel)
         self.assertIn("1 day", source)
         self.assertIn("3 days", source)
         self.assertIn("7 days", source)
-        self.assertIn("duration_minutes: this._shelveDurationMinutes", source)
 
     def test_frontend_displays_shelve_expiry(self) -> None:
         source = Path(

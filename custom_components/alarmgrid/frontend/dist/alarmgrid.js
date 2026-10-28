@@ -113,10 +113,10 @@ const TRANSLATIONS = {
     placeholder_system: "System",
     placeholder_threshold: "Threshold",
     condition_builder: "Condition Builder", match: "Match", all_conditions: "ALL conditions", any_condition: "ANY condition",
-    add_condition: "+ Add condition", add_group: "+ Add group", delete_condition: "Delete condition", delete_group: "Delete group",
+    add_condition: "+ Add condition", add_group: "+ Add group (advanced logic)", delete_condition: "Delete condition", delete_group: "Delete group",
     current_state: "Current", deadband_hysteresis: "Deadband / Hysteresis", hysteresis_help: "Prevents alarm chattering near the threshold.",
     alarm_delay: "Alarm delay", clear_delay: "Clear delay", seconds: "seconds",
-    add_rule: "Add Rule",
+    add_rule: "Create rule",
     test_condition: "Test condition", testing: "Testing…", condition_test: "Condition test", matched: "Matched", not_matched: "Not matched",
     current: "Current", expected: "Expected", condition_matched: "Condition matched", condition_not_matched: "Condition not matched",
     entity_not_found: "Entity not found", entity_unavailable: "Entity unavailable", previous_state_unavailable: "Previous state unavailable; state_changed cannot be previewed", result_outdated: "Result outdated — test again", test_failed: "Test failed",
@@ -151,6 +151,45 @@ const TRANSLATIONS = {
     suspend: "Suspend", disable: "Disable", shelved_until: "Suspended until {time}", remaining: "{time} remaining",
     alarm_disabled: "Alarm disabled", expiring: "Expiring…", shelved_temporary: "Shelved · temporary", disabled_persistent: "Disabled · until manually enabled",
     duration_invalid: "Enter a duration greater than zero.", duration_15m: "15 minutes", custom: "Custom…",
+    nav_sections: "AlarmGrid sections", nav_alarms: "Alarms", nav_log: "Log", nav_config: "Configuration",
+    view_subtitle: "Sorted by priority, then activation time · live updates",
+    audio_notice: "Browser sound is off on this device: you will not hear the horn.", enable_sound_short: "Enable sound",
+    ack_all_count: "Ack All ({count})", filter_priority: "Filter by priority", search_alarms: "Search alarms",
+    col_value: "Value", col_area_system: "Area · System", col_actions: "Actions",
+    show_instructions: "Show instructions", hide_instructions: "Hide instructions", operator_instructions: "Operator instructions",
+    acknowledged_at: "Acknowledged {time}",
+    legend_unack: "Coloured row: to acknowledge", legend_cleared: "Magenta row: cleared, not acknowledged", legend_ack: "Neutral row: acknowledged",
+    rules_title: "Alarm rules", rules_subtitle: "{count} rules · {enabled} enabled · each rule creates 4 Home Assistant entities",
+    new_rule: "New rule", search_rules: "Search name, ID, entity",
+    rules_selected_bar: "{count} rules selected · {entities} linked entities will also be removed", clear_selection: "Clear selection",
+    col_rule: "Rule", no_matching_rules: "No rules match the search",
+    back_to_rules: "Back to rules", new_rule_title: "New rule",
+    section_identity: "Identification", section_identity_help: "How the alarm is shown to operators.",
+    label_name: "Alarm name", label_rule_id: "Rule ID", optional: "optional",
+    help_rule_id_new: "Generated from the name. It becomes part of the entity IDs and cannot be changed after creation.",
+    help_rule_id_edit: "The rule ID cannot be changed.",
+    label_tag: "Tag", help_tag: "Short code shown in alarm lists.",
+    label_system: "System", help_system: "Suggestions from systems already in use.",
+    label_area: "Area", help_area: "Taken automatically from the area of the first entity.", area_none: "No area assigned",
+    section_condition: "When the alarm triggers", section_condition_help: "Each condition shows the current value of its entity.",
+    triggers_when_single: "Triggers when this condition is true:", triggers_when: "Triggers when", triggers_when_suffix: "of the following conditions are true:",
+    match_all: "all", match_any: "any", group_prefix: "Group:", group_suffix: "of these conditions",
+    condition_n: "Condition {n}", label_entity: "Entity", label_operator: "Operator", label_value: "Value", label_lower: "From", label_upper: "To",
+    joiner_and: "AND", joiner_or: "OR",
+    section_behavior: "Priority and timing", section_behavior_help: "Priority sets the colour, flashing, acknowledgement and order in lists.",
+    priority_help_critical: "Highest severity · flashes · requires ack", priority_help_high: "Flashes · requires ack", priority_help_medium: "Flashes · requires ack",
+    priority_help_low: "Requires ack · no flashing", priority_help_info: "No ack required", priority_help_status: "Status indication · no ack",
+    help_alarm_delay: "Conditions must stay true this long before the alarm triggers.", help_clear_delay: "The alarm clears only after the conditions stay false this long.",
+    section_notify: "Notifications and instructions", section_notify_help: "Optional.",
+    telegram_help_inherit: "Uses the global minimum priority", telegram_help_always: "Ignores the global minimum priority", telegram_help_never: "No messages for this rule",
+    label_instructions: "Operator instructions", help_instructions: "Shown in the panel when the alarm is active.",
+    summary_title: "Summary", summary_empty: "Choose an entity and a condition to see the summary.",
+    summary_alarm: "{priority} alarm when {conditions}", summary_delay_on: ", for at least {seconds} s", summary_delay_off: ". Clears after {seconds} s",
+    summary_hysteresis: "(hysteresis {value})", cond_and: "and", cond_or: "or", test_hint: "Test the condition against the current entity values before saving.",
+    conditions_count: "{count} conditions · {mode}", mode_all: "all true", mode_any: "at least one true",
+    confirm_delete_group: "Delete this group and all its conditions?", rule_created: "Rule {id} created",
+    more_alarms: "+{count} more alarms", open_alarmgrid: "Open AlarmGrid", alarm_summary: "Alarm summary",
+    chip_shelved: "shelved", chip_disabled: "disabled",
   },
   it: {
     default_title: "Allarmi Industriali",
@@ -247,10 +286,10 @@ const TRANSLATIONS = {
     placeholder_system: "Sistema",
     placeholder_threshold: "Soglia",
     condition_builder: "Costruttore condizioni", match: "Corrispondenza", all_conditions: "Tutte le condizioni", any_condition: "Almeno una condizione",
-    add_condition: "+ Aggiungi condizione", add_group: "+ Aggiungi gruppo", delete_condition: "Elimina condizione", delete_group: "Elimina gruppo",
+    add_condition: "+ Aggiungi condizione", add_group: "+ Aggiungi gruppo (logica avanzata)", delete_condition: "Elimina condizione", delete_group: "Elimina gruppo",
     current_state: "Attuale", deadband_hysteresis: "Banda morta / Isteresi", hysteresis_help: "Evita commutazioni ripetute dell’allarme vicino alla soglia.",
     alarm_delay: "Ritardo allarme", clear_delay: "Ritardo ripristino", seconds: "secondi",
-    add_rule: "Aggiungi regola",
+    add_rule: "Crea regola",
     test_condition: "Testa condizione", testing: "Test in corso…", condition_test: "Test condizione", matched: "Verificata", not_matched: "Non verificata",
     current: "Attuale", expected: "Atteso", condition_matched: "Condizione verificata", condition_not_matched: "Condizione non verificata",
     entity_not_found: "Entità non trovata", entity_unavailable: "Entità non disponibile", previous_state_unavailable: "Stato precedente non disponibile; state_changed non può essere testato", result_outdated: "Risultato non aggiornato — esegui nuovamente il test", test_failed: "Test fallito",
@@ -285,6 +324,45 @@ const TRANSLATIONS = {
     suspend: "Sospendi", disable: "Disabilita", shelved_until: "Sospeso fino alle {time}", remaining: "{time} rimanenti",
     alarm_disabled: "Allarme disabilitato", expiring: "In scadenza…", shelved_temporary: "Sospeso · temporaneo", disabled_persistent: "Disabilitato · fino alla riabilitazione manuale",
     duration_invalid: "Inserisci una durata maggiore di zero.", duration_15m: "15 minuti", custom: "Personalizzato…",
+    nav_sections: "Sezioni AlarmGrid", nav_alarms: "Allarmi", nav_log: "Registro", nav_config: "Configurazione",
+    view_subtitle: "Ordinati per priorità, poi per ora di attivazione · aggiornamento in tempo reale",
+    audio_notice: "Il suono del browser è disattivato su questo dispositivo: non sentirai la sirena.", enable_sound_short: "Abilita suono",
+    ack_all_count: "Riconosci tutti ({count})", filter_priority: "Filtra per priorità", search_alarms: "Cerca allarmi",
+    col_value: "Valore", col_area_system: "Area · Sistema", col_actions: "Azioni",
+    show_instructions: "Mostra istruzioni", hide_instructions: "Nascondi istruzioni", operator_instructions: "Istruzioni operatore",
+    acknowledged_at: "Riconosciuto alle {time}",
+    legend_unack: "Riga colorata: da riconoscere", legend_cleared: "Riga magenta: rientrato, non riconosciuto", legend_ack: "Riga neutra: riconosciuto",
+    rules_title: "Regole di allarme", rules_subtitle: "{count} regole · {enabled} abilitate · ogni regola crea 4 entità in Home Assistant",
+    new_rule: "Nuova regola", search_rules: "Cerca nome, ID, entità",
+    rules_selected_bar: "{count} regole selezionate · verranno rimosse anche {entities} entità collegate", clear_selection: "Deseleziona",
+    col_rule: "Regola", no_matching_rules: "Nessuna regola corrisponde alla ricerca",
+    back_to_rules: "Torna alle regole", new_rule_title: "Nuova regola",
+    section_identity: "Identificazione", section_identity_help: "Come l'allarme appare agli operatori.",
+    label_name: "Nome allarme", label_rule_id: "ID regola", optional: "opzionale",
+    help_rule_id_new: "Generato dal nome. Diventa parte degli entity_id e non si può cambiare dopo la creazione.",
+    help_rule_id_edit: "L'ID della regola non si può modificare.",
+    label_tag: "Tag", help_tag: "Codice breve mostrato nelle liste allarmi.",
+    label_system: "Sistema", help_system: "Suggerimenti dai sistemi già usati.",
+    label_area: "Area", help_area: "Presa automaticamente dall'area della prima entità.", area_none: "Nessuna area assegnata",
+    section_condition: "Quando scatta l'allarme", section_condition_help: "Ogni condizione mostra il valore attuale della sua entità.",
+    triggers_when_single: "Scatta quando questa condizione è vera:", triggers_when: "Scatta quando", triggers_when_suffix: "le condizioni seguenti sono vere:",
+    match_all: "tutte", match_any: "almeno una", group_prefix: "Gruppo:", group_suffix: "di queste condizioni",
+    condition_n: "Condizione {n}", label_entity: "Entità", label_operator: "Operatore", label_value: "Valore", label_lower: "Da", label_upper: "A",
+    joiner_and: "E", joiner_or: "O",
+    section_behavior: "Priorità e tempi", section_behavior_help: "La priorità decide colore, lampeggio, riconoscimento e ordine nelle liste.",
+    priority_help_critical: "Massima gravità · lampeggia · va riconosciuto", priority_help_high: "Lampeggia · va riconosciuto", priority_help_medium: "Lampeggia · va riconosciuto",
+    priority_help_low: "Va riconosciuto · non lampeggia", priority_help_info: "Nessun riconoscimento richiesto", priority_help_status: "Indicazione di stato · nessun riconoscimento",
+    help_alarm_delay: "Le condizioni devono restare vere per questo tempo prima che l'allarme scatti.", help_clear_delay: "L'allarme rientra solo dopo che le condizioni restano false per questo tempo.",
+    section_notify: "Notifiche e istruzioni", section_notify_help: "Facoltativo.",
+    telegram_help_inherit: "Usa la priorità minima globale", telegram_help_always: "Ignora la priorità minima globale", telegram_help_never: "Nessun messaggio per questa regola",
+    label_instructions: "Istruzioni per l'operatore", help_instructions: "Mostrate nel pannello quando l'allarme è attivo.",
+    summary_title: "Riepilogo", summary_empty: "Scegli un'entità e una condizione per vedere il riepilogo.",
+    summary_alarm: "Allarme {priority} quando {conditions}", summary_delay_on: ", per almeno {seconds} s", summary_delay_off: ". Rientra dopo {seconds} s",
+    summary_hysteresis: "(isteresi {value})", cond_and: "e", cond_or: "o", test_hint: "Prova la condizione con i valori attuali delle entità prima di salvare.",
+    conditions_count: "{count} condizioni · {mode}", mode_all: "tutte vere", mode_any: "almeno una vera",
+    confirm_delete_group: "Eliminare questo gruppo e tutte le sue condizioni?", rule_created: "Regola {id} creata",
+    more_alarms: "+{count} altri allarmi", open_alarmgrid: "Apri AlarmGrid", alarm_summary: "Riepilogo allarmi",
+    chip_shelved: "sospesi", chip_disabled: "disabilitati",
   },
 };
 
@@ -306,11 +384,23 @@ class AlarmGrid extends HTMLElement {
       threshold: "",
       priority: "medium",
       telegram_notification_policy: "inherit",
-      system: "",
+      system: "", tag: "", instructions: "",
       deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
     };
     this._selectedRuleIds = new Set();
     this._editingRuleId = null;
+    this._ruleEditorOpen = false;
+    this._ruleIdTouched = false;
+    this._ruleSearch = "";
+    this._expandedAlarmIds = new Set();
+    this._openRowMenu = null;
+    this._dialog = undefined;
+    this._closeRowMenus = (event) => {
+      if (event?.type === "keydown" && event.key !== "Escape") return;
+      if (event?.type === "pointerdown" && event.composedPath().some((node) => node?.classList?.contains?.("row-menu"))) return;
+      this._openRowMenu = null;
+      this.shadowRoot?.querySelectorAll("details.row-menu[open]").forEach((menu) => { menu.open = false; });
+    };
     this._rulesResult = null;
     this._rulePreview = null;
     this._rulePreviewLoading = false;
@@ -321,7 +411,6 @@ class AlarmGrid extends HTMLElement {
     this._effectiveTheme = "light";
     this._search = "";
     this._priority = "all";
-    this._shelveDurationMinutes = 60;
     this._audioEnabled = false;
     this._refreshing = false;
     this._updatesSubscribed = false;
@@ -356,7 +445,14 @@ class AlarmGrid extends HTMLElement {
     this._panel = panel;
   }
 
+  connectedCallback() {
+    document.addEventListener("pointerdown", this._closeRowMenus);
+    document.addEventListener("keydown", this._closeRowMenus);
+  }
+
   disconnectedCallback() {
+    document.removeEventListener("pointerdown", this._closeRowMenus);
+    document.removeEventListener("keydown", this._closeRowMenus);
     if (this._timer) {
       window.clearInterval(this._timer);
     }
@@ -481,13 +577,60 @@ class AlarmGrid extends HTMLElement {
     await this._load();
   }
 
-  async _shelve(ruleId) {
-    await this._callWS({
-      type: "alarmgrid/shelve",
-      rule_id: ruleId,
-      duration_minutes: this._shelveDurationMinutes,
-    });
+  async _alarmAction(type, ruleId, extra = {}) {
+    try {
+      await this._callWS({ type: `alarmgrid/${type}`, rule_id: ruleId, ...extra });
+    } catch (err) {
+      this._error = err?.message || String(err);
+    }
     await this._load();
+  }
+
+  _openAlarmDialog(kind, ruleId) {
+    const alarm = this._alarms.find((item) => item.id === ruleId);
+    if (!alarm) return;
+    this._openRowMenu = null;
+    this._dialog = { kind, alarm };
+    this._render();
+    this.shadowRoot.querySelector("[data-dialog-root] dialog")?.showModal?.();
+  }
+
+  // Same markup and validation as the Lovelace card so both surfaces behave alike.
+  _alarmDialogMarkup() {
+    if (!this._dialog) return "";
+    const alarm = this._dialog.alarm;
+    const comment = `<label>${this._t("comment_optional")}<textarea name="comment" rows="2"></textarea></label>`;
+    if (this._dialog.kind === "disable") return `<dialog class="theme-${this._effectiveTheme}" aria-labelledby="dialog-title"><form method="dialog"><h3 id="dialog-title">${this._escape(this._t("confirm_disable_title", { name: alarm.name || alarm.id }))}</h3><p>${this._t("confirm_disable_message")}</p>${comment}<div class="dialog-actions"><button value="cancel">${this._t("cancel")}</button><button class="danger" value="default" data-confirm-disable>${this._t("disable")}</button></div></form></dialog>`;
+    const presets = [[15, this._t("duration_15m")], ...this._shelveDurationOptions()];
+    return `<dialog class="theme-${this._effectiveTheme}" aria-labelledby="dialog-title"><form method="dialog"><h3 id="dialog-title">${this._t("suspend_alarm")}: ${this._escape(alarm.name || alarm.id)}</h3><label>${this._t("suspend_for")}<select name="preset">${presets.map(([minutes, label]) => `<option value="${minutes}" ${minutes === 60 ? "selected" : ""}>${label}</option>`).join("")}<option value="custom">${this._t("custom")}</option></select></label><div class="custom-duration" hidden><label>${this._t("duration")}<input name="duration" type="number" min="0.01" step="any" inputmode="decimal"></label><select name="unit" aria-label="${this._t("duration")}"><option value="minutes">${this._t("minutes")}</option><option value="hours">${this._t("hours")}</option><option value="days">${this._t("days")}</option></select></div>${comment}<div class="validation" role="alert"></div><div class="dialog-actions"><button value="cancel">${this._t("cancel")}</button><button class="primary" value="default" data-confirm-shelve>${this._t("suspend")}</button></div></form></dialog>`;
+  }
+
+  _dialogDurationMinutes(dialog) {
+    const preset = dialog.querySelector("[name=preset]").value;
+    if (preset !== "custom") return Number(preset);
+    const value = Number(dialog.querySelector("[name=duration]").value);
+    const factor = { minutes: 1, hours: 60, days: 1440 }[dialog.querySelector("[name=unit]").value];
+    const minutes = value * factor;
+    return Number.isFinite(minutes) && minutes > 0 ? Math.ceil(minutes) : null;
+  }
+
+  _wireAlarmDialog(dialogRoot) {
+    const dialog = dialogRoot.querySelector("dialog");
+    // The dialog survives live re-renders, so its listeners are bound only once.
+    if (!dialog || dialog._alarmGridHandlersBound) return;
+    dialog._alarmGridHandlersBound = true;
+    dialog.addEventListener("close", () => { this._dialog = undefined; this._render(); });
+    dialog.querySelector("[name=preset]")?.addEventListener("change", (event) => { dialog.querySelector(".custom-duration").hidden = event.target.value !== "custom"; });
+    dialog.querySelector("[data-confirm-shelve]")?.addEventListener("click", async (event) => {
+      const duration_minutes = this._dialogDurationMinutes(dialog);
+      if (!duration_minutes) { event.preventDefault(); dialog.querySelector(".validation").textContent = this._t("duration_invalid"); return; }
+      const comment = dialog.querySelector("[name=comment]").value.trim();
+      await this._alarmAction("shelve", this._dialog.alarm.id, { duration_minutes, ...(comment ? { comment } : {}) });
+    });
+    dialog.querySelector("[data-confirm-disable]")?.addEventListener("click", async () => {
+      const comment = dialog.querySelector("[name=comment]").value.trim();
+      await this._alarmAction("disable", this._dialog.alarm.id, comment ? { comment } : {});
+    });
   }
 
   async _testSound() {
@@ -529,15 +672,27 @@ class AlarmGrid extends HTMLElement {
     this._sound = { ...this._sound, horn_active: false };
   }
 
-  _filteredAlarms() {
+  _tabStates(tab = this._tab) {
+    return {
+      active: ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"],
+      unacknowledged: ["ACTIVE_UNACK", "CLEARED_UNACK"],
+      shelved: ["SHELVED"],
+      disabled: ["DISABLED"],
+    }[tab] || [];
+  }
+
+  _tabCount(tab) {
+    const states = this._tabStates(tab);
+    return this._alarms.filter((alarm) => states.includes(alarm.lifecycle_state)).length;
+  }
+
+  _filteredAlarms(ignorePriority = false) {
     const search = this._search.trim().toLowerCase();
+    const states = this._tabStates();
     return this._alarms
       .filter((alarm) => {
-        if (this._tab === "active" && !["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)) return false;
-        if (this._tab === "unacknowledged" && !["ACTIVE_UNACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)) return false;
-        if (this._tab === "shelved" && alarm.lifecycle_state !== "SHELVED") return false;
-        if (this._tab === "disabled" && alarm.lifecycle_state !== "DISABLED") return false;
-        if (this._priority !== "all" && alarm.priority !== this._priority) return false;
+        if (!states.includes(alarm.lifecycle_state)) return false;
+        if (!ignorePriority && this._priority !== "all" && alarm.priority !== this._priority) return false;
         if (!search) return true;
         return [alarm.tag, alarm.name, alarm.entity_id, alarm.area, alarm.system]
           .filter(Boolean)
@@ -554,18 +709,39 @@ class AlarmGrid extends HTMLElement {
     this._syncTheme();
     this._captureTableScroll();
     const visible = this._filteredAlarms();
-    this.shadowRoot.innerHTML = `
+    // Keep the modal outside the frequently refreshed panel subtree so polling
+    // and websocket updates cannot remove an open <dialog>.
+    let panelRoot = this.shadowRoot.querySelector("[data-panel-root]");
+    let dialogRoot = this.shadowRoot.querySelector("[data-dialog-root]");
+    if (!panelRoot || !dialogRoot) {
+      panelRoot = document.createElement("div");
+      panelRoot.dataset.panelRoot = "";
+      dialogRoot = document.createElement("div");
+      dialogRoot.dataset.dialogRoot = "";
+      this.shadowRoot.replaceChildren(panelRoot, dialogRoot);
+    }
+    panelRoot.innerHTML = `
       <style>${this._styles()}</style>
-      <main class="panel theme-${this._effectiveTheme}">
+      <div class="panel theme-${this._effectiveTheme}">
         ${this._headerView()}
-        ${this._tabsView()}
-        ${this._error ? `<div class="error">${this._escape(this._error)}</div>` : ""}
-        ${this._tab === "history" ? this._historyView() : ""}
-        ${this._tab === "rules" ? this._rulesView() : ""}
-        ${this._tab === "settings" ? this._settingsView() : ""}
-        ${["active", "unacknowledged", "shelved", "disabled"].includes(this._tab) ? this._alarmView(visible) : ""}
-      </main>
+        <div class="layout">
+          ${this._tabsView()}
+          <main class="content">
+            ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
+            ${this._tab === "history" ? this._historyView() : ""}
+            ${this._tab === "rules" ? this._rulesView() : ""}
+            ${this._tab === "settings" ? this._settingsView() : ""}
+            ${["active", "unacknowledged", "shelved", "disabled"].includes(this._tab) ? this._alarmView(visible) : ""}
+          </main>
+        </div>
+      </div>
     `;
+    if (this._dialog && !dialogRoot.querySelector("dialog")) {
+      dialogRoot.innerHTML = this._alarmDialogMarkup();
+    } else if (!this._dialog && dialogRoot.firstChild) {
+      dialogRoot.replaceChildren();
+    }
+    this._wireAlarmDialog(dialogRoot);
     this._wire();
     this._restoreTableScroll();
     this._rendered = true;
@@ -604,21 +780,22 @@ class AlarmGrid extends HTMLElement {
 
   _headerView() {
     if (this._hideHeader) return "";
+    const active = this._alarms.filter((a) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(a.lifecycle_state)).length;
+    const unack = this._tabCount("unacknowledged");
     return `
       <header class="topbar">
-        ${this._narrow ? `<button class="secondary menu-button" data-action="toggle-menu" aria-label="${this._t("open_sidebar")}">${this._t("menu")}</button>` : ""}
-        <div>
+        <div class="brand">
+          ${this._narrow ? `<button class="secondary menu-button" data-action="toggle-menu" aria-label="${this._t("open_sidebar")}">${this._t("menu")}</button>` : ""}
           <h1>${this._escape(this._title || this._t("default_title"))}</h1>
           <div class="metrics">
-            <span>${this._t("metric_active", { count: this._alarms.filter((a) => ["ACTIVE_UNACK", "ACTIVE_ACK"].includes(a.lifecycle_state)).length })}</span>
-            <span>${this._t("metric_unack", { count: this._alarms.filter((a) => ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(a.lifecycle_state)).length })}</span>
-            <span class="${this._sound.horn_active ? "horn on" : "horn"}">${this._sound.horn_active ? this._t("horn_active") : this._t("horn_idle")}</span>
+            <span class="metric ${active ? "metric-active" : ""}"><span class="dot"></span>${this._t("metric_active", { count: active })}</span>
+            <span class="metric ${unack ? "metric-unack" : ""}"><span class="dot"></span>${this._t("metric_unack", { count: unack })}</span>
+            <span class="metric horn ${this._sound.horn_active ? "on" : ""}"><ha-icon icon="${this._sound.horn_active ? "mdi:volume-high" : "mdi:volume-mute"}" aria-hidden="true"></ha-icon>${this._sound.horn_active ? this._t("horn_active") : this._t("horn_idle")}</span>
           </div>
         </div>
         <div class="actions">
-          ${!this._audioEnabled ? `<button class="secondary" data-action="enable-audio">${this._t("enable_alarm_sound")}</button>` : ""}
-          <button class="danger" data-action="silence">${this._t("silence")}</button>
-          <button class="primary" data-action="ack-all">${this._t("ack_all")}</button>
+          <button data-action="silence" ${this._sound.horn_active ? "" : "disabled"}><ha-icon icon="mdi:volume-off" aria-hidden="true"></ha-icon>${this._t("silence")}</button>
+          <button class="primary" data-action="ack-all" ${unack ? "" : "disabled"}><ha-icon icon="mdi:check-all" aria-hidden="true"></ha-icon>${this._t("ack_all_count", { count: unack })}</button>
         </div>
       </header>
     `;
@@ -626,20 +803,25 @@ class AlarmGrid extends HTMLElement {
 
   _tabsView() {
     if (this._hideTabs) return "";
-    return `<nav class="tabs">${this._tabs()}</nav>`;
+    return `<nav class="tabs" aria-label="${this._t("nav_sections")}">${this._tabs()}</nav>`;
   }
 
   _tabs() {
-    const tabs = [
-      ["active", this._t("tab_active")],
-      ["unacknowledged", this._t("tab_unacknowledged")],
-      ["history", this._t("tab_history")],
-      ["shelved", this._t("tab_shelved")],
-      ["disabled", this._t("tab_disabled")],
-      ["rules", this._t("tab_rules")],
-      ["settings", this._t("tab_settings")],
+    const unack = this._tabCount("unacknowledged");
+    const groups = [
+      [this._t("nav_alarms"), [
+        ["active", this._t("tab_active"), this._tabCount("active"), this._tabCount("active") ? "count-alert" : ""],
+        ["unacknowledged", this._t("tab_unacknowledged"), unack, unack ? "count-warn" : ""],
+        ["shelved", this._t("tab_shelved"), this._tabCount("shelved"), ""],
+        ["disabled", this._t("tab_disabled"), this._tabCount("disabled"), ""],
+      ]],
+      [this._t("nav_log"), [["history", this._t("tab_history")]]],
+      [this._t("nav_config"), [
+        ["rules", this._t("tab_rules"), this._rules.length, ""],
+        ["settings", this._t("tab_settings")],
+      ]],
     ];
-    return tabs.map(([id, label]) => `<button class="${this._tab === id ? "selected" : ""}" data-tab="${id}">${label}</button>`).join("");
+    return groups.map(([title, tabs]) => `<div class="nav-group"><span class="nav-title">${title}</span>${tabs.map(([id, label, count, countClass]) => `<button class="nav-item ${this._tab === id ? "selected" : ""}" data-tab="${id}" ${this._tab === id ? 'aria-current="page"' : ""}><span>${label}</span>${count !== undefined ? `<span class="count ${countClass}">${count}</span>` : ""}</button>`).join("")}</div>`).join("");
   }
 
   _shelveDurationOptions() {
@@ -653,58 +835,93 @@ class AlarmGrid extends HTMLElement {
     ];
   }
 
+  _audioNotice() {
+    if (this._audioEnabled) return "";
+    return `<div class="notice-bar" role="status"><span><ha-icon icon="mdi:information-outline" aria-hidden="true"></ha-icon>${this._t("audio_notice")}</span><button data-action="enable-audio">${this._t("enable_sound_short")}</button></div>`;
+  }
+
   _alarmView(alarms) {
+    const unfiltered = this._filteredAlarms(true);
+    const tabLabel = { active: "tab_active", unacknowledged: "tab_unacknowledged", shelved: "tab_shelved", disabled: "tab_disabled" }[this._tab];
+    const chips = ["all", ...CARD_PRIORITIES].map((priority) => {
+      const count = priority === "all" ? unfiltered.length : unfiltered.filter((alarm) => alarm.priority === priority).length;
+      return `<button class="chip ${this._priority === priority ? "selected" : ""}" data-priority-filter="${priority}" aria-pressed="${this._priority === priority}">${priority === "all" ? "" : `<span class="dot priority-dot-${priority}"></span>`}${this._t(`priority_${priority}`)} · ${count}</button>`;
+    }).join("");
     return `
-      <section class="toolbar">
-        <input type="search" placeholder="${this._t("search_placeholder")}" value="${this._escape(this._search)}" data-field="search">
-        <select data-field="priority">
-          ${["all", "critical", "high", "medium", "low", "info", "status"].map((priority) => `<option value="${priority}" ${this._priority === priority ? "selected" : ""}>${this._t(`priority_${priority}`)}</option>`).join("")}
-        </select>
-        <label class="shelve-duration">${this._t("shelve_for")}
-          <select data-field="shelve-duration">
-            ${this._shelveDurationOptions().map(([minutes, label]) => `<option value="${minutes}" ${this._shelveDurationMinutes === minutes ? "selected" : ""}>${label}</option>`).join("")}
-          </select>
-        </label>
-        <button data-action="refresh">${this._t("refresh")}</button>
+      ${this._audioNotice()}
+      <section class="view-head">
+        <div>
+          <h2>${this._t(tabLabel)}</h2>
+          <p class="subtitle">${this._t("view_subtitle")}</p>
+        </div>
+        <div class="search-box">
+          <ha-icon icon="mdi:magnify" aria-hidden="true"></ha-icon>
+          <input type="search" aria-label="${this._t("search_alarms")}" placeholder="${this._t("search_placeholder")}" value="${this._escape(this._search)}" data-field="search">
+        </div>
+      </section>
+      <section class="toolbar" role="group" aria-label="${this._t("filter_priority")}">
+        ${chips}
+        <button class="icon-button" data-action="refresh" title="${this._t("refresh")}" aria-label="${this._t("refresh")}"><ha-icon icon="mdi:refresh"></ha-icon></button>
       </section>
       <section class="table-shell">
         <table data-table-id="alarms">
           <thead>
             <tr>
-              <th>${this._t("col_time")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_tag")}</th><th>${this._t("col_alarm")}</th><th>${this._t("col_source_value")}</th><th>${this._t("col_state")}</th><th>${this._t("col_shelved_until")}</th><th>${this._t("col_ack")}</th><th>${this._t("col_shelve")}</th><th>${this._t("col_instructions")}</th>
+              <th>${this._t("col_priority")}</th><th>${this._t("col_time")}</th><th>${this._t("col_alarm")}</th><th>${this._t("col_area_system")}</th><th>${this._t("col_value")}</th><th>${this._t("col_state")}</th><th class="actions-col">${this._t("col_actions")}</th>
             </tr>
           </thead>
           <tbody>
-            ${alarms.length ? alarms.map((alarm) => this._alarmRow(alarm)).join("") : `<tr><td colspan="12" class="empty">${this._t("no_alarms")}</td></tr>`}
+            ${alarms.length ? alarms.map((alarm) => this._alarmRow(alarm)).join("") : `<tr><td colspan="7" class="empty">${this._t("no_alarms")}</td></tr>`}
           </tbody>
         </table>
       </section>
+      ${["active", "unacknowledged"].includes(this._tab) ? `<p class="legend"><span><span class="legend-swatch swatch-unack"></span>${this._t("legend_unack")}</span><span><span class="legend-swatch swatch-cleared"></span>${this._t("legend_cleared")}</span><span><span class="legend-swatch swatch-ack"></span>${this._t("legend_ack")}</span></p>` : ""}
     `;
+  }
+
+  _alarmStateText(alarm) {
+    const state = alarm.lifecycle_state;
+    if (state === "SHELVED" && alarm.shelve_expiry) return this._t("shelved_until", { time: this._shortTime(alarm.shelve_expiry) });
+    const label = this._lifecycleLabel(state);
+    if (state === "ACTIVE_ACK" && alarm.acknowledged_at) return `${label}<small>${this._t("acknowledged_at", { time: this._shortTime(alarm.acknowledged_at) })}</small>`;
+    return label;
+  }
+
+  _alarmActions(alarm) {
+    const id = this._escape(alarm.id);
+    const state = alarm.lifecycle_state;
+    if (state === "SHELVED") return `<button data-unshelve="${id}">${this._t("unshelve_now")}</button>`;
+    if (state === "DISABLED") return `<button data-enable="${id}">${this._t("enable_alarm")}</button>`;
+    const ack = alarm.acknowledged ? "" : `<button class="primary" data-ack="${id}">${this._t("ack")}</button>`;
+    const menu = `<details class="row-menu" data-row-menu="${id}" ${this._openRowMenu === alarm.id ? "open" : ""}><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical" aria-hidden="true"></ha-icon></summary><div class="menu-popover"><button data-open-shelve="${id}">${this._t("suspend_alarm")}…</button><button class="destructive-text" data-open-disable="${id}">${this._t("disable_alarm")}…</button></div></details>`;
+    return `${ack}${menu}`;
   }
 
   _alarmRow(alarm) {
     const stateClass = this._alarmStateClass(alarm);
     const flash = stateClass !== "state-pending-color" && (alarm.lifecycle_state === "ACTIVE_UNACK" || alarm.lifecycle_state === "CLEARED_UNACK");
+    const expanded = this._expandedAlarmIds.has(alarm.id);
+    const context = [alarm.area, alarm.system].filter(Boolean).map((item) => this._escape(item)).join(" · ");
+    const instructionsToggle = alarm.instructions
+      ? `<button class="icon-button" data-toggle-instructions="${this._escape(alarm.id)}" aria-expanded="${expanded}" title="${this._t(expanded ? "hide_instructions" : "show_instructions")}" aria-label="${this._t(expanded ? "hide_instructions" : "show_instructions")}"><ha-icon icon="mdi:book-open-variant" aria-hidden="true"></ha-icon></button>`
+      : "";
     return `
       <tr class="alarm-row priority-${alarm.priority} ${stateClass} ${flash ? "flash" : ""}">
-        <td>${this._time(alarm.active_since || alarm.cleared_at)}</td>
         <td><span class="badge">${this._t(`priority_${alarm.priority}`)}</span></td>
-        <td>${this._escape(alarm.area || "")}</td>
-        <td>${this._escape(alarm.system || "")}</td>
-        <td>${this._escape(alarm.tag || alarm.id)}</td>
-        <td>${this._escape(alarm.name)}</td>
-        <td>${this._escape(String(alarm.last_value ?? alarm.last_source_state ?? ""))}</td>
-        <td>${this._lifecycleLabel(alarm.lifecycle_state)}</td>
-        <td>${this._time(alarm.shelve_expiry)}</td>
-        <td><button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button></td>
-        <td><button data-shelve="${this._escape(alarm.id)}" ${alarm.shelved || alarm.disabled ? "disabled" : ""}>${this._t("shelve")}</button></td>
-        <td>${this._escape(alarm.instructions || "")}</td>
+        <td class="mono">${this._shortTime(alarm.active_since || alarm.cleared_at)}</td>
+        <td class="alarm-cell"><strong>${this._escape(alarm.name)}</strong>${alarm.tag ? `<span class="mono tag">${this._escape(alarm.tag)}</span>` : ""}</td>
+        <td>${context}</td>
+        <td class="mono">${this._escape(String(alarm.last_value ?? alarm.last_source_state ?? ""))}</td>
+        <td class="state-cell">${this._alarmStateText(alarm)}</td>
+        <td class="row-actions">${instructionsToggle}${this._alarmActions(alarm)}</td>
       </tr>
+      ${expanded ? `<tr class="instructions-row"><td colspan="7"><div class="instructions"><ha-icon icon="mdi:book-open-variant" aria-hidden="true"></ha-icon><div><strong>${this._t("operator_instructions")}</strong><p>${this._escape(alarm.instructions)}</p></div></div></td></tr>` : ""}
     `;
   }
 
   _historyView() {
     return `
+      <section class="view-head"><div><h2>${this._t("tab_history")}</h2></div></section>
       <section class="toolbar history-export">
         <label>${this._t("history_from")}
           <input type="datetime-local" data-history-range="start" value="${this._escape(this._historyStart)}">
@@ -738,72 +955,151 @@ class AlarmGrid extends HTMLElement {
   }
 
   _rulesView() {
-    const ruleDraft = this._ruleDraft;
+    return this._ruleEditorOpen ? this._ruleEditorView() : this._rulesListView();
+  }
+
+  _filteredRules() {
+    const search = this._ruleSearch.trim().toLowerCase();
+    if (!search) return this._rules;
+    return this._rules.filter((rule) => [rule.id, rule.name, rule.entity_id, rule.tag, rule.area, rule.system]
+      .filter(Boolean).join(" ").toLowerCase().includes(search));
+  }
+
+  _rulesListView() {
     const selectedRuleCount = this._selectedRuleIds.size;
+    const rules = this._filteredRules();
+    const allSelected = rules.length > 0 && rules.every((rule) => this._selectedRuleIds.has(rule.id));
+    const enabledCount = this._rules.filter((rule) => rule.enabled !== false).length;
+    const editIcon = `<ha-icon icon="mdi:pencil" aria-hidden="true"></ha-icon>`;
     return `
       <section class="rules">
-        <div class="rule-form">
-          <input placeholder="${this._t("placeholder_rule_id")}" value="${this._escape(ruleDraft.id)}" data-new="id" ${this._editingRuleId ? "disabled" : ""}>
-          <input placeholder="${this._t("placeholder_name")}" value="${this._escape(ruleDraft.name)}" data-new="name">
-          <input placeholder="${this._t("placeholder_system")}" value="${this._escape(ruleDraft.system)}" data-new="system">
-          <datalist id="entity-id-options">${this._entityOptions()}</datalist>
-          <fieldset class="condition-builder"><legend>${this._t("condition_builder")}</legend>${this._conditionBuilder(ruleDraft)}</fieldset>
-          ${this._rulePreviewPanel()}
-          <label>${this._t("alarm_delay")} <input type="number" min="0" data-new="delay_on_seconds" value="${ruleDraft.delay_on_seconds || 0}"> ${this._t("seconds")}</label>
-          <label>${this._t("clear_delay")} <input type="number" min="0" data-new="delay_off_seconds" value="${ruleDraft.delay_off_seconds || 0}"> ${this._t("seconds")}</label>
-          <select data-new="priority">
-            ${["critical", "high", "medium", "low", "info", "status"].map((p) => `<option value="${p}" ${ruleDraft.priority === p ? "selected" : ""}>${this._t(`priority_${p}`)}</option>`).join("")}
-          </select>
-          <label>${this._t("telegram_notifications")}
-            <select data-new="telegram_notification_policy">
-              ${["inherit", "always", "never"].map((policy) => `<option value="${policy}" ${ruleDraft.telegram_notification_policy === policy ? "selected" : ""}>${this._t(`telegram_policy_${policy}`)}</option>`).join("")}
-            </select>
-          </label>
-          ${this._editingRuleId
-            ? `<button class="secondary" data-action="test-rule" ${this._rulePreviewLoading ? "disabled" : ""}>${this._rulePreviewLoading ? this._t("testing") : this._t("test_condition")}</button><button class="primary" data-action="update-rule">${this._t("save_rule")}</button>
-          <button class="secondary" data-action="cancel-edit-rule">${this._t("cancel")}</button>`
-            : `<button class="secondary" data-action="test-rule" ${this._rulePreviewLoading ? "disabled" : ""}>${this._rulePreviewLoading ? this._t("testing") : this._t("test_condition")}</button><button class="primary" data-action="create-rule">${this._t("add_rule")}</button>`}
-        </div>
-        ${this._editingRuleId ? `<div class="notice">${this._t("editing_rule", { id: this._escape(this._editingRuleId) })}</div>` : ""}
-        ${this._rulesResult ? `<div class="notice">${this._escape(this._rulesResult)}</div>` : ""}
-        <div class="bulk-actions">
-          <span>${this._t("n_rules", { count: this._rules.length })}</span>
-          <span>${this._t("n_selected", { count: selectedRuleCount })}</span>
-          <span>${this._t("n_estimated_entities", { count: selectedRuleCount * 4 })}</span>
-          <button class="danger" data-action="delete-selected-rules" ${selectedRuleCount ? "" : "disabled"}>${this._t("delete_selected")}</button>
-          <button class="secondary" data-action="export-rules" ${this._rules.length ? "" : "disabled"}>${this._t("export_rules")}</button>
-          <button class="secondary" data-action="choose-rules-csv">${this._t("import_rules")}</button>
-          <input class="file-input" type="file" accept=".csv,text/csv" data-rules-csv>
+        <section class="view-head">
+          <div>
+            <h2>${this._t("rules_title")}</h2>
+            <p class="subtitle">${this._t("rules_subtitle", { count: this._rules.length, enabled: enabledCount })}</p>
           </div>
+          <div class="actions">
+            <button data-action="choose-rules-csv"><ha-icon icon="mdi:upload" aria-hidden="true"></ha-icon>${this._t("import_rules")}</button>
+            <button data-action="export-rules" ${this._rules.length ? "" : "disabled"}><ha-icon icon="mdi:download" aria-hidden="true"></ha-icon>${this._t("export_rules")}</button>
+            <button class="primary" data-action="new-rule"><ha-icon icon="mdi:plus" aria-hidden="true"></ha-icon>${this._t("new_rule")}</button>
+            <input class="file-input" type="file" accept=".csv,text/csv" data-rules-csv>
+          </div>
+        </section>
+        ${this._rulesResult ? `<div class="notice" role="status">${this._escape(this._rulesResult)}</div>` : ""}
+        <section class="toolbar">
+          <div class="search-box">
+            <ha-icon icon="mdi:magnify" aria-hidden="true"></ha-icon>
+            <input type="search" aria-label="${this._t("search_rules")}" placeholder="${this._t("search_rules")}" value="${this._escape(this._ruleSearch)}" data-field="rule-search">
+          </div>
+        </section>
+        ${selectedRuleCount ? `<div class="notice-bar bulk-actions" role="region" aria-label="${this._t("n_selected", { count: selectedRuleCount })}"><span>${this._t("rules_selected_bar", { count: selectedRuleCount, entities: selectedRuleCount * 4 })}</span><span class="actions"><button data-action="clear-rule-selection">${this._t("clear_selection")}</button><button class="danger" data-action="delete-selected-rules">${this._t("delete_selected")}</button></span></div>` : ""}
         <div class="table-shell">
           <table data-table-id="rules">
-            <thead><tr><th></th><th>${this._t("col_id")}</th><th>${this._t("col_entity")}</th><th>${this._t("col_name")}</th><th>${this._t("col_area")}</th><th>${this._t("col_system")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_telegram")}</th><th>${this._t("col_enabled")}</th><th></th></tr></thead>
-            <tbody>${this._rules.length ? this._rules.map((rule) => `<tr><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td>${this._escape(rule.id)}</td><td>${this._escape(rule.entity_id)}</td><td>${this._escape(rule.name)}</td><td>${this._escape(rule.area || "")}</td><td>${this._escape(rule.system || "")}</td><td>${this._escape(this._conditionSummary(rule))}</td><td>${this._t(`priority_${rule.priority}`)}</td><td>${this._t(`telegram_table_${rule.telegram_notification_policy || "inherit"}`)}</td><td>${rule.enabled ? this._t("yes") : this._t("no")}</td><td><button data-edit-rule="${this._escape(rule.id)}">${this._t("edit")}</button></td></tr>`).join("") : `<tr><td colspan="11" class="empty">${this._t("no_rules")}</td></tr>`}</tbody>
+            <thead><tr><th class="select-col"><input class="row-select" type="checkbox" data-action="select-all-rules" aria-label="${this._t(allSelected ? "deselect_all" : "select_all")}" ${allSelected ? "checked" : ""} ${rules.length ? "" : "disabled"}></th><th>${this._t("col_rule")}</th><th>${this._t("col_condition")}</th><th>${this._t("col_priority")}</th><th>${this._t("col_area_system")}</th><th>${this._t("col_telegram")}</th><th>${this._t("col_enabled")}</th><th><span class="visually-hidden">${this._t("edit")}</span></th></tr></thead>
+            <tbody>${rules.length ? rules.map((rule) => `<tr class="${this._selectedRuleIds.has(rule.id) ? "selected-row" : ""} ${rule.enabled === false ? "muted-row" : ""}"><td><input class="row-select" type="checkbox" data-rule-select="${this._escape(rule.id)}" aria-label="${this._escape(rule.name || rule.id)}" ${this._selectedRuleIds.has(rule.id) ? "checked" : ""}></td><td class="alarm-cell"><strong>${this._escape(rule.name)}</strong><span class="mono tag">${this._escape(rule.id)}</span></td><td class="condition-cell">${this._escape(this._conditionSummary(rule))}</td><td><span class="priority-label"><span class="dot priority-dot-${this._escape(rule.priority)}"></span>${this._t(`priority_${rule.priority}`)}</span></td><td>${[rule.area, rule.system].filter(Boolean).map((item) => this._escape(item)).join(" · ")}</td><td>${this._t(`telegram_table_${rule.telegram_notification_policy || "inherit"}`)}</td><td>${rule.enabled === false ? this._t("no") : this._t("yes")}</td><td><button class="icon-button" data-edit-rule="${this._escape(rule.id)}" title="${this._t("edit")}" aria-label="${this._t("edit")} ${this._escape(rule.name || rule.id)}">${editIcon}</button></td></tr>`).join("") : `<tr><td colspan="8" class="empty">${this._rules.length ? this._t("no_matching_rules") : this._t("no_rules")}</td></tr>`}</tbody>
           </table>
         </div>
       </section>
     `;
   }
 
-  _operatorOptions(selected) {
+  _ruleEditorView() {
+    const draft = this._ruleDraft;
+    const editing = Boolean(this._editingRuleId);
+    const optional = `<span class="optional">(${this._t("optional")})</span>`;
+    const systems = [...new Set(this._rules.map((rule) => rule.system).filter(Boolean))].sort();
+    const testButton = `<button class="secondary" data-action="test-rule" ${this._rulePreviewLoading ? "disabled" : ""}><ha-icon icon="mdi:play-circle-outline" aria-hidden="true"></ha-icon>${this._rulePreviewLoading ? this._t("testing") : this._t("test_condition")}</button>`;
+    const telegramChoices = ["inherit", "always", "never"].map((policy) => `<label class="choice"><input type="radio" name="rule-telegram" data-new="telegram_notification_policy" value="${policy}" ${draft.telegram_notification_policy === policy ? "checked" : ""}><span><strong>${this._t(`telegram_policy_${policy}`)}</strong><small>${this._t(`telegram_help_${policy}`)}</small></span></label>`).join("");
+    const priorityChoices = CARD_PRIORITIES.map((priority) => `<label class="choice priority-choice priority-${priority}"><input type="radio" name="rule-priority" data-new="priority" value="${priority}" ${draft.priority === priority ? "checked" : ""}><span><strong><span class="dot priority-dot-${priority}"></span>${this._t(`priority_${priority}`)}</strong><small>${this._t(`priority_help_${priority}`)}</small></span></label>`).join("");
+    const secondsField = (name, label, help) => `<label class="field"><span class="field-label">${this._t(label)}</span><span class="input-suffix"><input type="number" min="0" data-new="${name}" value="${this._escape(draft[name] || 0)}"><span>${this._t("seconds")}</span></span><small class="help">${this._t(help)}</small></label>`;
+    return `
+      <section class="rule-editor">
+        <header class="editor-head">
+          <div class="editor-title">
+            <button class="icon-button" data-action="cancel-edit-rule" title="${this._t("back_to_rules")}" aria-label="${this._t("back_to_rules")}"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
+            <div>
+              <div class="breadcrumb">${this._t("tab_rules")} / ${editing ? this._escape(this._editingRuleId) : this._t("new_rule_title")}</div>
+              <h2>${this._escape(draft.name || (editing ? this._editingRuleId : this._t("new_rule_title")))}</h2>
+            </div>
+          </div>
+          <div class="actions">
+            <button data-action="cancel-edit-rule">${this._t("cancel")}</button>
+            <button class="primary" data-action="${editing ? "update-rule" : "create-rule"}">${editing ? this._t("save_rule") : this._t("add_rule")}</button>
+          </div>
+        </header>
+        ${this._rulesResult ? `<div class="notice" role="status">${this._escape(this._rulesResult)}</div>` : ""}
+        <div class="editor-layout">
+          <div class="rule-form">
+            <datalist id="entity-id-options">${this._entityOptions()}</datalist>
+            <datalist id="system-options">${systems.map((system) => `<option value="${this._escape(system)}"></option>`).join("")}</datalist>
+            <section class="form-section">
+              <h3><span class="step">1</span>${this._t("section_identity")}</h3>
+              <p class="section-help">${this._t("section_identity_help")}</p>
+              <div class="form-grid">
+                <label class="field wide"><span class="field-label">${this._t("label_name")} *</span><input data-new="name" value="${this._escape(draft.name)}" required></label>
+                <label class="field"><span class="field-label">${this._t("label_rule_id")} *</span><input class="mono" data-new="id" value="${this._escape(draft.id)}" ${editing ? "disabled" : ""}><small class="help">${this._t(editing ? "help_rule_id_edit" : "help_rule_id_new")}</small></label>
+                <label class="field"><span class="field-label">${this._t("label_tag")} ${optional}</span><input class="mono" data-new="tag" value="${this._escape(draft.tag)}"><small class="help">${this._t("help_tag")}</small></label>
+                <label class="field"><span class="field-label">${this._t("label_system")} ${optional}</span><input data-new="system" list="system-options" value="${this._escape(draft.system)}"><small class="help">${this._t("help_system")}</small></label>
+                <div class="field"><span class="field-label">${this._t("label_area")}</span><div class="readonly-field" data-area-display>${this._escape(this._entityAreaName(this._draftPrimaryEntity()) || this._t("area_none"))}</div><small class="help">${this._t("help_area")}</small></div>
+              </div>
+            </section>
+            <section class="form-section">
+              <h3><span class="step">2</span>${this._t("section_condition")}</h3>
+              <p class="section-help">${this._t("section_condition_help")}</p>
+              <div class="condition-builder">${this._conditionBuilder(draft)}</div>
+            </section>
+            <section class="form-section">
+              <h3><span class="step">3</span>${this._t("section_behavior")}</h3>
+              <p class="section-help">${this._t("section_behavior_help")}</p>
+              <fieldset class="choices priority-choices"><legend class="field-label">${this._t("col_priority")}</legend>${priorityChoices}</fieldset>
+              <div class="form-grid">
+                ${secondsField("delay_on_seconds", "alarm_delay", "help_alarm_delay")}
+                ${secondsField("delay_off_seconds", "clear_delay", "help_clear_delay")}
+              </div>
+            </section>
+            <section class="form-section">
+              <h3><span class="step">4</span>${this._t("section_notify")}</h3>
+              <p class="section-help">${this._t("section_notify_help")}</p>
+              <fieldset class="choices"><legend class="field-label">${this._t("telegram_notifications")}</legend>${telegramChoices}</fieldset>
+              <label class="field"><span class="field-label">${this._t("label_instructions")}</span><textarea rows="3" data-new="instructions">${this._escape(draft.instructions)}</textarea><small class="help">${this._t("help_instructions")}</small></label>
+            </section>
+          </div>
+          <aside class="rule-aside">
+            <section class="aside-card">
+              <h3>${this._t("summary_title")}</h3>
+              <p class="rule-summary" data-rule-summary>${this._ruleSummaryHtml()}</p>
+              ${testButton}
+              <small class="help">${this._t("test_hint")}</small>
+            </section>
+            ${this._rulePreviewPanel()}
+          </aside>
+        </div>
+      </section>
+    `;
+  }
+
+  _operatorLabels() {
     const en = {above:"Above",below:"Below",greater_or_equal:"At or above",less_or_equal:"At or below",equal:"Equal",not_equal:"Not equal",contains:"Contains",is_on:"Is ON",is_off:"Is OFF",state_changed:"Changed",unavailable:"Unavailable",between:"Between",outside_range:"Outside range"};
     const it = {above:"Maggiore di",below:"Minore di",greater_or_equal:"Maggiore o uguale",less_or_equal:"Minore o uguale",equal:"Uguale",not_equal:"Diverso",contains:"Contiene",is_on:"È ON",is_off:"È OFF",state_changed:"Cambiato",unavailable:"Non disponibile",between:"Compreso tra",outside_range:"Fuori intervallo"};
-    const labels = this._language() === "it" ? it : en;
-    return Object.entries(labels).map(([value,label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("");
+    return this._language() === "it" ? it : en;
+  }
+
+  _operatorOptions(selected) {
+    return Object.entries(this._operatorLabels()).map(([value,label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("");
   }
 
   _rulePreviewPanel() {
     const preview = this._rulePreview;
     if (!preview && !this._rulePreviewLoading) return "";
-    if (this._rulePreviewLoading) return `<section class="rule-preview"><strong>${this._t("condition_test")}</strong><p>${this._t("testing")}</p></section>`;
-    if (preview.error) return `<section class="rule-preview error"><strong>${this._t("test_failed")}</strong><p>${this._escape(preview.error)}</p></section>`;
+    if (this._rulePreviewLoading) return `<section class="rule-preview aside-card"><strong>${this._t("condition_test")}</strong><p>${this._t("testing")}</p></section>`;
+    if (preview.error) return `<section class="rule-preview aside-card error"><strong>${this._t("test_failed")}</strong><p>${this._escape(preview.error)}</p></section>`;
     const rows = preview.conditions.map((item) => {
       const reason = item.reason ? this._t(item.reason) : "";
       const current = item.current_value == null ? "—" : `${this._escape(item.current_value)}${item.unit ? ` ${this._escape(item.unit)}` : ""}`;
       return `<div class="preview-condition ${item.matched ? "preview-match" : "preview-miss"}"><strong>${item.matched ? "✓" : "✗"} ${this._escape(item.friendly_name || item.entity_id)}</strong><span>${this._t("current")}: ${current}</span><span>${this._escape(this._expectationLabel(item))}</span><b>${item.matched ? this._t("condition_matched") : this._t("condition_not_matched")}</b>${reason ? `<em>${this._escape(reason)}</em>` : ""}</div>`;
     }).join("");
     const delays = preview.delays || {};
-    return `<section class="rule-preview"><strong>${this._t("condition_test")}: <span class="${preview.matched ? "preview-match" : "preview-miss"}">${preview.matched ? this._t("matched") : this._t("not_matched")}</span></strong>${rows}<p>${this._escape(preview.summary)}</p><p>${this._t("alarm_delay")}: ${Number(delays.alarm_seconds || 0)} ${this._t("seconds")} · ${this._t("clear_delay")}: ${Number(delays.clear_seconds || 0)} ${this._t("seconds")}</p></section>`;
+    return `<section class="rule-preview aside-card"><strong>${this._t("condition_test")}: <span class="${preview.matched ? "preview-match" : "preview-miss"}">${preview.matched ? this._t("matched") : this._t("not_matched")}</span></strong>${rows}<p>${this._escape(preview.summary)}</p><p>${this._t("alarm_delay")}: ${Number(delays.alarm_seconds || 0)} ${this._t("seconds")} · ${this._t("clear_delay")}: ${Number(delays.clear_seconds || 0)} ${this._t("seconds")}</p></section>`;
   }
 
   _expectationLabel(item) {
@@ -813,35 +1109,126 @@ class AlarmGrid extends HTMLElement {
     return labels[item.operator] || `${this._t("expected")}: ${value ?? "—"}`;
   }
 
-  _conditionRow(node, path) {
+  _entityLabel(entityId) {
+    return this._hass?.states?.[entityId]?.attributes?.friendly_name || entityId || "";
+  }
+
+  _entityUnit(entityId) {
+    return this._hass?.states?.[entityId]?.attributes?.unit_of_measurement || "";
+  }
+
+  // Plain-text description of one condition, e.g. "Boiler temperature > 85 °C".
+  _conditionText(node) {
+    if (!node?.entity_id) return "";
+    const range = ["between", "outside_range"].includes(node.operator);
+    const unit = this._entityUnit(node.entity_id);
+    const withUnit = (value) => (unit && value !== "" && value != null ? `${value} ${unit}` : value);
+    const expected = range ? { lower: withUnit(node.lower ?? ""), upper: withUnit(node.upper ?? "") } : withUnit(node.value ?? "");
+    const deadband = Number(node.deadband || 0);
+    const hysteresis = deadband > 0 ? ` ${this._t("summary_hysteresis", { value: withUnit(deadband) })}` : "";
+    return `${this._entityLabel(node.entity_id)} ${this._expectationLabel({ operator: node.operator, expected })}${hysteresis}`;
+  }
+
+  _expressionText(group, nested = false) {
+    if (!group || group.type !== "group" || !Array.isArray(group.conditions)) return "";
+    const joiner = ` ${this._t(group.operator === "or" ? "cond_or" : "cond_and")} `;
+    const parts = group.conditions
+      .map((node) => (node?.type === "group" ? this._expressionText(node, true) : this._conditionText(node)))
+      .filter(Boolean);
+    const text = parts.join(joiner);
+    return nested && parts.length > 1 ? `(${text})` : text;
+  }
+
+  _draftConditionText(draft) {
+    if (draft.condition_expression) return this._expressionText(draft.condition_expression);
+    return this._conditionText({ entity_id: draft.entity_id, operator: draft.condition, value: draft.threshold, deadband: draft.deadband });
+  }
+
+  _ruleSummaryHtml() {
+    const draft = this._ruleDraft;
+    const conditions = this._draftConditionText(draft);
+    if (!conditions) return this._escape(this._t("summary_empty"));
+    const priority = `<strong class="priority-text priority-${this._escape(draft.priority)}">${this._escape(this._t(`priority_${draft.priority}`).toUpperCase())}</strong>`;
+    const delayOn = Number(draft.delay_on_seconds || 0);
+    const delayOff = Number(draft.delay_off_seconds || 0);
+    return `${this._t("summary_alarm", { priority, conditions: `<strong>${this._escape(conditions)}</strong>` })}${delayOn > 0 ? this._escape(this._t("summary_delay_on", { seconds: delayOn })) : ""}${delayOff > 0 ? this._escape(this._t("summary_delay_off", { seconds: delayOff })) : ""}.`;
+  }
+
+  _draftPrimaryEntity() {
+    const draft = this._ruleDraft;
+    if (draft.entity_id) return draft.entity_id;
+    const first = (node) => {
+      if (node?.type === "condition") return node.entity_id || "";
+      if (node?.type !== "group" || !Array.isArray(node.conditions)) return "";
+      for (const child of node.conditions) { const found = first(child); if (found) return found; }
+      return "";
+    };
+    return first(draft.condition_expression);
+  }
+
+  // Update the live summary and the derived area without re-rendering the form.
+  _refreshRuleSummary() {
+    const summary = this.shadowRoot?.querySelector?.("[data-rule-summary]");
+    if (summary) summary.innerHTML = this._ruleSummaryHtml();
+    const area = this.shadowRoot?.querySelector?.("[data-area-display]");
+    if (area) area.textContent = this._entityAreaName(this._draftPrimaryEntity()) || this._t("area_none");
+  }
+
+  _slugify(value) {
+    return String(value || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  }
+
+  _conditionRow(node, path, number = 1) {
     const needsValue = !["is_on","is_off","state_changed","unavailable"].includes(node.operator);
     const range = ["between","outside_range"].includes(node.operator);
     const numeric = ["above","below","greater_or_equal","less_or_equal","between","outside_range"].includes(node.operator);
     const state = this._hass?.states?.[node.entity_id];
-    const current = state ? `${state.state}${state.attributes?.unit_of_measurement ? ` ${state.attributes.unit_of_measurement}` : ""}` : "—";
+    const unit = state?.attributes?.unit_of_measurement || "";
+    const current = state ? `${state.state}${unit ? ` ${unit}` : ""}` : "—";
+    const unitSuffix = unit ? ` (${this._escape(unit)})` : "";
+    const valueFields = !needsValue ? "" : range
+      ? `<label class="field"><span class="field-label">${this._t("label_lower")}${unitSuffix}</span><input type="number" step="any" value="${this._escape(node.lower ?? "")}" data-condition-field="lower"></label><label class="field"><span class="field-label">${this._t("label_upper")}${unitSuffix}</span><input type="number" step="any" value="${this._escape(node.upper ?? "")}" data-condition-field="upper"></label>`
+      : `<label class="field"><span class="field-label">${numeric ? this._t("col_threshold") : this._t("label_value")}${unitSuffix}</span><input ${numeric ? 'type="number" step="any"' : ""} value="${this._escape(node.value ?? "")}" data-condition-field="value"></label>`;
     return `<div class="condition-row" data-condition-path="${path}">
-      <input aria-label="Entity" list="entity-id-options" value="${this._escape(node.entity_id || "")}" data-condition-field="entity_id">
-      <select aria-label="Operator" data-condition-field="operator">${this._operatorOptions(node.operator)}</select>
-      ${needsValue ? range ? `<input type="number" aria-label="Lower" value="${node.lower ?? ""}" data-condition-field="lower"><input type="number" aria-label="Upper" value="${node.upper ?? ""}" data-condition-field="upper">` : `<input aria-label="Value" value="${node.value ?? ""}" data-condition-field="value">` : ""}
-      ${numeric ? `<label>${this._t("deadband_hysteresis")}<input type="number" min="0" step="any" value="${node.deadband ?? 0}" data-condition-field="deadband" title="${this._t("hysteresis_help")}"></label>` : ""}
-      <small>${this._t("current_state")}: ${this._escape(current)}</small><button type="button" data-delete-condition="${path}" title="${this._t("delete_condition")}">×</button></div>`;
+      <div class="condition-head"><span class="condition-title">${this._t("condition_n", { n: number })}</span><span class="current-pill">${this._t("current_state")}: <span class="mono">${this._escape(current)}</span></span>${path === "simple" ? "" : `<button type="button" class="icon-button" data-delete-condition="${path}" title="${this._t("delete_condition")}" aria-label="${this._t("delete_condition")}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`}</div>
+      <div class="condition-fields">
+        <label class="field entity-field"><span class="field-label">${this._t("label_entity")}</span><input list="entity-id-options" value="${this._escape(node.entity_id || "")}" data-condition-field="entity_id" placeholder="sensor.…"><small class="help">${this._escape(state?.attributes?.friendly_name || "")}</small></label>
+        <label class="field"><span class="field-label">${this._t("label_operator")}</span><select data-condition-field="operator">${this._operatorOptions(node.operator)}</select></label>
+        ${valueFields}
+        ${numeric ? `<label class="field"><span class="field-label">${this._t("deadband_hysteresis")}${unitSuffix}</span><input type="number" min="0" step="any" value="${this._escape(node.deadband ?? 0)}" data-condition-field="deadband"><small class="help">${this._t("hysteresis_help")}</small></label>` : ""}
+      </div></div>`;
   }
 
-  _groupBuilder(group, path="root") {
+  _groupBuilder(group, path="root", counter = { value: 0 }) {
     if (!group || group.type !== "group" || !Array.isArray(group.conditions)) return "";
-    return `<div class="condition-group ${path === "root" ? "root" : ""}" data-group-path="${path}"><div class="group-head"><select data-group-operator="${path}"><option value="and" ${group.operator === "and" ? "selected" : ""}>${this._t("all_conditions")}</option><option value="or" ${group.operator === "or" ? "selected" : ""}>${this._t("any_condition")}</option></select>${path === "root" ? "" : `<button type="button" data-delete-group="${path}">${this._t("delete_group")}</button>`}</div>${group.conditions.map((node,index) => node?.type === "group" ? this._groupBuilder(node, `${path}.${index}`) : node?.type === "condition" ? this._conditionRow(node, `${path}.${index}`) : "").join("")}<div class="group-actions"><button type="button" data-add-condition="${path}">${this._t("add_condition")}</button><button type="button" data-add-group="${path}">${this._t("add_group")}</button></div></div>`;
+    const root = path === "root";
+    const select = `<select data-group-operator="${path}" aria-label="${this._t("match")}"><option value="and" ${group.operator === "and" ? "selected" : ""}>${this._t("match_all")}</option><option value="or" ${group.operator === "or" ? "selected" : ""}>${this._t("match_any")}</option></select>`;
+    const head = root
+      ? `<div class="group-head match-sentence"><span>${this._t("triggers_when")}</span>${select}<span>${this._t("triggers_when_suffix")}</span></div>`
+      : `<div class="group-head"><span>${this._t("group_prefix")}</span>${select}<span>${this._t("group_suffix")}</span><button type="button" class="icon-button" data-delete-group="${path}" title="${this._t("delete_group")}" aria-label="${this._t("delete_group")}"><ha-icon icon="mdi:delete-outline"></ha-icon></button></div>`;
+    const joiner = `<div class="joiner" aria-hidden="true"><span>${this._t(group.operator === "or" ? "joiner_or" : "joiner_and")}</span></div>`;
+    const children = group.conditions.map((node,index) => {
+      if (node?.type === "group") return this._groupBuilder(node, `${path}.${index}`, counter);
+      if (node?.type === "condition") { counter.value += 1; return this._conditionRow(node, `${path}.${index}`, counter.value); }
+      return "";
+    }).filter(Boolean).join(joiner);
+    return `<div class="condition-group ${root ? "root" : "nested"}" data-group-path="${path}">${head}${children}<div class="group-actions"><button type="button" data-add-condition="${path}">${this._t("add_condition")}</button><button type="button" data-add-group="${path}">${this._t("add_group")}</button></div></div>`;
   }
 
   _conditionBuilder(draft) {
     if (draft.condition_expression) return this._groupBuilder(draft.condition_expression);
     const leaf = {entity_id:draft.entity_id,operator:draft.condition,value:draft.threshold,deadband:draft.deadband || 0};
-    return `${this._conditionRow(leaf, "simple")}<button type="button" data-add-condition="simple">${this._t("add_condition")}</button><button type="button" data-add-group="simple">${this._t("add_group")}</button>`;
+    return `<div class="condition-group root"><div class="group-head match-sentence"><span>${this._t("triggers_when_single")}</span></div>${this._conditionRow(leaf, "simple")}<div class="group-actions"><button type="button" data-add-condition="simple">${this._t("add_condition")}</button><button type="button" data-add-group="simple">${this._t("add_group")}</button></div></div>`;
   }
 
   _conditionSummary(rule) {
-    if (!rule.condition_expression) return `${rule.entity_id || ""} ${rule.condition || ""} ${rule.threshold ?? ""}`.trim();
+    if (!rule.condition_expression) {
+      return this._conditionText({ entity_id: rule.entity_id, operator: rule.condition, value: rule.threshold ?? "", deadband: rule.deadband })
+        || `${rule.entity_id || ""} ${rule.condition || ""} ${rule.threshold ?? ""}`.trim();
+    }
     const count = (node) => node.type === "condition" ? 1 : node.conditions.reduce((total, child) => total + count(child), 0);
-    return `${count(rule.condition_expression)} conditions · ${rule.condition_expression.operator.toUpperCase()}`;
+    const mode = this._t(rule.condition_expression.operator === "or" ? "mode_any" : "mode_all");
+    return this._t("conditions_count", { count: count(rule.condition_expression), mode });
   }
 
   _expressionNode(path) {
@@ -925,7 +1312,7 @@ class AlarmGrid extends HTMLElement {
     if (!resolved) return;
     if (deleteGroup) {
       if (resolved.node.type !== "group" || !Array.isArray(resolved.node.conditions)) return;
-      if (resolved.node.conditions.length > 1 && !confirm(this._t("delete_group"))) return;
+      if (resolved.node.conditions.length > 1 && !confirm(this._t("confirm_delete_group"))) return;
     } else if (resolved.node.type !== "condition") return;
     resolved.parent.conditions.splice(resolved.index, 1);
     this._render();
@@ -958,6 +1345,8 @@ class AlarmGrid extends HTMLElement {
 
   _settingsView() {
     return `
+      ${this._audioNotice()}
+      <section class="view-head"><div><h2>${this._t("tab_settings")}</h2></div></section>
       <section class="settings">
         <dl>
           <dt>${this._t("sound_mode")}</dt><dd>${this._escape(this._sound.sound_mode || "browser_only")}</dd>
@@ -972,9 +1361,11 @@ class AlarmGrid extends HTMLElement {
 
   _wire() {
     const builderRevision = this._builderRevision;
+    const onAll = (selector, handler) => this.shadowRoot.querySelectorAll(selector).forEach((element) => element.addEventListener("click", () => handler(element)));
     this.shadowRoot.querySelectorAll("[data-tab]").forEach((button) => {
       button.addEventListener("click", () => {
         this._tab = button.dataset.tab;
+        this._openRowMenu = null;
         this._render();
       });
     });
@@ -983,21 +1374,36 @@ class AlarmGrid extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='refresh']")?.addEventListener("click", () => this._load());
     this.shadowRoot.querySelector("[data-action='export-history']")?.addEventListener("click", () => this._exportHistory());
     this.shadowRoot.querySelector("[data-action='toggle-menu']")?.addEventListener("click", () => this._toggleSidebar());
-    this.shadowRoot.querySelector("[data-action='enable-audio']")?.addEventListener("click", () => this._testSound());
+    this.shadowRoot.querySelector("[data-action='enable-audio']")?.addEventListener("click", async () => { await this._testSound(); this._render(); });
     this.shadowRoot.querySelector("[data-action='test-sound']")?.addEventListener("click", () => this._testSound());
+    this.shadowRoot.querySelector("[data-action='new-rule']")?.addEventListener("click", () => this._startNewRule());
     this.shadowRoot.querySelector("[data-action='create-rule']")?.addEventListener("click", () => this._createRule());
     this.shadowRoot.querySelector("[data-action='test-rule']")?.addEventListener("click", () => this._testRule());
     this.shadowRoot.querySelector("[data-action='update-rule']")?.addEventListener("click", () => this._updateRule());
-    this.shadowRoot.querySelector("[data-action='cancel-edit-rule']")?.addEventListener("click", () => this._cancelEditRule());
+    onAll("[data-action='cancel-edit-rule']", () => this._cancelEditRule());
     this.shadowRoot.querySelectorAll("[data-edit-rule]").forEach((button) => button.addEventListener("click", () => this._startEditRule(button.dataset.editRule)));
     this.shadowRoot.querySelector("[data-action='delete-selected-rules']")?.addEventListener("click", () => this._deleteSelectedRules());
+    this.shadowRoot.querySelector("[data-action='clear-rule-selection']")?.addEventListener("click", () => { this._selectedRuleIds = new Set(); this._render(); });
+    this.shadowRoot.querySelector("[data-action='select-all-rules']")?.addEventListener("change", (event) => {
+      this._filteredRules().forEach((rule) => this._setMembership(this._selectedRuleIds, rule.id, event.target.checked));
+      this._render();
+    });
     this.shadowRoot.querySelector("[data-action='export-rules']")?.addEventListener("click", () => this._exportRules());
     this.shadowRoot.querySelector("[data-action='choose-rules-csv']")?.addEventListener("click", () => this.shadowRoot.querySelector("[data-rules-csv]")?.click());
     this.shadowRoot.querySelector("[data-rules-csv]")?.addEventListener("change", (event) => this._importRules(event.target.files?.[0]));
     this.shadowRoot.querySelectorAll("[data-new]").forEach((field) => {
       const updateDraft = () => {
+        if (field.type === "radio" && !field.checked) return;
         this._ruleDraft[field.dataset.new] = field.value;
+        if (field.dataset.new === "id") this._ruleIdTouched = true;
+        // A new rule's ID follows its name until the user edits the ID directly.
+        if (field.dataset.new === "name" && !this._editingRuleId && !this._ruleIdTouched) {
+          this._ruleDraft.id = this._slugify(field.value);
+          const idField = this.shadowRoot.querySelector("[data-new='id']");
+          if (idField) idField.value = this._ruleDraft.id;
+        }
         this._clearRulePreview();
+        this._refreshRuleSummary();
       };
       field.addEventListener("input", updateDraft);
       field.addEventListener("change", updateDraft);
@@ -1016,15 +1422,25 @@ class AlarmGrid extends HTMLElement {
         if (field.dataset.conditionField === "operator") {
           this._syncConditionBuilderFromDom();
           this._render();
+          return;
         }
+        this._refreshRuleSummary();
       };
       if (field.dataset.conditionField !== "operator") field.addEventListener("input", updateConditionField);
       field.addEventListener("change", updateConditionField);
+      // Re-render once a new entity is committed so its current value and unit appear.
+      if (field.dataset.conditionField === "entity_id") field.addEventListener("change", () => {
+        if (builderRevision !== this._builderRevision || !this._hass?.states?.[field.value]) return;
+        this._syncConditionBuilderFromDom();
+        this._render();
+      });
     });
     this.shadowRoot.querySelectorAll("[data-group-operator]").forEach((field) => field.addEventListener("change", () => {
       if (builderRevision !== this._builderRevision || !["and", "or"].includes(field.value)) return;
       this._clearRulePreview();
       const group = this._expressionGroup(field.dataset.groupOperator); if (group) group.operator = field.value;
+      this._syncConditionBuilderFromDom();
+      this._render();
     }));
     this.shadowRoot.querySelectorAll("[data-add-condition],[data-add-group]").forEach((button) => button.addEventListener("click", () => {
       if (builderRevision !== this._builderRevision) return;
@@ -1049,38 +1465,69 @@ class AlarmGrid extends HTMLElement {
         this._render();
       });
     });
-    this.shadowRoot.querySelector("[data-field='search']")?.addEventListener("input", (event) => {
-      this._search = event.target.value;
+    this._wireSearchField("[data-field='search']", (value) => { this._search = value; });
+    this._wireSearchField("[data-field='rule-search']", (value) => { this._ruleSearch = value; });
+    onAll("[data-priority-filter]", (button) => { this._priority = button.dataset.priorityFilter; this._render(); });
+    onAll("[data-ack]", (button) => this._ack(button.dataset.ack));
+    onAll("[data-unshelve]", (button) => this._alarmAction("unshelve", button.dataset.unshelve));
+    onAll("[data-enable]", (button) => this._alarmAction("enable", button.dataset.enable));
+    onAll("[data-open-shelve]", (button) => this._openAlarmDialog("shelve", button.dataset.openShelve));
+    onAll("[data-open-disable]", (button) => this._openAlarmDialog("disable", button.dataset.openDisable));
+    onAll("[data-toggle-instructions]", (button) => {
+      this._setMembership(this._expandedAlarmIds, button.dataset.toggleInstructions, !this._expandedAlarmIds.has(button.dataset.toggleInstructions));
       this._render();
     });
-    this.shadowRoot.querySelector("[data-field='priority']")?.addEventListener("change", (event) => {
-      this._priority = event.target.value;
-      this._render();
-    });
-    this.shadowRoot.querySelector("[data-field='shelve-duration']")?.addEventListener("change", (event) => {
-      const minutes = Number(event.target.value);
-      const validDurations = new Set(this._shelveDurationOptions().map(([value]) => value));
-      this._shelveDurationMinutes = validDurations.has(minutes) ? minutes : 60;
-    });
-    this.shadowRoot.querySelectorAll("[data-ack]").forEach((button) => button.addEventListener("click", () => this._ack(button.dataset.ack)));
-    this.shadowRoot.querySelectorAll("[data-shelve]").forEach((button) => button.addEventListener("click", () => this._shelve(button.dataset.shelve)));
+    // Row menus are re-created on every refresh; remember which one is open.
+    this.shadowRoot.querySelectorAll("details.row-menu").forEach((menu) => menu.addEventListener("toggle", () => {
+      if (menu.open) {
+        this._openRowMenu = menu.dataset.rowMenu;
+        this.shadowRoot.querySelectorAll("details.row-menu[open]").forEach((other) => { if (other !== menu) other.open = false; });
+      } else if (this._openRowMenu === menu.dataset.rowMenu) {
+        this._openRowMenu = null;
+      }
+    }));
     this._wireColumnResizers();
+  }
+
+  // Search re-renders the view, so restore focus and caret on the new input.
+  _wireSearchField(selector, setValue) {
+    this.shadowRoot.querySelector(selector)?.addEventListener("input", (event) => {
+      const caret = event.target.selectionStart;
+      setValue(event.target.value);
+      this._render();
+      const field = this.shadowRoot.querySelector(selector);
+      field?.focus();
+      field?.setSelectionRange?.(caret, caret);
+    });
+  }
+
+  _rulePayload(draft) {
+    const fields = { ...draft };
+    if (fields.condition_expression) fields.condition_expression = structuredClone(fields.condition_expression);
+    this._normalizeConditionDraft(fields.condition_expression);
+    const areaName = this._entityAreaName(fields.entity_id || this._draftPrimaryEntity());
+    if (areaName) fields.area = areaName;
+    return fields;
   }
 
   async _createRule() {
     this._syncConditionBuilderFromDom();
-    const fields = { ...this._ruleDraft };
-    if (fields.condition_expression) fields.condition_expression = structuredClone(fields.condition_expression);
-    this._normalizeConditionDraft(fields.condition_expression);
+    const fields = this._rulePayload(this._ruleDraft);
     Object.keys(fields).forEach((key) => {
       if (fields[key] === "") delete fields[key];
     });
     if (fields.threshold !== undefined && fields.threshold !== "") fields.threshold = Number(fields.threshold);
-    const areaName = this._entityAreaName(fields.entity_id);
-    if (areaName) fields.area = areaName;
-    await this._callWS({ type: "alarmgrid/create_rule", rule: fields });
-    this._resetRuleDraft();
-    await this._load();
+    try {
+      await this._callWS({ type: "alarmgrid/create_rule", rule: fields });
+      this._rulesResult = this._t("rule_created", { id: fields.id || "" });
+      this._ruleEditorOpen = false;
+      this._resetRuleDraft();
+      await this._load();
+      this._render();
+    } catch (err) {
+      this._rulesResult = err?.message || String(err);
+      this._render();
+    }
   }
 
   async _testRule() {
@@ -1113,9 +1560,10 @@ class AlarmGrid extends HTMLElement {
       threshold: "",
       priority: "medium",
       telegram_notification_policy: "inherit",
-      system: "",
+      system: "", tag: "", instructions: "",
       deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
     };
+    this._ruleIdTouched = false;
   }
 
   _normalizeConditionDraft(node) {
@@ -1129,6 +1577,9 @@ class AlarmGrid extends HTMLElement {
     const rule = this._rules.find((item) => item.id === ruleId);
     if (!rule) return;
     this._editingRuleId = ruleId;
+    this._ruleEditorOpen = true;
+    this._rulesResult = null;
+    this._rulePreview = null;
     this._ruleDraft = {
       id: rule.id || "",
       entity_id: rule.entity_id || "",
@@ -1137,33 +1588,41 @@ class AlarmGrid extends HTMLElement {
       threshold: rule.threshold ?? "",
       priority: rule.priority || "medium",
       telegram_notification_policy: rule.telegram_notification_policy || "inherit",
-      system: rule.system || "",
+      system: rule.system || "", tag: rule.tag || "", instructions: rule.instructions || "",
       deadband: rule.deadband || 0, delay_on_seconds: rule.delay_on_seconds || 0, delay_off_seconds: rule.delay_off_seconds || 0,
       condition_expression: rule.condition_expression ? structuredClone(rule.condition_expression) : null,
     };
     this._render();
+    this.scrollIntoView?.({ block: "start" });
     this.shadowRoot.querySelector("[data-condition-field='entity_id']")?.focus();
+  }
+
+  _startNewRule() {
+    this._resetRuleDraft();
+    this._ruleEditorOpen = true;
+    this._rulesResult = null;
+    this._render();
+    this.scrollIntoView?.({ block: "start" });
+    this.shadowRoot.querySelector("[data-new='name']")?.focus();
   }
 
   _cancelEditRule() {
     this._resetRuleDraft();
+    this._ruleEditorOpen = false;
     this._render();
   }
 
   async _updateRule() {
     if (!this._editingRuleId) return;
     this._syncConditionBuilderFromDom();
-    const changes = { ...this._ruleDraft };
-    if (changes.condition_expression) changes.condition_expression = structuredClone(changes.condition_expression);
-    this._normalizeConditionDraft(changes.condition_expression);
+    const changes = this._rulePayload(this._ruleDraft);
     delete changes.id;
-    if (changes.system === "") changes.system = null;
+    // Empty optional text fields clear the stored value instead of keeping it.
+    ["system", "tag", "instructions"].forEach((key) => { if (changes[key] === "") changes[key] = null; });
     Object.keys(changes).forEach((key) => {
       if (changes[key] === "") delete changes[key];
     });
     if (changes.threshold !== undefined && changes.threshold !== null) changes.threshold = Number(changes.threshold);
-    const areaName = this._entityAreaName(changes.entity_id);
-    if (areaName) changes.area = areaName;
     try {
       await this._callWS({
         type: "alarmgrid/update_rule",
@@ -1171,8 +1630,10 @@ class AlarmGrid extends HTMLElement {
         changes,
       });
       this._rulesResult = this._t("rule_updated", { id: this._editingRuleId });
+      this._ruleEditorOpen = false;
       this._resetRuleDraft();
       await this._load();
+      this._render();
     } catch (err) {
       this._rulesResult = err.message || String(err);
       this._render();
@@ -1410,6 +1871,15 @@ class AlarmGrid extends HTMLElement {
     });
   }
 
+  // Time only for today, short date and time otherwise.
+  _shortTime(value) {
+    const date = new Date(value || "");
+    if (!value || Number.isNaN(date.getTime())) return this._escape(value || "");
+    const today = new Date().toDateString() === date.toDateString();
+    const options = today ? { timeStyle: "short" } : { dateStyle: "short", timeStyle: "short" };
+    return new Intl.DateTimeFormat(this._language(), options).format(date);
+  }
+
   _time(value) {
     if (!value) return "";
     try {
@@ -1431,48 +1901,106 @@ class AlarmGrid extends HTMLElement {
 
   _styles() {
     return `
-      :host { display: block; color: var(--ag-text); background: var(--ag-bg); min-height: var(--ag-min-height, 100vh); font-family: Arial, sans-serif; }
+      :host { display: block; color: var(--ag-text); background: var(--ag-bg); min-height: var(--ag-min-height, 100vh); font-family: var(--paper-font-body1_-_font-family, Roboto, Arial, sans-serif); }
       .panel { min-height: var(--ag-min-height, 100vh); background: var(--ag-bg); color: var(--ag-text); }
       .theme-dark {
-        --ag-bg: #101316; --ag-surface: #11161b; --ag-surface-alt: #14191f; --ag-header: #181d22; --ag-control: #202832; --ag-control-hover: #2a3541; --ag-text: #e6edf3; --ag-muted: #9fb1c1; --ag-heading-muted: #b8c7d4; --ag-border: #303942; --ag-border-soft: #28323c; --ag-selected-bg: #d9e2ec; --ag-selected-text: #101316; --ag-row-neutral: #252c33; --ag-row-neutral-text: #aebdcc; --ag-row-pending: #202832; --ag-row-pending-text: #dbe4ec; --ag-notice: #dbeafe; --ag-error-bg: #5b1c1c; --ag-error-text: #ffd5d5; --ag-error-border: #a83737;
+        --ag-bg: #0f1419; --ag-surface: #131a21; --ag-surface-alt: #10161c; --ag-header: #121920; --ag-control: #1b232c; --ag-control-hover: #24303b; --ag-input: #0f151b; --ag-text: #e6edf3; --ag-muted: #9aa7b4; --ag-heading-muted: #c3cfdb; --ag-border: #2c3743; --ag-border-soft: #1f2831; --ag-selected-bg: #1d2833; --ag-selected-text: #ffffff; --ag-row-neutral: #1b2229; --ag-row-neutral-text: #aebdcc; --ag-row-pending: #202832; --ag-row-pending-text: #dbe4ec; --ag-notice: #cfe0f5; --ag-notice-bg: #182433; --ag-notice-border: #2a4060; --ag-error-bg: #5b1c1c; --ag-error-text: #ffd5d5; --ag-error-border: #a83737; --ag-accent: #2f6fea; --ag-accent-soft: #13213a; --ag-alert-bg: #3a1714; --ag-alert-text: #ffb4ab; --ag-warn-bg: #3a2c0c; --ag-warn-text: #ffd27a; --ag-ok: #7ee2a0; --ag-miss: #ff9b91;
       }
       .theme-light {
-        --ag-bg: #f5f7fb; --ag-surface: #ffffff; --ag-surface-alt: #eef3f8; --ag-header: #ffffff; --ag-control: #ffffff; --ag-control-hover: #e8eef6; --ag-text: #1f2937; --ag-muted: #526170; --ag-heading-muted: #425466; --ag-border: #d7e0ea; --ag-border-soft: #e3e9f0; --ag-selected-bg: #1d4ed8; --ag-selected-text: #ffffff; --ag-row-neutral: #eef2f7; --ag-row-neutral-text: #526170; --ag-row-pending: #e7edf5; --ag-row-pending-text: #334155; --ag-notice: #1e40af; --ag-error-bg: #fee2e2; --ag-error-text: #7f1d1d; --ag-error-border: #fca5a5;
+        --ag-bg: #f5f7fb; --ag-surface: #ffffff; --ag-surface-alt: #eef3f8; --ag-header: #ffffff; --ag-control: #ffffff; --ag-control-hover: #e8eef6; --ag-input: #ffffff; --ag-text: #1f2937; --ag-muted: #526170; --ag-heading-muted: #334155; --ag-border: #d7e0ea; --ag-border-soft: #e3e9f0; --ag-selected-bg: #dbe7fb; --ag-selected-text: #0f2a5f; --ag-row-neutral: #eef2f7; --ag-row-neutral-text: #526170; --ag-row-pending: #e7edf5; --ag-row-pending-text: #334155; --ag-notice: #1e3a8a; --ag-notice-bg: #e8f0fe; --ag-notice-border: #b6cdf7; --ag-error-bg: #fee2e2; --ag-error-text: #7f1d1d; --ag-error-border: #fca5a5; --ag-accent: #1d4ed8; --ag-accent-soft: #e8f0fe; --ag-alert-bg: #fde4e1; --ag-alert-text: #8f1d14; --ag-warn-bg: #fdf0d2; --ag-warn-text: #7a4b00; --ag-ok: #15803d; --ag-miss: #b42318;
       }
-      .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 18px; background: var(--ag-header); border-bottom: 1px solid var(--ag-border); }
+      .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; background: currentColor; }
+      .priority-dot-critical { background: #ef2b1d; } .priority-dot-high { background: #ff9f00; } .priority-dot-medium { background: #f5c400; }
+      .priority-dot-low { background: #58a6ff; } .priority-dot-info { background: #83b4c6; } .priority-dot-status { background: #54c6d6; }
+      .mono { font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      ha-icon { --mdc-icon-size: 18px; display: inline-flex; flex: none; }
+
+      .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; padding: 12px 20px; background: var(--ag-header); border-bottom: 1px solid var(--ag-border); }
+      .brand { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0; }
       .menu-button { display: none; flex: 0 0 auto; }
-      h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0; }
-      .metrics { display: flex; gap: 10px; margin-top: 6px; color: var(--ag-muted); font-size: 13px; }
-      .horn.on { color: #ffcf33; font-weight: 700; }
-      .actions, .toolbar, .tabs, .rule-form, .bulk-actions, .bulk-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      button, select, input { background: var(--ag-control); color: var(--ag-text); border: 1px solid var(--ag-border); min-height: 34px; border-radius: 4px; padding: 0 10px; font-size: 14px; }
-      input { min-width: 260px; }
-      button { cursor: pointer; }
+      h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0; }
+      .metrics { display: flex; flex-wrap: wrap; gap: 8px; color: var(--ag-muted); font-size: 13px; }
+      .metric { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: var(--ag-control); border: 1px solid var(--ag-border-soft); font-weight: 600; }
+      .metric .dot { background: var(--ag-muted); }
+      .metric-active { background: var(--ag-alert-bg); color: var(--ag-alert-text); border-color: transparent; } .metric-active .dot { background: #ff6b5e; }
+      .metric-unack { background: var(--ag-warn-bg); color: var(--ag-warn-text); border-color: transparent; } .metric-unack .dot { background: #ffb020; }
+      .horn.on { color: var(--ag-warn-text); }
+      .actions, .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      button, select, input, textarea { background: var(--ag-control); color: var(--ag-text); border: 1px solid var(--ag-border); min-height: 36px; border-radius: 8px; padding: 0 12px; font: inherit; font-size: 14px; box-sizing: border-box; }
+      input, select, textarea { background: var(--ag-input); }
+      textarea { padding: 10px 12px; min-height: 84px; resize: vertical; line-height: 1.45; width: 100%; }
+      input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--ag-accent); outline-offset: 1px; }
+      button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-weight: 500; }
       button:hover { background: var(--ag-control-hover); }
       button:disabled { opacity: .45; cursor: default; }
-      .primary { background: #2563eb; border-color: #3473ff; color: #ffffff; }
-      .primary:hover { background: #1d4ed8; }
-      .danger { background: #9f1d1d; border-color: #d23b3b; color: #ffffff; }
+      .primary { background: var(--ag-accent); border-color: var(--ag-accent); color: #ffffff; }
+      .primary:hover { background: #2a62d0; }
+      .danger { background: #9f1d1d; border-color: #c53030; color: #ffffff; }
       .danger:hover { background: #831717; }
-      .secondary { background: #30515d; border-color: #4b7b8c; color: #ffffff; }
-      .secondary:hover { background: #3c6373; }
-      .tabs { padding: 10px 18px; background: var(--ag-surface-alt); border-bottom: 1px solid var(--ag-border-soft); }
-      .tabs button.selected { background: var(--ag-selected-bg); color: var(--ag-selected-text); border-color: var(--ag-selected-bg); }
-      .toolbar { padding: 12px 18px; }
-      .shelve-duration { display: flex; gap: 6px; align-items: center; color: var(--ag-heading-muted); font-size: 13px; }
-      .history-export label { display: grid; gap: 4px; color: var(--ag-heading-muted); font-size: 12px; }
-      .history-export input { min-width: 210px; }
-      .history-export-result { margin-top: 0; }      
-      .table-shell { overflow: auto; padding: 0 18px 18px; }
+      .secondary { background: var(--ag-accent-soft); border-color: var(--ag-notice-border); color: var(--ag-notice); }
+      .secondary:hover { background: var(--ag-notice-bg); }
+      .icon-button { width: 36px; padding: 0; background: transparent; border-color: transparent; color: var(--ag-heading-muted); }
+      .icon-button:hover { background: var(--ag-control-hover); }
+
+      .layout { display: flex; flex-wrap: wrap; align-items: stretch; min-height: calc(var(--ag-min-height, 100vh) - 64px); }
+      .tabs { flex: 1 1 220px; max-width: 250px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 16px 10px; background: var(--ag-surface-alt); border-right: 1px solid var(--ag-border-soft); }
+      .nav-group { display: flex; flex-direction: column; gap: 2px; }
+      .nav-title { padding: 0 12px 6px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ag-muted); }
+      .nav-item { justify-content: space-between; min-height: 40px; width: 100%; border-color: transparent; background: transparent; color: var(--ag-heading-muted); text-align: left; }
+      .nav-item.selected { background: var(--ag-selected-bg); color: var(--ag-selected-text); font-weight: 700; }
+      .count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--ag-control); border: 1px solid var(--ag-border-soft); color: var(--ag-heading-muted); font-size: 12px; font-weight: 700; text-align: center; box-sizing: border-box; }
+      .count-alert { background: #c23a2f; border-color: #c23a2f; color: #ffffff; }
+      .count-warn { background: var(--ag-warn-bg); border-color: transparent; color: var(--ag-warn-text); }
+      .content { flex: 999 1 560px; min-width: 0; padding: 18px 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+
+      .view-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+      .view-head h2 { margin: 0; font-size: 20px; font-weight: 600; }
+      .subtitle { margin: 4px 0 0; color: var(--ag-muted); font-size: 13px; }
+      .search-box { position: relative; display: flex; align-items: center; flex: 0 1 340px; min-width: 220px; }
+      .search-box ha-icon { position: absolute; left: 10px; color: var(--ag-muted); pointer-events: none; }
+      .search-box input { width: 100%; padding-left: 34px; min-height: 40px; }
+      .notice-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--ag-notice-bg); border: 1px solid var(--ag-notice-border); color: var(--ag-notice); font-size: 14px; }
+      .notice-bar > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+      .chip { min-height: 32px; border-radius: 999px; padding: 0 12px; font-size: 13px; color: var(--ag-heading-muted); background: transparent; text-transform: capitalize; }
+      .chip.selected { background: var(--ag-text); border-color: var(--ag-text); color: var(--ag-bg); font-weight: 700; }
+      .toolbar .icon-button { margin-left: auto; }
+
+      .table-shell { overflow: auto; border: 1px solid var(--ag-border-soft); border-radius: 12px; background: var(--ag-surface); }
       table { width: 100%; border-collapse: collapse; background: var(--ag-surface); table-layout: auto; }
-      th, td { border-bottom: 1px solid var(--ag-border-soft); padding: 8px 9px; text-align: left; font-size: 13px; white-space: nowrap; }
-      th { background: var(--ag-control); color: var(--ag-heading-muted); position: sticky; top: 0; z-index: 1; }
-      td:nth-child(6), td:nth-child(12) { white-space: normal; min-width: 180px; }
-      tr { border-left: 6px solid #4b5563; }
-      .alarm-row { background: var(--ag-surface); color: var(--ag-text); }
-      .alarm-row td { border-bottom-color: rgba(16, 19, 22, .35); }
-      .alarm-row button { background: rgba(16, 19, 22, .22); color: inherit; border-color: rgba(16, 19, 22, .4); }
-      .alarm-row button:hover { background: rgba(16, 19, 22, .34); }
+      th, td { border-bottom: 1px solid var(--ag-border-soft); padding: 10px 12px; text-align: left; font-size: 14px; white-space: nowrap; vertical-align: middle; }
+      th { background: var(--ag-surface-alt); color: var(--ag-muted); font-size: 12px; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+      .actions-col { text-align: right; }
+      .alarm-cell { white-space: normal; min-width: 200px; }
+      .alarm-cell strong { display: block; font-weight: 600; }
+      .tag { display: block; margin-top: 2px; font-size: 12px; opacity: .78; }
+      .state-cell small { display: block; font-size: 12px; opacity: .78; }
+      .row-actions { text-align: right; }
+      .row-actions > * { vertical-align: middle; }
+      .row-actions button + button, .row-actions button + details { margin-left: 4px; }
+      .row-menu { position: relative; display: inline-block; }
+      .row-menu[open] { z-index: 3; }
+      .row-menu summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; height: 36px; cursor: pointer; border-radius: 8px; color: inherit; }
+      .row-menu summary::-webkit-details-marker { display: none; } .row-menu summary::marker { content: ""; }
+      .menu-popover { position: absolute; right: 0; top: calc(100% + 4px); min-width: 190px; padding: 5px; border: 1px solid var(--ag-border); border-radius: 10px; background: var(--ag-surface); color: var(--ag-text); box-shadow: 0 6px 18px rgba(0,0,0,.28); }
+      .menu-popover button { display: flex; width: 100%; justify-content: flex-start; border-color: transparent; background: transparent; color: var(--ag-text); min-height: 40px; }
+      .menu-popover button:hover { background: var(--ag-control-hover); }
+      .destructive-text { color: var(--ag-miss) !important; }
+      .instructions-row td { padding: 0 12px 12px; background: var(--ag-surface); white-space: normal; }
+      .instructions { display: flex; gap: 10px; padding: 10px 14px; border-radius: 8px; background: var(--ag-notice-bg); color: var(--ag-notice); font-size: 13px; line-height: 1.5; }
+      .instructions p { margin: 2px 0 0; }
+      .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 0; color: var(--ag-muted); font-size: 12px; }
+      .legend > span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend-swatch { width: 14px; height: 10px; border-radius: 3px; }
+      .swatch-unack { background: #ef2b1d; } .swatch-cleared { background: #d85b9d; } .swatch-ack { background: #f3f4f6; border: 1px solid #9ca3af; }
+
+      tr { border-left: 6px solid transparent; }
+      .alarm-row { background: var(--ag-surface); color: var(--ag-text); border-left-color: #4b5563; }
+      .alarm-row td { border-bottom-color: rgba(16, 19, 22, .25); }
+      .alarm-row button, .alarm-row summary { background: rgba(16, 19, 22, .16); color: inherit; border-color: rgba(16, 19, 22, .35); }
+      .alarm-row button:hover, .alarm-row summary:hover { background: rgba(16, 19, 22, .3); }
+      .alarm-row button.primary { background: #101316; border-color: #101316; color: #ffffff; }
+      .alarm-row .icon-button, .alarm-row summary { border-color: transparent; background: transparent; }
       .alarm-row.priority-critical.state-active-unack { background: #ef2b1d; color: #101316; border-left-color: #8f1711; }
       .alarm-row.priority-high.state-active-unack { background: #ff9f00; color: #101316; border-left-color: #a85b00; }
       .alarm-row.priority-medium.state-active-unack { background: #ffd800; color: #101316; border-left-color: #b69100; }
@@ -1483,41 +2011,110 @@ class AlarmGrid extends HTMLElement {
       .alarm-row.state-cleared-unack { background: #d85b9d; color: #101316; border-left-color: #8e2f63; }
       .alarm-row.state-active-ack, .alarm-row.state-cleared-ack { background: #f3f4f6; color: #1f2933; border-left-color: #9ca3af; }
       .alarm-row.state-shelved, .alarm-row.state-disabled, .alarm-row.state-normal { background: var(--ag-row-neutral); color: var(--ag-row-neutral-text); border-left-color: #596675; }
-      .badge { text-transform: uppercase; font-size: 12px; font-weight: 700; }
+      .alarm-row.state-shelved button, .alarm-row.state-disabled button { color: var(--ag-text); border-color: var(--ag-border); background: var(--ag-control); }
+      .priority-label { text-transform: capitalize; }
+      .badge { text-transform: uppercase; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
       .flash { animation: flashRow 1s step-end infinite; }
       @keyframes flashRow { 50% { filter: brightness(1.25); } }
+      @media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
       .empty, .error { color: var(--ag-muted); padding: 18px; }
-      .error { margin: 12px 18px; color: var(--ag-error-text); background: var(--ag-error-bg); border: 1px solid var(--ag-error-border); }
-      .rules, .settings { padding: 12px 18px 18px; }
+      .empty { text-align: center; white-space: normal; }
+      .error { margin: 0; color: var(--ag-error-text); background: var(--ag-error-bg); border: 1px solid var(--ag-error-border); border-radius: 10px; }
+      .rules { display: flex; flex-direction: column; gap: 14px; }
+      .settings { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+      .history-export label { display: grid; gap: 4px; color: var(--ag-heading-muted); font-size: 12px; }
+      .history-export input { min-width: 210px; }
       .file-input { display: none; }
-      .bulk-actions, .bulk-summary { margin-top: 8px; color: var(--ag-heading-muted); font-size: 13px; }
-      .bulk-actions { margin-bottom: 10px; }
-      .row-select { min-width: 0; width: 16px; height: 16px; padding: 0; }
-      .notice { margin-top: 8px; color: var(--ag-notice); font-size: 13px; }
-      .rule-form { margin-bottom: 12px; }
-      .condition-builder { flex-basis:100%; border:1px solid var(--divider-color); border-radius:10px; padding:12px; }
-      .rule-preview { flex-basis:100%; border:1px solid var(--divider-color); border-radius:10px; padding:12px; background:var(--card-background-color); }
-      .preview-condition { display:grid; gap:3px; margin:10px 0; padding-left:10px; border-left:3px solid var(--divider-color); }
-      .preview-match { color:var(--success-color, var(--primary-color)); } .preview-miss { color:var(--error-color, var(--warning-color)); }
-      .condition-group { border-left:3px solid var(--primary-color); margin:8px 0; padding:8px; background:var(--card-background-color); }
-      .condition-group .condition-group { margin-left:min(18px,3vw); } .group-head,.group-actions{display:flex;gap:8px;margin-bottom:8px}
-      .condition-row { display:grid;grid-template-columns:minmax(150px,2fr) minmax(120px,1fr) repeat(2,minmax(90px,1fr)) auto auto;gap:8px;align-items:end;margin:8px 0; }
-      .condition-row label{display:grid;font-size:.75rem}.condition-row small{align-self:center}
-      @media(max-width:720px){.condition-row{grid-template-columns:1fr}.condition-group .condition-group{margin-left:8px}}
-      .settings dl { display: grid; grid-template-columns: max-content minmax(120px, 1fr); gap: 10px 18px; max-width: 560px; }
-      .settings dt { color: var(--ag-muted); }
-      .settings dd { margin: 0; }
+      .row-select { min-width: 0; width: 18px; height: 18px; min-height: 0; padding: 0; accent-color: var(--ag-accent); }
+      .select-col { width: 44px; }
+      .selected-row td { background: var(--ag-accent-soft); }
+      .muted-row td { color: var(--ag-muted); }
+      .condition-cell { white-space: normal; min-width: 220px; }
+      .priority-label { display: inline-flex; align-items: center; gap: 6px; }
+      .notice { color: var(--ag-notice); background: var(--ag-notice-bg); border: 1px solid var(--ag-notice-border); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+
+      .rule-editor { display: flex; flex-direction: column; gap: 14px; }
+      .editor-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 2; padding: 8px 0; background: var(--ag-bg); }
+      .editor-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .editor-title h2 { margin: 2px 0 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+      .breadcrumb { color: var(--ag-muted); font-size: 13px; }
+      .editor-layout { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+      .rule-form { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+      .form-section { display: flex; flex-direction: column; gap: 14px; padding: 18px; border: 1px solid var(--ag-border-soft); border-radius: 14px; background: var(--ag-surface); }
+      .form-section h3 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 16px; font-weight: 600; }
+      .step { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ag-selected-bg); color: var(--ag-selected-text); font-size: 13px; font-weight: 700; }
+      .section-help { margin: -8px 0 0 36px; color: var(--ag-muted); font-size: 13px; }
+      .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+      .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+      .field.wide { grid-column: 1 / -1; }
+      .field input, .field select { width: 100%; min-height: 40px; }
+      .field-label { font-size: 13px; font-weight: 600; color: var(--ag-heading-muted); }
+      .optional { font-weight: 400; color: var(--ag-muted); }
+      .help { color: var(--ag-muted); font-size: 12px; line-height: 1.4; }
+      .readonly-field { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border: 1px dashed var(--ag-border); border-radius: 8px; color: var(--ag-heading-muted); box-sizing: border-box; }
+      .input-suffix { display: flex; align-items: center; border: 1px solid var(--ag-border); border-radius: 8px; background: var(--ag-input); padding-right: 12px; }
+      .input-suffix input { border: 0; background: transparent; min-width: 0; flex: 1; }
+      .input-suffix span { color: var(--ag-muted); font-size: 13px; }
+      .choices { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .choices legend { margin-bottom: 8px; }
+      .choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--ag-border); border-radius: 10px; background: var(--ag-input); cursor: pointer; }
+      .choice input { min-height: 0; width: 18px; height: 18px; margin: 1px 0 0; padding: 0; accent-color: var(--ag-accent); flex: none; }
+      .choice strong { text-transform: capitalize; display: flex; align-items: center; gap: 7px; font-size: 14px; }
+      .choice small { display: block; margin-top: 2px; color: var(--ag-muted); font-size: 12px; line-height: 1.35; }
+      .choice:has(input:checked) { border: 2px solid var(--ag-accent); background: var(--ag-accent-soft); padding: 9px 11px; }
+      .condition-builder { display: flex; flex-direction: column; gap: 10px; }
+      .condition-group { display: flex; flex-direction: column; gap: 10px; }
+      .condition-group.nested { padding: 12px; border: 1px dashed var(--ag-border); border-radius: 12px; background: var(--ag-surface-alt); }
+      .group-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+      .match-sentence { font-size: 15px; }
+      .group-head select { font-weight: 700; }
+      .group-head .icon-button { margin-left: auto; }
+      .joiner { display: flex; align-items: center; gap: 10px; color: var(--ag-muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+      .joiner::before, .joiner::after { content: ""; flex: 1; height: 1px; background: var(--ag-border-soft); }
+      .group-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .group-actions button { border-style: dashed; background: transparent; }
+      .condition-row { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--ag-border); border-radius: 12px; background: var(--ag-surface-alt); }
+      .condition-head { display: flex; align-items: center; gap: 10px; }
+      .condition-title { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ag-muted); }
+      .current-pill { padding: 2px 10px; border-radius: 999px; background: var(--ag-control); border: 1px solid var(--ag-border-soft); font-size: 12px; color: var(--ag-heading-muted); }
+      .condition-head .icon-button { margin-left: auto; }
+      .condition-fields { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; align-items: start; }
+      .rule-aside { flex: 1 1 300px; max-width: 400px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 64px; }
+      .aside-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--ag-border-soft); border-radius: 14px; background: var(--ag-surface); }
+      .aside-card h3 { margin: 0; font-size: 15px; }
+      .rule-summary { margin: 0; font-size: 14px; line-height: 1.6; }
+      .priority-text.priority-critical { color: #ef2b1d; } .priority-text.priority-high { color: #e68a00; } .priority-text.priority-medium { color: #c79a00; }
+      .priority-text.priority-low { color: #3f8cff; } .priority-text.priority-info, .priority-text.priority-status { color: var(--ag-muted); }
+      .rule-preview p { margin: 0; font-size: 13px; color: var(--ag-muted); }
+      .rule-preview.error { color: var(--ag-error-text); background: var(--ag-error-bg); }
+      .preview-condition { display: grid; gap: 3px; padding-left: 10px; border-left: 3px solid var(--ag-border); font-size: 13px; }
+      .preview-match { color: var(--ag-ok); } .preview-miss { color: var(--ag-miss); }
+
+      dialog { width: min(420px, calc(100vw - 32px)); box-sizing: border-box; color: var(--ag-text); background: var(--ag-surface); border: 1px solid var(--ag-border); border-radius: 12px; padding: 20px; font-family: var(--paper-font-body1_-_font-family, Roboto, Arial, sans-serif); }
+      dialog::backdrop { background: rgba(0,0,0,.45); }
+      dialog form, dialog label { display: grid; gap: 8px; }
+      dialog h3, dialog p { margin: 0 0 12px; }
+      dialog select, dialog input, dialog textarea { width: 100%; min-height: 42px; }
+      .custom-duration { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
+      .custom-duration[hidden] { display: none; }
+      .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+      .validation { min-height: 1.2em; color: var(--ag-miss); font-size: 13px; }
+
       .resizable-column { position: relative; min-width: 72px; padding-right: 16px; }
       .col-resizer { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; touch-action: none; user-select: none; }
-      .col-resizer:hover { background: rgba(255, 255, 255, .18); }
+      .col-resizer:hover { background: rgba(127, 127, 127, .25); }
       @media (max-width: 720px) {
-        .topbar { align-items: flex-start; flex-direction: column; }
-        .menu-button { display: inline-flex; align-items: center; justify-content: center; }
-        input { min-width: 0; width: 100%; }
-        .actions, .toolbar, .rule-form { width: 100%; }
-        .shelve-duration { width: 100%; }
-        .shelve-duration select { flex: 1 1 auto; }
-        button, select { flex: 1 1 auto; }
+        .menu-button { display: inline-flex; }
+        .topbar { padding: 10px 12px; }
+        .tabs { flex: 1 1 100%; max-width: none; flex-direction: row; gap: 4px; padding: 8px 12px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ag-border-soft); }
+        .nav-group { flex-direction: row; gap: 4px; }
+        .nav-title { display: none; }
+        .nav-item { width: auto; white-space: nowrap; gap: 8px; }
+        .content { padding: 14px 12px 24px; }
+        .search-box { flex: 1 1 100%; min-width: 0; }
+        .form-grid, .choices { grid-template-columns: 1fr; }
+        .rule-aside { position: static; max-width: none; }
+        .section-help { margin-left: 0; }
       }
     `;
   }
@@ -1755,6 +2352,7 @@ class AlarmGridCard extends HTMLElement {
     this._closeActionMenus = (event) => {
       if (event?.type === "keydown" && event.key !== "Escape") return;
       if (event?.type === "pointerdown" && event.composedPath().includes(this)) return;
+      this._openMenuId = undefined;
       this.shadowRoot?.querySelectorAll("details.action-menu[open]").forEach((menu) => { menu.open = false; });
     };
   }
@@ -1885,12 +2483,14 @@ class AlarmGridCard extends HTMLElement {
   }
 
   _showShelveDialog(alarm) {
+    this._openMenuId = undefined;
     this._dialog = { kind: "shelve", alarm, preset: "15" };
     this._render();
     this.shadowRoot.querySelector("dialog")?.showModal();
   }
 
   _showDisableDialog(alarm) {
+    this._openMenuId = undefined;
     this._dialog = { kind: "disable", alarm };
     this._render();
     this.shadowRoot.querySelector("dialog")?.showModal();
@@ -1966,9 +2566,9 @@ class AlarmGridCard extends HTMLElement {
     if (state === "SHELVED") status = `${this._t("shelved_until", { time: this._time(alarm.shelve_expiry) })}<br>${this._remaining(alarm.shelve_expiry)}`;
     if (state === "DISABLED") status = this._t("alarm_disabled");
     const activeActions = ["active", "unacknowledged"].includes(this._config.view) && state !== "DISABLED" && state !== "SHELVED";
-    const menu = activeActions && (this._config.show_shelve_action || this._config.show_disable_action) ? `<details class="action-menu"><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical" aria-hidden="true"></ha-icon></summary><div class="menu-popover">${this._config.show_shelve_action ? `<button data-open-shelve="${this._escape(alarm.id)}">${this._t("suspend_alarm")}</button>` : ""}${this._config.show_disable_action ? `<button class="destructive-text" data-open-disable="${this._escape(alarm.id)}">${this._t("disable_alarm")}</button>` : ""}</div></details>` : "";
+    const menu = activeActions && (this._config.show_shelve_action || this._config.show_disable_action) ? `<details class="action-menu" data-menu-id="${this._escape(alarm.id)}" ${this._openMenuId === alarm.id ? "open" : ""}><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical" aria-hidden="true"></ha-icon></summary><div class="menu-popover">${this._config.show_shelve_action ? `<button data-open-shelve="${this._escape(alarm.id)}">${this._t("suspend_alarm")}</button>` : ""}${this._config.show_disable_action ? `<button class="destructive-text" data-open-disable="${this._escape(alarm.id)}">${this._t("disable_alarm")}</button>` : ""}</div></details>` : "";
     const restore = this._config.show_restore_actions && state === "SHELVED" ? `<button data-unshelve="${this._escape(alarm.id)}">${this._t("unshelve_now")}</button>` : this._config.show_restore_actions && state === "DISABLED" ? `<button data-enable="${this._escape(alarm.id)}">${this._t("enable_alarm")}</button>` : "";
-    return `<article class="alarm-item priority-${this._escape(priority)} state-${state?.toLowerCase()}"><div class="accent" aria-hidden="true"></div><div class="alarm-content"><div class="alarm-leading"><span class="priority-badge"><span class="state-icon" aria-hidden="true">${state === "SHELVED" ? "💤" : state === "DISABLED" ? "🚫" : ""}</span><span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div><div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}<div class="alarm-footer"><div class="alarm-details">${this._config.show_value && value != null && value !== "" ? `${this._escape(value)} · ` : ""}<span class="state">${status}</span></div>${this._config.show_actions ? `<div class="item-actions">${activeActions ? `<button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${menu}` : restore}</div>` : ""}</div></div></article>`;
+    return `<article class="alarm-item priority-${this._escape(priority)} state-${state?.toLowerCase()}${unack ? " is-unack" : ""}"><div class="accent" aria-hidden="true"></div><div class="alarm-content"><div class="alarm-leading"><span class="priority-badge">${state === "SHELVED" ? '<ha-icon class="state-icon" icon="mdi:sleep" aria-hidden="true"></ha-icon>' : state === "DISABLED" ? '<ha-icon class="state-icon" icon="mdi:cancel" aria-hidden="true"></ha-icon>' : ""}<span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div><div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}<div class="alarm-footer"><div class="alarm-details">${this._config.show_value && value != null && value !== "" ? `${this._escape(value)} · ` : ""}<span class="state">${status}</span></div>${this._config.show_actions ? `<div class="item-actions">${activeActions ? `<button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${menu}` : restore}</div>` : ""}</div></div></article>`;
   }
 
   _openPanel() {
@@ -1999,11 +2599,11 @@ class AlarmGridCard extends HTMLElement {
     }
     cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
       ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
-      ${this._config.show_summary ? `<section class="summary" aria-label="Alarm summary"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>💤 ${shelved}</b></span><span class="chip"><b>🚫 ${disabled}</b></span></section>` : ""}
+      ${this._config.show_summary ? `<section class="summary" aria-label="${this._t("alarm_summary")}"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>${shelved}</b> ${this._t("chip_shelved")}</span><span class="chip"><b>${disabled}</b> ${this._t("chip_disabled")}</span></section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
-      ${visible.length > shown.length ? `<button class="more" data-action="open-panel">+${visible.length - shown.length} more alarms</button>` : ""}
-      ${this._config.show_open_panel ? `<footer><button data-action="open-panel">Open AlarmGrid <span aria-hidden="true">→</span></button></footer>` : ""}
+      ${visible.length > shown.length ? `<button class="more" data-action="open-panel">${this._t("more_alarms", { count: visible.length - shown.length })}</button>` : ""}
+      ${this._config.show_open_panel ? `<footer><button data-action="open-panel">${this._t("open_alarmgrid")} <span aria-hidden="true">→</span></button></footer>` : ""}
     </ha-card>`;
     if (this._dialog && !dialogRoot.querySelector("dialog")) {
       dialogRoot.innerHTML = this._dialogMarkup();
@@ -2013,8 +2613,13 @@ class AlarmGridCard extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='silence']")?.addEventListener("click", () => this._action("silence"));
     this.shadowRoot.querySelector("[data-action='ack-all']")?.addEventListener("click", () => this._action("acknowledge_all"));
     this.shadowRoot.querySelectorAll("[data-ack]").forEach((button) => button.addEventListener("click", () => this._action("acknowledge", button.dataset.ack)));
+    // The card subtree is rebuilt on every refresh; remember which menu is open.
     this.shadowRoot.querySelectorAll("details.action-menu").forEach((menu) => menu.addEventListener("toggle", () => {
-      if (!menu.open) return;
+      if (!menu.open) {
+        if (this._openMenuId === menu.dataset.menuId) this._openMenuId = undefined;
+        return;
+      }
+      this._openMenuId = menu.dataset.menuId;
       this.shadowRoot.querySelectorAll("details.action-menu[open]").forEach((other) => { if (other !== menu) other.open = false; });
     }));
     this.shadowRoot.querySelectorAll("[data-open-shelve]").forEach((button) => button.addEventListener("click", () => this._showShelveDialog(this._alarms.find((alarm) => alarm.id === button.dataset.openShelve))));
@@ -2055,7 +2660,7 @@ class AlarmGridCard extends HTMLElement {
       .accent { width:4px; flex:none; background:var(--priority); border-radius:var(--ha-card-border-radius, 12px) 0 0 var(--ha-card-border-radius, 12px); } .alarm-content { padding:10px 12px; min-width:0; flex:1; border-radius:0 var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px) 0; }
       .alarm-leading, .alarm-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; min-width:0; }
       .priority-badge { display:inline-flex; align-items:center; gap:6px; color:var(--priority); font-size:var(--ag-priority-font-size, .7rem); font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
-      .priority-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } time, .alarm-tag, .alarm-context, .alarm-details { color:var(--secondary-text-color); font-size:var(--ag-alarm-meta-font-size, .78rem); }
+      .priority-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } .state-icon { --mdc-icon-size:14px; width:14px; height:14px; } time, .alarm-tag, .alarm-context, .alarm-details { color:var(--secondary-text-color); font-size:var(--ag-alarm-meta-font-size, .78rem); }
       .alarm-name { margin:5px 0 2px; min-width:0; font-size:var(--ag-alarm-name-font-size, 1rem); font-weight:600; line-height:1.35; overflow-wrap:anywhere; } .alarm-tag { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .alarm-context { margin-top:3px; overflow-wrap:anywhere; } .alarm-footer { margin-top:7px; align-items:flex-end; } .alarm-details { min-width:0; overflow-wrap:anywhere; }
       .state { color:var(--primary-text-color); } .item-actions { position:relative; z-index:1; display:flex; flex:none; align-items:center; gap:3px; } .item-actions button { min-height:40px; padding:0 10px; color:var(--primary-color); font-size:var(--ag-action-font-size, .78rem); font-weight:600; text-transform:uppercase; }
