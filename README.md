@@ -661,10 +661,18 @@ telegram_interactive_disable: true
 
 Activation messages use Home Assistant's native `telegram_bot.send_message` action.
 Callbacks arrive through the selected event entities and execute the existing alarm
-engine actions; no raw Telegram HTTP API, credentials, or user identity is handled.
+engine actions; no raw Telegram HTTP API or credentials are handled.
 If an interactive send definitely fails, the integration attempts one plain V1
 notification without buttons. A successful send with incomplete response data is
 not retried, preventing duplicate messages.
+
+The history **Operator** column and history CSV export record who performed each
+Telegram action (ACK, shelve, unshelve, disable, or enable), using the callback
+sender's first and last name, for example `Mario Rossi (Telegram)`. If the name is
+unavailable, AlarmGrid uses `Telegram (ID 123456)` when the callback includes a user
+ID, or keeps `telegram` when no sender details are available. For actions with a
+confirmation or duration menu, the operator is the person who clicks the final
+button. Existing history entries retain their previously recorded operator.
 
 Interactive Telegram action sessions are currently stored in memory, bounded to
 1,000 entries with a seven-day TTL. Buttons on messages created before a Home
