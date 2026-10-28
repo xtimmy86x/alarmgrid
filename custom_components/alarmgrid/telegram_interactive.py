@@ -65,6 +65,26 @@ def parse_callback(value: Any) -> tuple[str, str] | None:
     return parts[1], parts[2]
 
 
+def _callback_operator(attributes: dict[str, Any]) -> str:
+    """Label the sender of HA's telegram_callback, not the bot or chat."""
+
+    name = " ".join(
+        value.strip()
+        for key in ("from_first", "from_last")
+        if isinstance(value := attributes.get(key), str) and value.strip()
+    )
+    if name:
+        return f"{name} (Telegram)"
+    user_id = attributes.get("user_id")
+    if (
+        isinstance(user_id, (str, int))
+        and not isinstance(user_id, bool)
+        and (identifier := str(user_id).strip())
+    ):
+        return f"Telegram (ID {identifier})"
+    return "telegram"
+
+
 class TelegramInteractiveManager:
     """Own bounded sessions and execute validated actions through AlarmEngine."""
 
@@ -198,14 +218,16 @@ class TelegramInteractiveManager:
             await self._answer(callback_id, self.text["unavailable"], session.config_entry_id)
             return
         try:
-            answer = await self._execute(session, rule, action)
+            answer = await self._execute(
+                session, rule, action, operator=_callback_operator(attributes)
+            )
         except Exception:
             _LOGGER.warning("Interactive Telegram alarm action failed", exc_info=True)
             answer = self.text["unavailable"]
         await self._answer(callback_id, answer, session.config_entry_id)
 
     async def _execute(
-        self, session: TelegramActionSession, rule: Any, action: str
+        self, session: TelegramActionSession, rule: Any, action: str, *, operator: str
     ) -> str:
         state = self.engine.states[session.rule_id]
         lifecycle = state.lifecycle_state
@@ -267,7 +289,7 @@ class TelegramInteractiveManager:
                 or not rule.requires_ack
             ):
                 return self.text["unavailable"]
-            await self.engine.acknowledge_alarm(session.rule_id, operator="telegram")
+            await self.engine.acknowledge_alarm(session.rule_id, operator=operator)
             await self._markup(session, self.keyboard(session.token, rule))
             return self.text["ack_ok"]
         if action in SHELVE_MINUTES:
@@ -281,7 +303,7 @@ class TelegramInteractiveManager:
             await self.engine.shelve_alarm(
                 session.rule_id,
                 duration_minutes=SHELVE_MINUTES[action],
-                operator="telegram",
+                operator=operator,
                 comment="Shelved from Telegram",
             )
             until = self.engine.states[session.rule_id].shelve_expiry
@@ -301,7 +323,7 @@ class TelegramInteractiveManager:
             )
             return self.text["shelve_ok"]
         if action == "unshelve" and lifecycle == AlarmLifecycleState.SHELVED:
-            await self.engine.unshelve_alarm(session.rule_id, operator="telegram")
+            await self.engine.unshelve_alarm(session.rule_id, operator=operator)
             await self._edit(
                 session,
                 f"{session.original_message}\n\n🔔 {self.text['unshelve_ok']}",
@@ -314,7 +336,7 @@ class TelegramInteractiveManager:
             and rule.enabled
         ):
             await self.engine.disable_alarm(
-                session.rule_id, operator="telegram", comment="Disabled from Telegram"
+                session.rule_id, operator=operator, comment="Disabled from Telegram"
             )
             await self._edit(
                 session,
@@ -323,7 +345,7 @@ class TelegramInteractiveManager:
             )
             return self.text["disable_ok"]
         if action == "enable" and not rule.enabled:
-            await self.engine.enable_alarm(session.rule_id, operator="telegram")
+            await self.engine.enable_alarm(session.rule_id, operator=operator)
             await self._edit(
                 session, f"{session.original_message}\n\n▶️ {self.text['enable_ok']}", []
             )

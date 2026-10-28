@@ -1,5 +1,7 @@
+import tempfile
 import unittest
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 from custom_components.alarmgrid.alarm_engine import AlarmEngine
@@ -8,6 +10,7 @@ from custom_components.alarmgrid.alarm_models import (
     AlarmRule,
     AlarmRuntimeState,
 )
+from custom_components.alarmgrid.alarm_store import SQLiteHistoryStore
 from custom_components.alarmgrid.telegram_interactive import (
     MAX_SESSIONS,
     SHELVE_MINUTES,
@@ -163,8 +166,8 @@ class TelegramActionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         self.subject = TelegramInteractiveManager(hass, self.engine, {})
         self.subject.add_session("token", "alarm", "notify.telegram", 10, 20, "alarm", "bot-one")
 
-    async def callback(self, action):
-        await self.subject.handle_callback({"id": f"query-{action}", "data": f"ag:token:{action}", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}})
+    async def callback(self, action, **sender):
+        await self.subject.handle_callback({"id": f"query-{action}", "data": f"ag:token:{action}", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}, **sender})
         self.assertEqual(self.services.calls[-1][1], "answer_callback_query")
 
     async def test_ack_changes_real_engine_state_and_operator(self):
@@ -173,6 +176,79 @@ class TelegramActionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(state.lifecycle_state, AlarmLifecycleState.ACTIVE_ACK)
         self.assertEqual(state.ack_user, "telegram")
         self.assertTrue(any(call[1] == "edit_replymarkup" for call in self.services.calls))
+
+    async def test_ack_records_callback_sender_with_identity_fallbacks(self):
+        cases = [
+            ({"from_first": " Mario ", "from_last": " Rossi ", "user_id": 123}, "Mario Rossi (Telegram)"),
+            ({"from_first": "Mario", "from_last": None}, "Mario (Telegram)"),
+            ({"from_first": "", "from_last": "Rossi"}, "Rossi (Telegram)"),
+            ({"from_first": "Élodie", "from_last": "D'Angelo"}, "Élodie D'Angelo (Telegram)"),
+            ({"from_first": " ", "from_last": None, "user_id": 123}, "Telegram (ID 123)"),
+            ({"user_id": " 456 "}, "Telegram (ID 456)"),
+            ({"from_first": {}, "from_last": [], "user_id": 123}, "Telegram (ID 123)"),
+            ({"from_first": None, "user_id": None}, "telegram"),
+            ({"user_id": False}, "telegram"),
+            ({"user_id": " "}, "telegram"),
+            ({"user_id": {}}, "telegram"),
+            ({}, "telegram"),
+        ]
+        for sender, expected in cases:
+            with self.subTest(sender=sender):
+                self.engine.states["alarm"].lifecycle_state = AlarmLifecycleState.ACTIVE_UNACK
+                await self.callback("ack", **sender)
+                self.assertEqual(self.engine.states["alarm"].ack_user, expected)
+                self.assertEqual(self.engine.last_event.event_type, "acknowledged")
+                self.assertEqual(self.engine.last_event.operator, expected)
+
+    async def test_ack_sender_survives_sqlite_history_round_trip(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "history.db"
+            store = SQLiteHistoryStore(path)
+            await store.async_setup()
+            self.engine.history_store = store
+            await self.callback("ack", from_first="Mario", from_last="Rossi", user_id=123)
+
+            # The same serialized operator is consumed by the history view/CSV.
+            reopened = SQLiteHistoryStore(path)
+            events = await reopened.query_events()
+            self.assertEqual(len(events), 1)
+            self.assertEqual(events[0].event_type, "acknowledged")
+            self.assertEqual(events[0].to_dict()["operator"], "Mario Rossi (Telegram)")
+
+    async def test_bot_and_original_message_are_not_used_as_operator(self):
+        await self.callback(
+            "ack",
+            from_first="Mario",
+            from_last="Rossi",
+            bot={"config_entry_id": "bot-one", "first_name": "Alarm bot", "username": "alarm_bot"},
+            message={"message_id": 20, "from": {"first_name": "Original sender"}},
+        )
+        self.assertEqual(self.engine.last_event.operator, "Mario Rossi (Telegram)")
+
+    async def test_each_action_records_who_clicked_the_final_button(self):
+        await self.callback("shelve", from_first="Alice")
+        self.assertIsNone(self.engine.last_event)
+        await self.callback("s60", from_first="Bob")
+        self.assertEqual(self.engine.last_event.event_type, "shelved")
+        self.assertEqual(self.engine.last_event.operator, "Bob (Telegram)")
+        await self.callback("unshelve", from_first="Carla")
+        self.assertEqual(self.engine.last_event.event_type, "unshelved")
+        self.assertEqual(self.engine.last_event.operator, "Carla (Telegram)")
+        await self.callback("disable", from_first="Diego")
+        self.assertEqual(self.engine.last_event.event_type, "unshelved")
+        await self.callback("disable_confirm", from_first="Elena")
+        self.assertEqual(self.engine.last_event.event_type, "disabled")
+        self.assertEqual(self.engine.last_event.operator, "Elena (Telegram)")
+        await self.callback("enable", from_first="Franco")
+        self.assertEqual(self.engine.last_event.event_type, "enabled")
+        self.assertEqual(self.engine.last_event.operator, "Franco (Telegram)")
+
+    async def test_rejected_callback_does_not_record_sender_or_action(self):
+        await self.callback("ack", chat_id=999, from_first="Mario", user_id=123)
+        self.assertEqual(self.engine.states["alarm"].lifecycle_state, AlarmLifecycleState.ACTIVE_UNACK)
+        self.assertIsNone(self.engine.states["alarm"].ack_user)
+        self.assertIsNone(self.engine.last_event)
+        self.assertEqual(await self.engine.history_store.query_events(), [])
 
     async def test_shelve_submenu_and_duration_change_real_engine(self):
         await self.callback("shelve")
