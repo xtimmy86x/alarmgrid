@@ -190,6 +190,8 @@ const TRANSLATIONS = {
     confirm_delete_group: "Delete this group and all its conditions?", rule_created: "Rule {id} created",
     more_alarms: "+{count} more alarms", open_alarmgrid: "Open AlarmGrid", alarm_summary: "Alarm summary",
     chip_shelved: "shelved", chip_disabled: "disabled",
+    badge_active_unack: "to acknowledge", badge_active_ack: "acknowledged", badge_cleared_unack: "cleared · to acknowledge",
+    badge_cleared_ack: "cleared", badge_shelved: "shelved", badge_disabled: "disabled",
   },
   it: {
     default_title: "Allarmi Industriali",
@@ -363,6 +365,8 @@ const TRANSLATIONS = {
     confirm_delete_group: "Eliminare questo gruppo e tutte le sue condizioni?", rule_created: "Regola {id} creata",
     more_alarms: "+{count} altri allarmi", open_alarmgrid: "Apri AlarmGrid", alarm_summary: "Riepilogo allarmi",
     chip_shelved: "sospesi", chip_disabled: "disabilitati",
+    badge_active_unack: "da riconoscere", badge_active_ack: "riconosciuto", badge_cleared_unack: "rientrato · da riconoscere",
+    badge_cleared_ack: "rientrato", badge_shelved: "sospeso", badge_disabled: "disabilitato",
   },
 };
 
@@ -2562,13 +2566,25 @@ class AlarmGridCard extends HTMLElement {
     const unack = ["ACTIVE_UNACK", "CLEARED_UNACK"].includes(state);
     const context = [this._config.show_system && alarm.system, this._config.show_area && alarm.area].filter(Boolean);
     const value = alarm.last_value ?? alarm.last_source_state;
-    let status = this._t(`state_${String(state || "normal").toLowerCase()}`);
-    if (state === "SHELVED") status = `${this._t("shelved_until", { time: this._time(alarm.shelve_expiry) })}<br>${this._remaining(alarm.shelve_expiry)}`;
+    const badgeKey = `badge_${String(state || "").toLowerCase()}`;
+    const badgeState = TRANSLATIONS.en[badgeKey] ? this._t(badgeKey) : "";
+    // Active states are already named in the badge; only suppression needs detail.
+    let status = "";
+    if (state === "SHELVED") status = `${this._t("shelved_until", { time: this._time(alarm.shelve_expiry) })} · ${this._remaining(alarm.shelve_expiry)}`;
     if (state === "DISABLED") status = this._t("alarm_disabled");
+    if (!badgeState && !status) status = this._lifecycleText(state);
+    const details = [
+      this._config.show_value && value != null && value !== "" ? `<span class="value">${this._escape(value)}</span>` : "",
+      ...context.map((item) => this._escape(item)),
+    ].filter(Boolean).join(" · ");
     const activeActions = ["active", "unacknowledged"].includes(this._config.view) && state !== "DISABLED" && state !== "SHELVED";
     const menu = activeActions && (this._config.show_shelve_action || this._config.show_disable_action) ? `<details class="action-menu" data-menu-id="${this._escape(alarm.id)}" ${this._openMenuId === alarm.id ? "open" : ""}><summary class="icon-button" title="${this._t("more_actions")}" aria-label="${this._t("more_actions")}"><ha-icon icon="mdi:dots-vertical" aria-hidden="true"></ha-icon></summary><div class="menu-popover">${this._config.show_shelve_action ? `<button data-open-shelve="${this._escape(alarm.id)}">${this._t("suspend_alarm")}</button>` : ""}${this._config.show_disable_action ? `<button class="destructive-text" data-open-disable="${this._escape(alarm.id)}">${this._t("disable_alarm")}</button>` : ""}</div></details>` : "";
     const restore = this._config.show_restore_actions && state === "SHELVED" ? `<button data-unshelve="${this._escape(alarm.id)}">${this._t("unshelve_now")}</button>` : this._config.show_restore_actions && state === "DISABLED" ? `<button data-enable="${this._escape(alarm.id)}">${this._t("enable_alarm")}</button>` : "";
-    return `<article class="alarm-item priority-${this._escape(priority)} state-${state?.toLowerCase()}${unack ? " is-unack" : ""}"><div class="accent" aria-hidden="true"></div><div class="alarm-content"><div class="alarm-leading"><span class="priority-badge">${state === "SHELVED" ? '<ha-icon class="state-icon" icon="mdi:sleep" aria-hidden="true"></ha-icon>' : state === "DISABLED" ? '<ha-icon class="state-icon" icon="mdi:cancel" aria-hidden="true"></ha-icon>' : ""}<span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div><div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}${context.length ? `<div class="alarm-context">${context.map((item) => this._escape(item)).join(" · ")}</div>` : ""}<div class="alarm-footer"><div class="alarm-details">${this._config.show_value && value != null && value !== "" ? `${this._escape(value)} · ` : ""}<span class="state">${status}</span></div>${this._config.show_actions ? `<div class="item-actions">${activeActions ? `<button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${menu}` : restore}</div>` : ""}</div></div></article>`;
+    return `<article class="alarm-item priority-${this._escape(priority)} state-${state?.toLowerCase()}${unack ? " is-unack" : ""}"><div class="accent" aria-hidden="true"></div><div class="alarm-content"><div class="alarm-leading"><span class="priority-badge">${state === "SHELVED" ? '<ha-icon class="state-icon" icon="mdi:sleep" aria-hidden="true"></ha-icon>' : state === "DISABLED" ? '<ha-icon class="state-icon" icon="mdi:cancel" aria-hidden="true"></ha-icon>' : ""}<span class="priority-dot" aria-hidden="true"></span>${this._escape(this._t(`priority_${priority}`))}${badgeState ? `<span class="badge-state"> · ${this._escape(badgeState)}</span>` : ""}</span><time>${this._time(alarm.active_since || alarm.cleared_at)}</time></div><div class="alarm-name">${this._escape(alarm.name || alarm.tag || alarm.id)}</div>${this._config.show_tag && alarm.tag ? `<div class="alarm-tag">${this._escape(alarm.tag)}</div>` : ""}<div class="alarm-footer"><div class="alarm-details">${details}${status ? `<span class="state">${status}</span>` : ""}</div>${this._config.show_actions ? `<div class="item-actions">${activeActions ? `<button data-ack="${this._escape(alarm.id)}" ${alarm.acknowledged ? "disabled" : ""}>${this._t("ack")}</button>${menu}` : restore}</div>` : ""}</div></div></article>`;
+  }
+
+  _lifecycleText(state) {
+    return this._t(`state_${String(state || "normal").toLowerCase()}`);
   }
 
   _openPanel() {
@@ -2586,6 +2602,7 @@ class AlarmGridCard extends HTMLElement {
     const disabled = this._alarms.filter((alarm) => alarm.lifecycle_state === "DISABLED").length;
     const count = (priority) => this._alarms.filter((alarm) => alarm.priority === priority && ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"].includes(alarm.lifecycle_state)).length;
     const themeClass = this._config.theme === "auto" ? "" : ` force-${this._config.theme}`;
+    const chip = (kind, value, label) => `<span class="chip ${kind}${value ? "" : " zero"}">${kind ? '<span class="chip-dot" aria-hidden="true"></span>' : ""}<b>${value}</b> ${label}</span>`;
     // Keep the modal outside the frequently refreshed card subtree. A websocket
     // update or periodic poll must not remove an open <dialog> from the DOM.
     let cardRoot = this.shadowRoot.querySelector("[data-card-root]");
@@ -2598,8 +2615,8 @@ class AlarmGridCard extends HTMLElement {
       this.shadowRoot.replaceChildren(cardRoot, dialogRoot);
     }
     cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
-      ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · ${this._t("horn_active")}` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
-      ${this._config.show_summary ? `<section class="summary" aria-label="${this._t("alarm_summary")}"><span class="chip critical"><b>${count("critical")}</b> ${this._t("priority_critical")}</span><span class="chip high"><b>${count("high")}</b> ${this._t("priority_high")}</span><span class="chip unack"><b>${unack}</b> ${this._t("metric_unack", { count: "" }).trim()}</span><span class="chip"><b>${shelved}</b> ${this._t("chip_shelved")}</span><span class="chip"><b>${disabled}</b> ${this._t("chip_disabled")}</span></section>` : ""}
+      ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · <span class="horn-on">${this._t("horn_active")}</span>` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
+      ${this._config.show_summary ? `<section class="summary" aria-label="${this._t("alarm_summary")}">${chip("critical", count("critical"), this._t("priority_critical"))}${chip("high", count("high"), this._t("priority_high"))}${chip("unack", unack, this._t("metric_unack", { count: "" }).trim())}${chip("", shelved, this._t("chip_shelved"))}${chip("", disabled, this._t("chip_disabled"))}</section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
       ${visible.length > shown.length ? `<button class="more" data-action="open-panel">${this._t("more_alarms", { count: visible.length - shown.length })}</button>` : ""}
@@ -2640,7 +2657,7 @@ class AlarmGridCard extends HTMLElement {
   }
 
   _styles() {
-    return `:host { display:block; min-width:0; font-family:inherit; --ag-critical:#d64545; --ag-high:#e17825; --ag-medium:#c79618; --ag-low:#4285b4; --ag-info:#477fc1; --ag-status:#718096; }
+    return `:host { display:block; min-width:0; font-family:inherit; --ag-critical:#d64545; --ag-high:#e17825; --ag-medium:#c79618; --ag-low:#4285b4; --ag-info:#477fc1; --ag-status:#718096; --ag-cleared:#c2549a; }
       .alarm-card { min-height:var(--ag-card-min-height, 0); overflow:visible; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border-radius:var(--ha-card-border-radius, 12px); }
       .force-light { color-scheme:light; --primary-text-color:#202124; --secondary-text-color:#5f6368; --divider-color:#dfe1e5; --ha-card-background:#fff; }
       .force-dark { color-scheme:dark; --primary-text-color:#e8eaed; --secondary-text-color:#aab0b6; --divider-color:#45494e; --ha-card-background:#202124; }
@@ -2673,6 +2690,16 @@ class AlarmGridCard extends HTMLElement {
       .empty ha-icon { color:var(--primary-color); } .error { margin:0 16px 10px; padding:10px; color:var(--error-color); border:1px solid var(--error-color); border-radius:var(--ha-card-border-radius, 12px); }
       .more { display:block; margin:0 auto 6px; min-height:40px; padding:0 12px; color:var(--secondary-text-color); font-size:.82rem; }
       footer { border-top:1px solid var(--divider-color); padding:5px 8px; text-align:center; } footer button { min-height:44px; width:100%; color:var(--primary-color); font-weight:500; }
+      .heading>ha-icon { box-sizing:content-box; padding:8px; border-radius:10px; background:color-mix(in srgb, var(--error-color, var(--ag-critical)) 14%, transparent); }
+      .horn-on { color:var(--warning-color, var(--ag-high)); font-weight:600; }
+      .chip-dot { width:7px; height:7px; border-radius:50%; background:currentColor; } .chip.critical .chip-dot { color:var(--ag-critical); } .chip.high .chip-dot { color:var(--ag-high); } .chip.unack .chip-dot { color:var(--warning-color, var(--ag-medium)); }
+      .chip.zero { opacity:.6; } .chip.zero b { color:inherit; }
+      .alarm-item.is-unack { --tint:var(--priority); background:color-mix(in srgb, var(--ha-card-background, var(--card-background-color)) 84%, var(--tint)); border-color:color-mix(in srgb, var(--divider-color) 45%, var(--tint)); }
+      .alarm-item.state-cleared_unack { --tint:var(--ag-cleared); } .state-cleared_unack .accent { background:var(--ag-cleared); }
+      .is-unack .priority-dot { box-shadow:0 0 0 3px color-mix(in srgb, var(--priority) 30%, transparent); }
+      .badge-state { font-weight:600; letter-spacing:.02em; }
+      .alarm-details .value { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--primary-text-color); }
+      .alarm-details .state { display:block; color:var(--primary-text-color); } .alarm-details .value + .state, .alarm-details:not(:empty) .state { margin-top:2px; }
       @media (max-width:420px) { header { padding-inline:12px; } .summary { padding-inline:12px; } .alarm-footer { align-items:flex-start; flex-direction:column; } .item-actions { align-self:flex-end; } }
     `;
   }
