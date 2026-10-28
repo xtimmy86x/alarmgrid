@@ -54,7 +54,7 @@ function fixture(attributes = { "data-condition-field": "entity_id" }) {
   let renders = 0;
   panel._render = () => { renders += 1; panel.shadowRoot.activeElement = null; };
   field.focus();
-  return { panel, field, rule, alarm, timers, renders: () => renders };
+  return { panel, field, rule, alarm, timers, window: context.window, renders: () => renders };
 }
 
 for (const attributes of [
@@ -131,3 +131,20 @@ test("editing a rule focuses the entity control in the condition builder", () =>
   assert.equal(panel._editingRuleId, null);
   assert.equal(renders(), 2, "explicit editor actions still render");
 });
+
+for (const [entitiesPerRule, expected] of [[1, 2], [4, 8], [undefined, 8]]) {
+  test(`rule deletion estimate follows backend entity count ${entitiesPerRule}`, async () => {
+    const { panel, rule, window } = fixture();
+    panel._hass.callWS = async () => ({ rules: [rule], entities_per_rule: entitiesPerRule });
+    await panel._load();
+    let confirmation;
+    panel._t = (key, values) => {
+      if (key === "confirm_delete_rules") confirmation = values;
+      return key;
+    };
+    // Stop at the confirmation, without performing a deletion.
+    window.confirm = () => false;
+    await panel._deleteRules({}, 2, "selected");
+    assert.equal(confirmation.entities, expected);
+  });
+}

@@ -25,6 +25,7 @@
         "title": "Opzioni AlarmGrid",
         "description": "Configura il comportamento degli allarmi e il canale opzionale di notifica Telegram.",
         "data": {
+          "create_rule_buttons": "Crea pulsanti per ogni regola",
           "telegram_enabled": "Abilita notifiche Telegram",
           "telegram_targets": "Entità notify Telegram",
           "telegram_min_priority": "Priorità minima Telegram",
@@ -40,6 +41,9 @@
           "telegram_interactive_ack": "Consenti ACK",
           "telegram_interactive_shelve": "Consenti sospensione",
           "telegram_interactive_disable": "Consenti disabilitazione"
+        },
+        "data_description": {
+          "create_rule_buttons": "Crea i pulsanti di riconoscimento, sospensione e disabilitazione per ogni regola. Disattivando questa opzione vengono rimossi i pulsanti già creati per le regole; i pulsanti globali restano disponibili."
         }
       }
     },

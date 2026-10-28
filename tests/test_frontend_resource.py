@@ -51,7 +51,7 @@ class FrontendResourceRegistrationTests(IsolatedAsyncioTestCase):
                 "res_type": "module",
                 "url": (
                     "/alarmgrid/frontend/dist/alarmgrid.js"
-                    "?v=2.1.1&build=20261028.1"
+                    "?v=2.1.1&build=20261028.2"
                 ),
             },
         )

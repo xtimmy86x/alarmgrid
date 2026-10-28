@@ -368,7 +368,18 @@ Global entities include:
 - `select.alarmgrid_filter_priority`
 - `number.alarmgrid_history_retention_days`
 
-Every stored rule also gets a binary alarm sensor and action buttons after the integration reloads.
+Every stored rule gets a binary alarm sensor. By default it also gets three action
+buttons: acknowledge, shelve, and disable.
+
+In **Settings > Devices & services > AlarmGrid > Configure**, turn off **Create
+buttons for each rule** to create only the binary sensor per rule. Saving the option
+reloads the integration and removes existing per-rule button entities from the
+entity registry. Turning it back on recreates them for all stored rules. This
+option also applies to subsequently created or imported rules.
+
+Global buttons and actions in the panel, card, Telegram, and services remain
+available. Custom names, entity IDs, and other registry customizations on removed
+buttons are not retained when those buttons are recreated.
 
 ## Rule Creation
 

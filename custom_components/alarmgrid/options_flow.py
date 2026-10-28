@@ -15,6 +15,7 @@ from .const import (
     CONF_AUTO_HIDE_CLEARED_ACK,
     CONF_AUTO_SHELVE_FLAPPING,
     CONF_COMPACT_MODE,
+    CONF_CREATE_RULE_BUTTONS,
     CONF_DEFAULT_DEADBAND,
     CONF_DEFAULT_DELAY_OFF,
     CONF_DEFAULT_DELAY_ON,
@@ -125,6 +126,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return vol.Schema(
             {
+                vol.Optional(
+                    CONF_CREATE_RULE_BUTTONS,
+                    default=options[CONF_CREATE_RULE_BUTTONS],
+                ): bool,
                 vol.Optional(
                     CONF_MAX_ACTIVE_ALARMS,
                     default=options[CONF_MAX_ACTIVE_ALARMS],

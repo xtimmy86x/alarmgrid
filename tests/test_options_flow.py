@@ -12,6 +12,21 @@ class OptionsFlowImportTests(unittest.TestCase):
 
         self.assertTrue(hasattr(options_flow, "OptionsFlowHandler"))
 
+    def test_rule_button_option_is_boolean_and_keeps_the_saved_value(self) -> None:
+        import voluptuous as vol
+        from types import SimpleNamespace
+
+        from custom_components.alarmgrid.const import CONF_CREATE_RULE_BUTTONS, DEFAULT_OPTIONS
+        from custom_components.alarmgrid.options_flow import OptionsFlowHandler
+
+        handler = OptionsFlowHandler(SimpleNamespace(data={}, options={}))
+        for enabled in (True, False):
+            schema = handler._options_schema({**DEFAULT_OPTIONS, CONF_CREATE_RULE_BUTTONS: enabled})
+            self.assertIs(schema({})[CONF_CREATE_RULE_BUTTONS], enabled)
+            self.assertIs(schema({CONF_CREATE_RULE_BUTTONS: not enabled})[CONF_CREATE_RULE_BUTTONS], not enabled)
+            with self.assertRaises(vol.Invalid):
+                schema({CONF_CREATE_RULE_BUTTONS: "false"})
+
 
 if __name__ == "__main__":
     unittest.main()

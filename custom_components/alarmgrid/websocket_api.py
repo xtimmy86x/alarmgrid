@@ -126,7 +126,10 @@ async def websocket_list_rules(
     runtime = _runtime(hass)
     connection.send_result(
         msg["id"],
-        {"rules": [rule.to_dict() for rule in runtime.engine.rules.values()]},
+        {
+            "rules": [rule.to_dict() for rule in runtime.engine.rules.values()],
+            "entities_per_rule": 4 if runtime.create_rule_buttons else 1,
+        },
     )
 
 
