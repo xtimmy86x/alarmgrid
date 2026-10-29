@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import deque
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from functools import wraps
 from typing import Any
 
 from .alarm_models import (
@@ -30,6 +32,24 @@ AsyncPersist = Callable[[dict[str, AlarmRuntimeState]], Awaitable[None]]
 AsyncEventHandler = Callable[[AlarmEvent], Awaitable[None]]
 
 
+def _serialized(method):
+    """Serialize mutations, allowing nested engine calls from the owning task."""
+
+    @wraps(method)
+    async def wrapped(self, *args, **kwargs):
+        task = asyncio.current_task()
+        if self._mutation_owner is task:
+            return await method(self, *args, **kwargs)
+        async with self._mutation_lock:
+            self._mutation_owner = task
+            try:
+                return await method(self, *args, **kwargs)
+            finally:
+                self._mutation_owner = None
+
+    return wrapped
+
+
 class AlarmEngine:
     """Evaluate source states and maintain alarm lifecycle state."""
 
@@ -41,6 +61,7 @@ class AlarmEngine:
         sound_manager: AlarmSoundManager | None = None,
         now: Callable[[], datetime] | None = None,
         persist_states: AsyncPersist | None = None,
+        persist_rules: Callable[[Iterable[AlarmRule]], Awaitable[None]] | None = None,
         initial_states: dict[str, AlarmRuntimeState] | None = None,
         alarm_flood_threshold: int = 25,
         alarm_flood_window_seconds: int = 60,
@@ -60,6 +81,7 @@ class AlarmEngine:
         self.sound_manager = sound_manager
         self._now = now or (lambda: datetime.now(UTC))
         self._persist_states = persist_states
+        self._persist_rules = persist_rules
         self._listeners: list[Listener] = []
         self._previous_entity_states: dict[str, str] = {}
         self._current_entity_states: dict[str, str] = {}
@@ -75,6 +97,14 @@ class AlarmEngine:
         self.auto_shelve_minutes = auto_shelve_minutes
         self.last_event: AlarmEvent | None = None
         self._event_handler = event_handler
+        self._mutation_lock = asyncio.Lock()
+        self._mutation_owner = None
+        self._closed = False
+        self.diagnostics = {
+            "history_write_failures": 0,
+            "state_write_failures": 0,
+            "rule_write_failures": 0,
+        }
 
     @classmethod
     async def from_store(
@@ -96,6 +126,7 @@ class AlarmEngine:
             sound_manager=sound_manager,
             now=now,
             persist_states=rule_store.async_save_states,
+            persist_rules=rule_store.async_save_rules,
             initial_states=states,
             event_handler=event_handler,
         )
@@ -113,7 +144,12 @@ class AlarmEngine:
 
     def _notify(self) -> None:
         for listener in list(self._listeners):
-            listener()
+            try:
+                listener()
+            except Exception as err:
+                _LOGGER.error(
+                    "Alarm update listener failed: error=%s", type(err).__name__
+                )
 
     def notify_listeners(self) -> None:
         """Notify Home Assistant entities after external runtime state changes."""
@@ -122,7 +158,25 @@ class AlarmEngine:
 
     async def _persist(self) -> None:
         if self._persist_states:
-            await self._persist_states(self.states)
+            try:
+                await self._persist_states(self.states)
+            except Exception as err:
+                self.diagnostics["state_write_failures"] += 1
+                _LOGGER.error(
+                    "Alarm state persistence failed: error=%s; runtime processing continues, restart recovery may be stale",
+                    type(err).__name__,
+                )
+
+    async def _persist_rule_definitions(self) -> None:
+        if self._persist_rules:
+            try:
+                await self._persist_rules(self.rules.values())
+            except Exception as err:
+                self.diagnostics["rule_write_failures"] += 1
+                _LOGGER.error(
+                    "Alarm rule persistence failed: error=%s; enable/disable changes may be lost on restart",
+                    type(err).__name__,
+                )
 
     def get_alarm(self, rule_id: str) -> AlarmRuntimeState:
         """Return runtime state for a rule."""
@@ -134,21 +188,56 @@ class AlarmEngine:
 
         return self.rules[rule_id]
 
+    @_serialized
     async def process_state(self, entity_id: str, new_state: Any) -> None:
         """Evaluate all rules tied to an entity state change."""
 
+        if self._closed:
+            return
         state = "" if new_state is None else str(new_state)
         previous = self._current_entity_states.get(entity_id)
         if previous is not None:
             self._previous_entity_states[entity_id] = previous
         self._current_entity_states[entity_id] = state
-        for rule_id in list(self._dependency_index.get(entity_id, ())):
+        for rule_id in sorted(self._dependency_index.get(entity_id, ())):
             await self.evaluate_rule(rule_id, state, previous)
 
     def seed_entity_states(self, states: dict[str, Any]) -> None:
         """Seed the multi-entity cache from the currently tracked HA states."""
         self._current_entity_states.update(
             {entity_id: str(getattr(value, "state", value)) for entity_id, value in states.items() if value is not None}
+        )
+
+    @_serialized
+    async def reconcile_states(self, states: dict[str, Any]) -> None:
+        """Evaluate a complete HA snapshot without inventing state-change edges."""
+        self._current_entity_states = {}
+        self._previous_entity_states = {}
+        self.seed_entity_states(states)
+        for rule in list(self.rules.values()):
+            # All referenced entities must have reached the HA state machine.
+            # Missing startup entities are evaluated on their first real update.
+            if (
+                rule.source_entity_ids
+                and rule.source_entity_ids <= self._current_entity_states.keys()
+            ):
+                await self._evaluate_current_rule(rule.id)
+            else:
+                runtime = self.states[rule.id]
+                runtime.pending_active_since = None
+                runtime.pending_clear_since = None
+        await self._persist()
+        self._notify()
+
+    async def _evaluate_current_rule(self, rule_id: str) -> None:
+        rule = self.rules[rule_id]
+        if (
+            not rule.source_entity_ids
+            or not rule.source_entity_ids <= self._current_entity_states.keys()
+        ):
+            return
+        await self.evaluate_rule(
+            rule_id, self._current_entity_states.get(rule.entity_id, "")
         )
 
     def _rebuild_dependency_index(self) -> None:
@@ -158,9 +247,12 @@ class AlarmEngine:
             for entity_id in rule.source_entity_ids:
                 self._dependency_index.setdefault(entity_id, set()).add(rule.id)
 
+    @_serialized
     async def process_due_transitions(self) -> None:
         """Evaluate delayed alarm transitions that are due at the current time."""
 
+        if self._closed:
+            return
         now = self._now()
         due_rule_ids: list[str] = []
         for rule in list(self.rules.values()):
@@ -168,13 +260,15 @@ class AlarmEngine:
                 rule.id, AlarmRuntimeState(rule_id=rule.id)
             )
             due_at = self._rule_due_transition_at(rule, runtime)
-            if due_at is None or due_at > now or runtime.last_state is None:
+            if due_at is None or due_at > now:
                 continue
             due_rule_ids.append(rule.id)
 
         for rule_id in due_rule_ids:
             runtime = self.states[rule_id]
-            if runtime.last_state is not None:
+            if runtime.lifecycle_state == AlarmLifecycleState.SHELVED:
+                await self.unshelve_alarm(rule_id, operator="system")
+            elif runtime.last_state is not None:
                 await self.evaluate_rule(rule_id, runtime.last_state)
 
     def next_due_transition_at(self) -> datetime | None:
@@ -190,6 +284,7 @@ class AlarmEngine:
                 due_times.append(due_at)
         return min(due_times) if due_times else None
 
+    @_serialized
     async def evaluate_rule(
         self, rule_id: str, new_state: Any, previous_state: Any = None
     ) -> AlarmEvaluationResult:
@@ -227,7 +322,14 @@ class AlarmEngine:
             )
             details = expression_result.details
             summary = f"{details['matched_conditions']}/{details['total_conditions']} conditions matched"
-            result = AlarmEvaluationResult(expression_result.matched, summary, summary, message=f"{rule.name}: {summary}", evaluation_details=details)
+            result = AlarmEvaluationResult(
+                expression_result.matched,
+                summary,
+                summary,
+                message=f"{rule.name}: {summary}",
+                evaluation_details=details,
+                message_is_generated=True,
+            )
         else:
             result = evaluate_rule(
                 rule, new_state, previous_state, currently_active=runtime.is_active,
@@ -246,6 +348,7 @@ class AlarmEngine:
         self._notify()
         return result
 
+    @_serialized
     async def manual_alarm(
         self, rule_id: str, *, message: str | None = None, operator: str | None = None
     ) -> None:
@@ -371,6 +474,7 @@ class AlarmEngine:
             result=result,
         )
 
+    @_serialized
     async def acknowledge_alarm(
         self,
         rule_id: str,
@@ -406,6 +510,7 @@ class AlarmEngine:
         await self._persist()
         self._notify()
 
+    @_serialized
     async def acknowledge_all(
         self,
         *,
@@ -429,6 +534,7 @@ class AlarmEngine:
             count += 1
         return count
 
+    @_serialized
     async def silence_horn(
         self, duration_seconds: int | None = None, *, operator: str | None = None
     ) -> None:
@@ -439,6 +545,7 @@ class AlarmEngine:
         await self._record_system_event(AlarmEventType.SILENCED, operator=operator)
         self._notify()
 
+    @_serialized
     async def unsilence_horn(self, *, operator: str | None = None) -> None:
         """Unsilence audible alarm sound."""
 
@@ -447,6 +554,7 @@ class AlarmEngine:
         await self._record_system_event(AlarmEventType.UNSILENCED, operator=operator)
         self._notify()
 
+    @_serialized
     async def shelve_alarm(
         self,
         rule_id: str,
@@ -480,6 +588,7 @@ class AlarmEngine:
         await self._persist()
         self._notify()
 
+    @_serialized
     async def unshelve_alarm(
         self, rule_id: str, *, operator: str | None = None
     ) -> None:
@@ -490,6 +599,8 @@ class AlarmEngine:
         previous = runtime.lifecycle_state
         runtime.pending_active_since = None
         runtime.pending_clear_since = None
+        if previous != AlarmLifecycleState.SHELVED:
+            return
         runtime.lifecycle_state = AlarmLifecycleState.NORMAL
         runtime.shelve_expiry = None
         runtime.previous_lifecycle_state = previous
@@ -500,9 +611,11 @@ class AlarmEngine:
             new_state=runtime.lifecycle_state,
             operator=operator,
         )
+        await self._evaluate_current_rule(rule_id)
         await self._persist()
         self._notify()
 
+    @_serialized
     async def disable_alarm(
         self, rule_id: str, *, operator: str | None = None, comment: str | None = None
     ) -> None:
@@ -515,6 +628,7 @@ class AlarmEngine:
         runtime.pending_active_since = None
         runtime.pending_clear_since = None
         runtime.lifecycle_state = AlarmLifecycleState.DISABLED
+        runtime.shelve_expiry = None
         runtime.previous_lifecycle_state = previous
         await self._record_event(
             rule,
@@ -526,16 +640,23 @@ class AlarmEngine:
         )
         if self.sound_manager:
             await self.sound_manager.on_alarm_acknowledged(rule_id)
+        await self._persist_rule_definitions()
         await self._persist()
         self._notify()
 
+    @_serialized
     async def enable_alarm(self, rule_id: str, *, operator: str | None = None) -> None:
         """Enable an alarm rule."""
 
         rule = self.rules[rule_id]
         runtime = self.states[rule_id]
         previous = runtime.lifecycle_state
+        if rule.enabled and previous != AlarmLifecycleState.DISABLED:
+            return
         self.rules[rule_id] = replace(rule, enabled=True)
+        runtime.pending_active_since = None
+        runtime.pending_clear_since = None
+        runtime.shelve_expiry = None
         runtime.lifecycle_state = AlarmLifecycleState.NORMAL
         runtime.previous_lifecycle_state = previous
         await self._record_event(
@@ -545,9 +666,12 @@ class AlarmEngine:
             new_state=runtime.lifecycle_state,
             operator=operator,
         )
+        await self._evaluate_current_rule(rule_id)
+        await self._persist_rule_definitions()
         await self._persist()
         self._notify()
 
+    @_serialized
     async def create_rule(self, data: dict[str, Any]) -> AlarmRule:
         """Create a new alarm rule."""
 
@@ -562,6 +686,7 @@ class AlarmEngine:
         self._notify()
         return rule
 
+    @_serialized
     async def update_rule(self, rule_id: str, changes: dict[str, Any]) -> AlarmRule:
         """Update a rule by re-validating the merged rule data."""
 
@@ -573,10 +698,17 @@ class AlarmEngine:
         rule = AlarmRule.from_dict(data)
         self.rules[rule_id] = rule
         self._rebuild_dependency_index()
+        runtime = self.states[rule_id]
+        if not rule.enabled and runtime.lifecycle_state != AlarmLifecycleState.DISABLED:
+            await self.disable_alarm(rule_id)
+        elif rule.enabled and runtime.lifecycle_state == AlarmLifecycleState.DISABLED:
+            await self.enable_alarm(rule_id)
         await self._record_event(rule, AlarmEventType.RULE_UPDATED)
+        await self._persist()
         self._notify()
         return rule
 
+    @_serialized
     async def delete_rule(self, rule_id: str) -> None:
         """Delete an alarm rule."""
 
@@ -611,6 +743,10 @@ class AlarmEngine:
     ) -> datetime | None:
         """Return when a rule's pending transition should be evaluated."""
 
+        if not rule.enabled or runtime.lifecycle_state == AlarmLifecycleState.DISABLED:
+            return None
+        if runtime.lifecycle_state == AlarmLifecycleState.SHELVED:
+            return runtime.shelve_expiry
         if (
             runtime.pending_active_since is not None
             and not runtime.is_active
@@ -803,6 +939,25 @@ class AlarmEngine:
         message: str | None = None,
         operator: str | None = None,
     ) -> None:
+        # Snapshot presentation data at the event, without parsing generated prose
+        # or replacing user comments/history messages during Telegram formatting.
+        presentation: dict[str, Any] = {}
+        if result is not None and result.message_is_generated:
+            presentation = {
+                "generated_message": message == result.message,
+                "description": rule.description,
+            }
+            if result.evaluation_details is not None:
+                presentation.update(
+                    {
+                        key: result.evaluation_details[key]
+                        for key in ("matched_conditions", "total_conditions")
+                    }
+                )
+            elif rule.condition is not None:
+                presentation.update(
+                    condition=rule.condition.value, threshold=rule.threshold
+                )
         event = AlarmEvent(
             rule_id=rule.id,
             entity_id=rule.entity_id,
@@ -824,11 +979,13 @@ class AlarmEngine:
                 "telegram_requires_ack": rule.requires_ack,
                 "telegram_shelving_allowed": rule.shelving_allowed,
                 "telegram_rule_enabled": rule.enabled,
+                "telegram_presentation": presentation,
             },
         )
-        await self.history_store.add_event(event)
-        self.last_event = event
+        # The outbox must not depend on SQLite accepting the history row.
         await self._notify_event_handler(event)
+        await self._append_history(event)
+        self.last_event = event
 
     async def _record_system_event(
         self,
@@ -845,26 +1002,41 @@ class AlarmEngine:
             operator=operator,
             timestamp=self._now(),
         )
-        await self.history_store.add_event(event)
+        await self._append_history(event)
         self.last_event = event
 
+    async def _append_history(self, event: AlarmEvent) -> None:
+        try:
+            await self.history_store.add_event(event)
+        except Exception as err:
+            self.diagnostics["history_write_failures"] += 1
+            _LOGGER.error(
+                "Alarm history write failed: rule=%s event=%s error=%s; notification and alarm processing continue",
+                event.rule_id,
+                event.event_type,
+                type(err).__name__,
+            )
+
     async def _notify_event_handler(self, event: AlarmEvent) -> None:
-        """Run post-history integrations without changing lifecycle semantics."""
+        """Enqueue integrations independently of history storage."""
 
         if self._event_handler is None:
             return
         try:
             await self._event_handler(event)
-        except Exception:  # Notifications and other sinks are best effort.
+        except Exception as err:  # Notifications and other sinks are best effort.
             _LOGGER.warning(
-                "Post-history event handler failed for %s",
+                "Alarm event handler failed: rule=%s event=%s error=%s",
+                event.rule_id,
                 event.event_type,
-                exc_info=True,
+                type(err).__name__,
             )
 
+    @_serialized
     async def async_shutdown(self) -> None:
         """Flush state before unload."""
 
+        self._closed = True
         await self._persist()
         close = getattr(self.history_store, "close", None)
         if close:

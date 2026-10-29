@@ -51,6 +51,7 @@ def evaluate_rule(
             state,
             value,
             message=f"{rule.name} above {threshold:g}",
+            message_is_generated=True,
         )
 
     if condition == AlarmCondition.BELOW:
@@ -65,6 +66,7 @@ def evaluate_rule(
             state,
             value,
             message=f"{rule.name} below {threshold:g}",
+            message_is_generated=True,
         )
 
     if condition == AlarmCondition.EQUAL:
@@ -74,6 +76,7 @@ def evaluate_rule(
             state,
             state,
             message=f"{rule.name} equals {expected}",
+            message_is_generated=True,
         )
 
     if condition == AlarmCondition.NOT_EQUAL:
@@ -83,6 +86,7 @@ def evaluate_rule(
             state,
             state,
             message=f"{rule.name} not equal to {expected}",
+            message_is_generated=True,
         )
 
     if condition == AlarmCondition.CONTAINS:
@@ -92,6 +96,7 @@ def evaluate_rule(
             state,
             state,
             message=f"{rule.name} contains {needle}",
+            message_is_generated=True,
         )
 
     if condition == AlarmCondition.IS_ON:
