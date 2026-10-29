@@ -612,8 +612,8 @@ For full Home Assistant integration tests, install `requirements_test.txt` in a 
 
 ## Telegram notifications
 
-AlarmGrid can send **outbound-only, plain-text** alarm lifecycle
-notifications through one or more Home Assistant `notify` entities. The feature is
+AlarmGrid can send **plain-text** alarm lifecycle notifications to one or more
+Telegram-backed Home Assistant `notify` entities. The feature is
 fully opt-in and has a default minimum priority of `high`.
 
 1. Configure the [Telegram Bot integration](https://www.home-assistant.io/integrations/telegram_bot/)
@@ -658,6 +658,75 @@ Telegram alarm messages and interactive action labels currently support English
 and Italian and follow the language configured in Home Assistant. Other languages
 fall back to English.
 
+### Delivery recovery and diagnostics
+
+Both ordinary and interactive notifications use Home Assistant's
+`telegram_bot.send_message` action, targeting the selected `notify` entity and
+explicitly setting `parse_mode: plain_text`. Special characters in entity names
+and descriptions are sent literally. Long fields are shortened and messages are
+bounded to 4,096 UTF-16 code units, including emoji; history retains the original
+event data. Messages include the original event date and time.
+
+Eligible notifications are saved in Home Assistant storage before a background
+worker attempts delivery. A slow Telegram request does not hold up alarm
+evaluation. Each recipient has its own queued delivery, preserving event order
+for that recipient and avoiding resends to recipients whose delivery succeeded.
+
+- Pending deliveries survive integration reloads and Home Assistant restarts.
+- Temporary failures, unavailable targets, missing response identifiers, and
+  30-second timeouts are retried with delays from 5 seconds up to 5 minutes.
+  Telegram's longer `RetryAfter` delays are respected, including after a restart.
+- Requests are spaced by at least 3.1 seconds per recipient and 0.05 seconds
+  globally. Other uses of the same Telegram bot can still cause rate limiting.
+- The queue holds at most 1,000 recipient deliveries, each for at most 24 hours.
+  Queue overflow, expiry, and permanent Telegram errors such as `Forbidden`,
+  `InvalidToken`, `BadRequest`, or `ChatMigrated` are logged as errors. Correct the
+  bot/chat configuration for permanent errors; these deliveries are not retried.
+- Current notification preferences are checked before each attempt. Disabling
+  Telegram, removing a target or rule, disabling an event type, or changing a
+  rule's notification policy can cancel a pending delivery.
+- If queue storage fails, delivery continues from memory and an error is logged;
+  pending messages can then be lost on restart. Persistence is retried.
+
+Delivery cannot be guaranteed exactly once: a timeout or a crash after Telegram
+accepts a message but before AlarmGrid saves that result can cause a duplicate on
+retry. A successful API response confirms acceptance, not that an operator has
+read the message. An activation in alarm history alone does not confirm delivery.
+
+The engine reevaluates available source states when Home Assistant finishes
+starting, when rules are refreshed, when a rule is enabled, and when shelving
+expires. Already-active alarms are not activated again solely because of a
+reload, and initial snapshots do not invent `state_changed` edges. Concurrent
+source changes are processed in order. History write failures are logged and do
+not prevent notifications or subsequent alarm evaluation.
+
+Download AlarmGrid's diagnostics from the integration menu to inspect pending,
+successful, retried, failed, expired, and cancelled delivery counters, the age of
+the oldest pending message, the last error code, and storage failure counters.
+Delivery diagnostics contain aggregate data without recipients or message text.
+The counters persist across reloads; engine storage-error counters are per run.
+
+For detailed troubleshooting, add these entries to Home Assistant's `logger`
+configuration, merging with any existing configuration:
+
+```yaml
+logger:
+  logs:
+    custom_components.alarmgrid.alarm_notifications: debug
+    custom_components.alarmgrid.notification_queue: debug
+    custom_components.alarmgrid.alarm_engine: debug
+    custom_components.alarmgrid.telegram_interactive: debug
+```
+
+Debug logs show configuration exclusions (`below_minimum_priority`,
+`rule_policy_never`, `event_disabled`, etc.), queue insertion, and successful
+delivery. Warnings include the delivery ID, rule ID, event type, target entity,
+attempt number, safe error code, and next retry delay. Recovery after a failed
+attempt is logged at info level; permanent failures and storage problems are
+errors. AlarmGrid does not log bot tokens, message bodies, or raw transport
+exception text. Target entity IDs do appear in logs, so redact these before
+sharing logs publicly.
+
 ### Interactive Telegram actions
 
 Interactive actions extend the existing V1 setup and are disabled by default. The
@@ -683,12 +752,13 @@ telegram_interactive_shelve: true
 telegram_interactive_disable: true
 ```
 
-Activation messages use Home Assistant's native `telegram_bot.send_message` action.
+Interactive activation messages add buttons to the same delivery action.
 Callbacks arrive through the selected event entities and execute the existing alarm
 engine actions; no raw Telegram HTTP API or credentials are handled.
-If an interactive send definitely fails, the integration attempts one plain V1
-notification without buttons. A successful send with incomplete response data is
-not retried, preventing duplicate messages.
+If Home Assistant rejects the inline keyboard before sending, the integration
+attempts one plain notification without buttons. Other failures and incomplete
+response data follow the queue retry policy above; an ambiguous timeout does not
+trigger an immediate second send without buttons.
 
 The history **Operator** column and history CSV export record who performed each
 Telegram action (ACK, shelve, unshelve, disable, or enable), using the callback

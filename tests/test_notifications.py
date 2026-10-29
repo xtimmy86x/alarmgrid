@@ -79,7 +79,7 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
                 return {"chats": [{"chat_id": 10, "message_id": 20}]}
 
         services = Services()
-        hass = SimpleNamespace(config=SimpleNamespace(language="en"), services=services)
+        hass = SimpleNamespace(config=SimpleNamespace(language="en"), services=services, states=SimpleNamespace(get=lambda _: SimpleNamespace(state="unknown")))
         manager = TelegramInteractiveManager(hass, engine, {})
         plain = []
 
@@ -97,6 +97,7 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(call["target"], {"entity_id": "notify.telegram_operations"})
         self.assertTrue(call["blocking"])
         self.assertTrue(call["return_response"])
+        self.assertEqual(call["service_data"]["parse_mode"], "plain_text")
         self.assertEqual(len(manager.sessions), 1)
         self.assertEqual(plain, [])
 
@@ -108,7 +109,7 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
             async def async_call(self, *args, **kwargs):
                 return {}
 
-        manager = TelegramInteractiveManager(SimpleNamespace(config=SimpleNamespace(language="en"), services=Services()), engine, {})
+        manager = TelegramInteractiveManager(SimpleNamespace(config=SimpleNamespace(language="en"), services=Services(), states=SimpleNamespace(get=lambda _: SimpleNamespace(state="unknown"))), engine, {})
         plain = []
 
         async def send(target, message):
@@ -259,7 +260,8 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("System:", message)
         self.assertNotIn("Tag:", message)
         self.assertIn("Priority: CRITICAL", message)
-        self.assertIn("Time: 08:42", message)
+        local_time = event().timestamp.astimezone().strftime("%H:%M (%Y-%m-%d %Z)")
+        self.assertIn(f"Time: {local_time}", message)
 
     async def test_manager_isolates_provider_failure(self):
         class BrokenProvider:
