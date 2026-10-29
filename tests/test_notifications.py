@@ -53,8 +53,9 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
         message = format_telegram_message(
             event(source_state="on", source_value="on", priority="high"), "it"
         )
-        for expected in ("ALLARME ATTIVO", "Priorità: ALTA", "Stato: on", "Valore: on", "Ora:"):
+        for expected in ("ALLARME ATTIVO", "Priorità: ALTA", "Stato: Attivo", "🕒"):
             self.assertIn(expected, message)
+        self.assertNotIn("Valore:", message)
         for english in ("ACTIVATED", "Priority:", "State:", "Value:", "Time:"):
             self.assertNotIn(english, message)
 
@@ -260,8 +261,8 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("System:", message)
         self.assertNotIn("Tag:", message)
         self.assertIn("Priority: CRITICAL", message)
-        local_time = event().timestamp.astimezone().strftime("%H:%M (%Y-%m-%d %Z)")
-        self.assertIn(f"Time: {local_time}", message)
+        local_time = event().timestamp.astimezone().strftime("%Y-%m-%d · %H:%M %Z")
+        self.assertIn(f"🕒 {local_time}", message)
 
     async def test_manager_isolates_provider_failure(self):
         class BrokenProvider:

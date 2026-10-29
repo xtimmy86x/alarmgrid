@@ -322,7 +322,14 @@ class AlarmEngine:
             )
             details = expression_result.details
             summary = f"{details['matched_conditions']}/{details['total_conditions']} conditions matched"
-            result = AlarmEvaluationResult(expression_result.matched, summary, summary, message=f"{rule.name}: {summary}", evaluation_details=details)
+            result = AlarmEvaluationResult(
+                expression_result.matched,
+                summary,
+                summary,
+                message=f"{rule.name}: {summary}",
+                evaluation_details=details,
+                message_is_generated=True,
+            )
         else:
             result = evaluate_rule(
                 rule, new_state, previous_state, currently_active=runtime.is_active,
@@ -932,6 +939,25 @@ class AlarmEngine:
         message: str | None = None,
         operator: str | None = None,
     ) -> None:
+        # Snapshot presentation data at the event, without parsing generated prose
+        # or replacing user comments/history messages during Telegram formatting.
+        presentation: dict[str, Any] = {}
+        if result is not None and result.message_is_generated:
+            presentation = {
+                "generated_message": message == result.message,
+                "description": rule.description,
+            }
+            if result.evaluation_details is not None:
+                presentation.update(
+                    {
+                        key: result.evaluation_details[key]
+                        for key in ("matched_conditions", "total_conditions")
+                    }
+                )
+            elif rule.condition is not None:
+                presentation.update(
+                    condition=rule.condition.value, threshold=rule.threshold
+                )
         event = AlarmEvent(
             rule_id=rule.id,
             entity_id=rule.entity_id,
@@ -953,6 +979,7 @@ class AlarmEngine:
                 "telegram_requires_ack": rule.requires_ack,
                 "telegram_shelving_allowed": rule.shelving_allowed,
                 "telegram_rule_enabled": rule.enabled,
+                "telegram_presentation": presentation,
             },
         )
         # The outbox must not depend on SQLite accepting the history row.

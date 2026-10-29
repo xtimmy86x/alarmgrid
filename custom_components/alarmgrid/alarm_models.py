@@ -484,6 +484,7 @@ class AlarmEvaluationResult:
     message: str | None = None
     reason: str | None = None
     evaluation_details: dict[str, Any] | None = None
+    message_is_generated: bool = False
 
 
 @dataclass(slots=True)

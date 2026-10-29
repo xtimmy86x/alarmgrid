@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
+from decimal import Decimal, InvalidOperation
 from typing import Any, Protocol
 
 from .alarm_models import (
@@ -282,36 +283,140 @@ def truncate_telegram_text(value: str, limit: int = 4096) -> str:
 
 
 def format_telegram_message(event: AlarmEvent, language: str = "en") -> str:
-    """Create a compact, safe plain-text message, omitting empty fields."""
+    """Separate status, location and reading without repeating generated text."""
 
     language = normalize_telegram_language(language)
-    priority = telegram_text(language, f"priority_{event.priority}")
     emoji = _EVENT_EMOJI.get(event.event_type) or _PRIORITY_EMOJI.get(
         event.priority or "", "🔔"
     )
-    title = truncate_telegram_text(
-        event.name or event.tag or event.entity_id or telegram_text(language, "alarm"),
-        256,
+    full_title = (
+        event.name or event.tag or event.entity_id or telegram_text(language, "alarm")
     )
+    title = truncate_telegram_text(full_title, 256)
     event_label = telegram_text(language, f"event_{event.event_type}")
-    lines = [f"{emoji} {event_label} — {title}", ""]
-    fields = (
-        ("priority", priority),
-        ("area", event.area),
-        ("system", event.system),
-        ("tag", event.tag),
-        ("state", event.source_state),
-        ("value", event.source_value),
-        ("operator", event.operator),
-        ("reason", event.message),
-        ("time", event.timestamp.astimezone().strftime("%H:%M (%Y-%m-%d %Z)")),
+    sections = [f"{emoji} {event_label}\n{title}"]
+
+    def section(fields: list[tuple[str, Any]]) -> None:
+        lines = [
+            f"{telegram_text(language, f'field_{key}')}: {truncate_telegram_text(str(value), 600 if key == 'reason' else 300)}"
+            for key, value in fields
+            if value not in (None, "")
+        ]
+        if lines:
+            sections.append("\n".join(lines))
+
+    section(
+        [
+            ("area", event.area),
+            ("system", event.system),
+            ("tag", event.tag if event.tag != full_title else None),
+            (
+                "priority",
+                telegram_text(language, f"priority_{event.priority}")
+                if event.priority
+                else None,
+            ),
+        ]
     )
-    lines.extend(
-        f"{telegram_text(language, f'field_{key}')}: {truncate_telegram_text(str(value), 600 if key == 'reason' else 300)}"
-        for key, value in fields
-        if value not in (None, "")
+    presentation = event.metadata.get("telegram_presentation") or {}
+    readings = _telegram_readings(event, presentation, language)
+    condition = presentation.get("condition")
+    # This is the activation condition, not a claim about a cleared reading.
+    if event.event_type == AlarmEventType.ACTIVATED.value and condition in {
+        "above",
+        "below",
+        "equal",
+        "not_equal",
+        "contains",
+    }:
+        threshold = presentation.get("threshold")
+        if threshold is not None:
+            readings.append(
+                (
+                    "condition",
+                    telegram_text(language, f"condition_{condition}").format(
+                        value=_telegram_value(threshold, language)
+                        if condition in {"above", "below"}
+                        else f"“{threshold}”",
+                    ),
+                )
+            )
+    section(readings)
+
+    reason = (
+        presentation.get("description")
+        if presentation.get("generated_message")
+        else event.message
     )
-    return truncate_telegram_text("\n".join(lines))
+    section(
+        [
+            ("operator", event.operator),
+            ("reason", reason if reason != full_title else None),
+        ]
+    )
+    time_format = "%d/%m/%Y · %H:%M %Z" if language == "it" else "%Y-%m-%d · %H:%M %Z"
+    sections.append(f"🕒 {event.timestamp.astimezone().strftime(time_format)}")
+    return truncate_telegram_text("\n\n".join(sections))
+
+
+def _telegram_value(value: Any, language: str) -> str:
+    """Localize typed numbers, preserving text thresholds and their exact values."""
+    text = str(value)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if text.endswith(".0"):
+            text = text[:-2]
+        if language == "it":
+            text = text.replace(".", ",")
+    return text
+
+
+def _telegram_state(value: Any, language: str) -> str:
+    text = str(value)
+    if text in {"on", "off", "unavailable", "unknown", "manual"}:
+        return telegram_text(language, f"state_{text}")
+    return text
+
+
+def _telegram_readings(
+    event: AlarmEvent,
+    presentation: dict[str, Any],
+    language: str,
+) -> list[tuple[str, Any]]:
+    """Keep meaningful source differences while collapsing duplicate readings."""
+    matched = presentation.get("matched_conditions")
+    total = presentation.get("total_conditions")
+    if isinstance(matched, int) and isinstance(total, int):
+        return [
+            (
+                "conditions",
+                telegram_text(language, "conditions_matched").format(
+                    matched=matched,
+                    total=total,
+                ),
+            )
+        ]
+
+    state, value = event.source_state, event.source_value
+    if value in (None, ""):
+        return (
+            [("state", _telegram_state(state, language))]
+            if state not in (None, "")
+            else []
+        )
+    numeric = isinstance(value, (int, float)) and not isinstance(value, bool)
+    same = str(state) == str(value)
+    if numeric and state not in (None, ""):
+        try:
+            same = Decimal(str(state)) == Decimal(str(value))
+        except InvalidOperation:
+            pass
+    if same and not numeric:
+        return [("state", _telegram_state(state, language))]
+    fields = []
+    if state not in (None, "") and not same:
+        fields.append(("state", _telegram_state(state, language)))
+    fields.append(("value", _telegram_value(value, language)))
+    return fields
 
 
 def _extract_sent_chat(response: Any) -> dict[str, Any] | None:

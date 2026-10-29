@@ -658,6 +658,31 @@ Telegram alarm messages and interactive action labels currently support English
 and Italian and follow the language configured in Home Assistant. Other languages
 fall back to English.
 
+Messages separate the lifecycle status and alarm name from the location, reading,
+and event time. Numeric alarms show one value instead of repeating it as both
+state and value. The configured activation condition is translated, including
+Italian decimal commas; literal text comparisons retain their exact text.
+Boolean states and AND/OR evaluation summaries are also localized. For example:
+
+```text
+🟡 ALLARME ATTIVO
+Pressione compressori bassa
+
+Area: Locale compressori
+Priorità: MEDIA
+
+Valore: 7,2
+Condizione: inferiore a 7,5
+
+🕒 29/10/2026 · 04:00 CET
+```
+
+Generated evaluation text no longer repeats the title as a reason. Rule
+descriptions, manual messages, operator names, and operator comments remain
+visible when present. History retains its original messages and readings.
+Cleared notifications show the new reading without repeating the activation
+condition as if it still matched. Already-queued messages retain their saved text.
+
 ### Delivery recovery and diagnostics
 
 Both ordinary and interactive notifications use Home Assistant's
