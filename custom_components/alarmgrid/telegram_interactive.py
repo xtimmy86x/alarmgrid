@@ -309,7 +309,7 @@ class TelegramInteractiveManager:
                 session.rule_id,
                 duration_minutes=SHELVE_MINUTES[action],
                 operator=operator,
-                comment="Shelved from Telegram",
+                comment=self.text["shelved_from_telegram"],
             )
             until = self.engine.states[session.rule_id].shelve_expiry
             await self._edit(
@@ -341,7 +341,7 @@ class TelegramInteractiveManager:
             and rule.enabled
         ):
             await self.engine.disable_alarm(
-                session.rule_id, operator=operator, comment="Disabled from Telegram"
+                session.rule_id, operator=operator, comment=self.text["disabled_from_telegram"]
             )
             await self._edit(
                 session,

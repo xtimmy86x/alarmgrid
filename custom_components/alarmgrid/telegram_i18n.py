@@ -6,6 +6,8 @@ from typing import Any
 
 _TEXT = {
     "en": {
+        "shelved_from_telegram": "Shelved from Telegram",
+        "disabled_from_telegram": "Disabled from Telegram",
         "event_activated": "ACTIVATED", "event_cleared": "CLEARED",
         "event_acknowledged": "ACKNOWLEDGED", "event_shelved": "SHELVED",
         "event_unshelved": "UNSHELVED", "event_disabled": "DISABLED",
@@ -41,6 +43,8 @@ _TEXT = {
         "duration_4320": "3 days", "duration_10080": "7 days",
     },
     "it": {
+        "shelved_from_telegram": "Sospeso da Telegram",
+        "disabled_from_telegram": "Disabilitato da Telegram",
         "event_activated": "ALLARME ATTIVO", "event_cleared": "RIENTRATO",
         "event_acknowledged": "RICONOSCIUTO", "event_shelved": "SOSPESO",
         "event_unshelved": "RIATTIVATO", "event_disabled": "DISABILITATO",
