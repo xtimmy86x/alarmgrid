@@ -625,6 +625,45 @@ fully opt-in and has a default minimum priority of `high`.
 5. Select one or more Telegram-backed `notify` entities.
 6. Choose the minimum priority and the lifecycle event types to send.
 
+**Shelved** and **Disabled** notifications are enabled by default, alongside the
+existing activation/clear defaults. Previously saved event preferences are kept:
+if these two options were off, enable them under **Configure → Telegram**.
+They use the same recipients, persistent delivery queue, minimum priority and
+per-rule notification policy as other lifecycle notifications.
+
+### Action operators in history and Telegram
+
+Actions from the panel, AlarmGrid services, action buttons and sound switch record
+the authenticated Home Assistant user's display name, for example
+`Alessandro (Home Assistant)`. This includes rule creation, editing, CSV import and
+deletion; disabling a rule in the editor also records the actor on the disabled
+event and sends its configured Telegram notification.
+
+The name is saved when the action happens and appears in the **Operator** history
+column, history exports, and Telegram's **Operator / Operatore** field. Existing
+history is not rewritten, and later user renames do not change saved events.
+If a user can no longer be resolved, the Home Assistant user ID is retained as a
+fallback. Calls without a user context are labeled
+`Home Assistant (system/automation)`; internal timer/anti-flapping actions keep
+`system`, and Telegram actions retain their Telegram sender identity. AlarmGrid
+does not guess a person from an automation's parent context.
+
+For example, shelving an alarm from Home Assistant produces:
+
+```text
+💤 SOSPESO
+Pressione compressori bassa
+
+Priorità: ALTA
+
+Operatore: Alessandro (Home Assistant)
+Motivo: Manutenzione
+
+🕒 14/11/2026 · 22:00 CET
+```
+
+### Notification settings
+
 The selector intentionally lists all entities in the `notify` domain because Home
 Assistant does not expose a stable, universal way for an options selector to limit
 these entities to Telegram providers. Choose only notify entities created for your

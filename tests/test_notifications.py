@@ -158,7 +158,7 @@ class TelegramNotifierTests(unittest.IsolatedAsyncioTestCase):
                 async def send(target, message, captured=calls):
                     captured.append((target, message))
 
-                await TelegramNotifier(options(), send).notify(event(event_type))
+                await TelegramNotifier(options(**{option: False}), send).notify(event(event_type))
                 self.assertEqual(calls, [])
                 await TelegramNotifier(options(**{option: True}), send).notify(
                     event(event_type)

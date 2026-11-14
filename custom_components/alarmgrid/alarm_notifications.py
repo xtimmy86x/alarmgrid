@@ -26,6 +26,7 @@ from .const import (
     CONF_TELEGRAM_NOTIFY_SHELVED,
     CONF_TELEGRAM_NOTIFY_UNSHELVED,
     CONF_TELEGRAM_TARGETS,
+    DEFAULT_OPTIONS,
 )
 from .notification_queue import (
     DeliveryError,
@@ -176,7 +177,7 @@ class TelegramNotifier:
         event_option = _EVENT_OPTIONS.get(item.event_type)
         if event_option is None:
             return "unsupported_event"
-        if not self._options.get(event_option, False):
+        if not self._options.get(event_option, DEFAULT_OPTIONS[event_option]):
             return "event_disabled"
         policy = item.policy
         if self._rule_lookup is not None:

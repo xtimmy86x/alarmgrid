@@ -574,7 +574,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
             self.assertIn(f'"alarmgrid/{command}"', source)
             self.assertIn(f"websocket_{command}", source)
             self.assertIn(f"engine.{command}_alarm(", source)
-        self.assertGreaterEqual(source.count("operator=connection.user.id"), 7)
+        self.assertGreaterEqual(source.count("operator=user_operator(connection.user)"), 7)
         self.assertIn('comment=msg.get("comment")', source)
         self.assertIn('{"unshelved": True}', source)
         self.assertIn('{"disabled": True}', source)
