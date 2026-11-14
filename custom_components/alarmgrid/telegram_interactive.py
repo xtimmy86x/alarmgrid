@@ -221,8 +221,13 @@ class TelegramInteractiveManager:
             answer = await self._execute(
                 session, rule, action, operator=_callback_operator(attributes)
             )
-        except Exception:
-            _LOGGER.warning("Interactive Telegram alarm action failed", exc_info=True)
+        except Exception as err:
+            _LOGGER.warning(
+                "Interactive Telegram alarm action failed: rule=%s action=%s error=%s",
+                session.rule_id,
+                action,
+                type(err).__name__,
+            )
             answer = self.text["unavailable"]
         await self._answer(callback_id, answer, session.config_entry_id)
 
@@ -372,8 +377,10 @@ class TelegramInteractiveManager:
                 {"callback_query_id": callback_id, "message": message},
                 config_entry_id,
             )
-        except Exception:
-            _LOGGER.warning("Could not answer Telegram callback", exc_info=True)
+        except Exception as err:
+            _LOGGER.warning(
+                "Could not answer Telegram callback: error=%s", type(err).__name__
+            )
 
     async def _markup(
         self, session: TelegramActionSession, keyboard: list[Any]
@@ -388,25 +395,36 @@ class TelegramInteractiveManager:
                 },
                 session.config_entry_id,
             )
-        except Exception:
-            _LOGGER.warning("Could not update Telegram reply markup", exc_info=True)
+        except Exception as err:
+            _LOGGER.warning(
+                "Could not update Telegram reply markup: rule=%s error=%s",
+                session.rule_id,
+                type(err).__name__,
+            )
 
     async def _edit(
         self, session: TelegramActionSession, message: str, keyboard: list[Any]
     ) -> None:
+        from .alarm_notifications import truncate_telegram_text
+
         try:
             await self._call(
                 "edit_message",
                 {
                     "chat_id": session.chat_id,
                     "message_id": session.message_id,
-                    "message": message,
+                    "message": truncate_telegram_text(message),
+                    "parse_mode": "plain_text",
                     "inline_keyboard": keyboard,
                 },
                 session.config_entry_id,
             )
-        except Exception:
-            _LOGGER.warning("Could not edit Telegram message", exc_info=True)
+        except Exception as err:
+            _LOGGER.warning(
+                "Could not edit Telegram message: rule=%s error=%s",
+                session.rule_id,
+                type(err).__name__,
+            )
 
 
 _ACTIVE_STATES = {

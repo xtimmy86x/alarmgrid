@@ -34,7 +34,7 @@ async def async_get_config_entry_diagnostics(
 
     runtime = hass.data[DOMAIN][entry.entry_id]
     history_path = Path(runtime.history_store.path)
-    options = {**DEFAULT_OPTIONS, **entry.options}
+    options = {**DEFAULT_OPTIONS, **entry.data, **entry.options}
     diagnostic_options = dict(entry.options)
     diagnostic_options.pop(CONF_TELEGRAM_TARGETS, None)
     diagnostic_options.pop(CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES, None)
@@ -50,9 +50,13 @@ async def async_get_config_entry_diagnostics(
         "active_alarm_count": runtime.engine.active_count(),
         "unacknowledged_alarm_count": runtime.engine.unacknowledged_count(),
         "history_db_size": history_path.stat().st_size if history_path.exists() else 0,
+        "engine": dict(runtime.engine.diagnostics),
         "sound": runtime.sound_manager.as_dict(),
         "media_player_ids": list(runtime.sound_manager.media_players),
         "telegram": {
+            "delivery": runtime.notification_outbox.diagnostics()
+            if runtime.notification_outbox
+            else {},
             "enabled": bool(options[CONF_TELEGRAM_ENABLED]),
             "target_count": len(options[CONF_TELEGRAM_TARGETS]),
             "interactive_enabled": bool(options[CONF_TELEGRAM_INTERACTIVE_ENABLED]),

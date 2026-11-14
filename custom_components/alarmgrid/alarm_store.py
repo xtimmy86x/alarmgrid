@@ -112,12 +112,14 @@ class SQLiteHistoryStore:
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
+        self._ready = False
 
     async def async_setup(self) -> None:
         """Create the history database schema."""
 
         self.path.parent.mkdir(parents=True, exist_ok=True)
         await asyncio.to_thread(self._setup_sync)
+        self._ready = True
 
     def _setup_sync(self) -> None:
         with sqlite3.connect(self.path) as connection:
@@ -126,6 +128,8 @@ class SQLiteHistoryStore:
     async def add_event(self, event: AlarmEvent) -> None:
         """Insert one history event."""
 
+        if not self._ready:
+            await self.async_setup()
         await asyncio.to_thread(self._add_event_sync, event)
 
     def _add_event_sync(self, event: AlarmEvent) -> None:
