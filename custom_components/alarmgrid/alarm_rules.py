@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from dataclasses import replace
+from math import isfinite
 from typing import Any
 
 from .alarm_models import (
@@ -21,7 +24,8 @@ def parse_numeric_state(value: Any) -> float | None:
     if text.lower() in UNAVAILABLE_STATES:
         return None
     try:
-        return float(text)
+        number = float(text)
+        return number if isfinite(number) else None
     except ValueError:
         return None
 
@@ -32,8 +36,49 @@ def evaluate_rule(
     previous_state: Any = None,
     *,
     currently_active: bool = False,
+    current_states: Mapping[str, Any] | None = None,
 ) -> AlarmEvaluationResult:
     """Evaluate an alarm rule against a source state."""
+
+    if rule.threshold_entity:
+        states = current_states or {}
+        raw = states.get(rule.threshold_entity)
+        threshold = getattr(raw, "state", raw)
+        reason = None
+        if threshold is None:
+            reason = "threshold_entity_not_found"
+        elif str(threshold).strip().lower() in UNAVAILABLE_STATES:
+            reason = "threshold_entity_unavailable"
+        elif rule.condition in {AlarmCondition.ABOVE, AlarmCondition.BELOW} and parse_numeric_state(threshold) is None:
+            reason = "threshold_not_numeric"
+        elif source_state is None or str(source_state).strip().lower() in UNAVAILABLE_STATES:
+            reason = "entity_unavailable"
+        if reason:
+            return AlarmEvaluationResult(
+                False, "" if source_state is None else str(source_state), source_state,
+                reason=reason,
+                evaluation_details={
+                    "invalid": True,
+                    "threshold_entity": rule.threshold_entity,
+                    "threshold": threshold,
+                },
+            )
+        result = evaluate_rule(
+            replace(rule, threshold_entity=None, threshold=threshold),
+            source_state, previous_state, currently_active=currently_active,
+        )
+        if rule.condition in {AlarmCondition.EQUAL, AlarmCondition.NOT_EQUAL}:
+            left, right = parse_numeric_state(source_state), parse_numeric_state(threshold)
+            if left is not None and right is not None:
+                result.matched = left == right if rule.condition == AlarmCondition.EQUAL else left != right
+        result.evaluation_details = {
+            "threshold_entity": rule.threshold_entity,
+            "threshold": parse_numeric_state(threshold)
+            if rule.condition in {AlarmCondition.ABOVE, AlarmCondition.BELOW}
+            else threshold,
+            "invalid": result.reason == "not_numeric",
+        }
+        return result
 
     state = "" if source_state is None else str(source_state)
     normalized = state.strip().lower()

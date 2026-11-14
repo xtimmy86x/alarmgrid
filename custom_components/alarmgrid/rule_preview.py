@@ -70,7 +70,7 @@ async def async_preview_rule(
             item.update(
                 friendly_name=friendly_name,
                 unit=unit,
-                expected=_expected(condition),
+                expected=detail.get("expected", _expected(condition)),
                 deadband=condition.get("deadband", 0),
             )
             if condition["operator"] == "state_changed" and detail["entity_id"] not in previous_states:
@@ -83,7 +83,7 @@ async def async_preview_rule(
                 return next(by_id)
             values = [visit(child) for child in node["conditions"]]
             return all(values) if node["operator"] == "and" else any(values)
-        matched = visit(rule.condition_expression)
+        matched = visit(rule.condition_expression) and not result.details.get("invalid", False)
     else:
         entity_id = rule.entity_id
         state = hass.states.get(entity_id)
@@ -92,7 +92,8 @@ async def async_preview_rule(
             detail = {"entity_id": entity_id, "operator": rule.condition.value, "current_value": None, "matched": False, "reason": "entity_not_found"}
             matched = False
         else:
-            evaluation = evaluate_rule(rule, state.state, previous, currently_active=currently_active)
+            evaluation = evaluate_rule(rule, state.state, previous, currently_active=currently_active,
+                current_states={key: hass.states.get(key) for key in rule.source_entity_ids})
             matched = evaluation.matched
             reason = evaluation.reason
             if state.state == "unavailable" and rule.condition.value != "unavailable":
@@ -101,7 +102,12 @@ async def async_preview_rule(
                 matched, reason = False, "previous_state_unavailable"
             detail = {"entity_id": entity_id, "operator": rule.condition.value, "current_value": state.state, "matched": matched, "reason": reason}
         friendly_name, unit = _state_metadata(state)
-        detail.update(friendly_name=friendly_name, unit=unit, expected=rule.threshold, deadband=rule.deadband)
+        expected = rule.threshold
+        if rule.threshold_entity:
+            threshold_state = hass.states.get(rule.threshold_entity)
+            expected = getattr(threshold_state, "state", None)
+            detail["value_entity"] = rule.threshold_entity
+        detail.update(friendly_name=friendly_name, unit=unit, expected=expected, deadband=rule.deadband)
         conditions = [detail]
 
     matched_count = sum(bool(item["matched"]) for item in conditions)

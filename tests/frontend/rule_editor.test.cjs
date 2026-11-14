@@ -33,6 +33,7 @@ function fixture(attributes = { "data-condition-field": "entity_id" }) {
   const timers = [];
   const context = vm.createContext({
     HTMLElement: class {
+      constructor() { this.style = { setProperty() {} }; }
       attachShadow() { this.shadowRoot = { activeElement: null }; }
     },
     customElements: { get: (name) => registry.get(name), define: (name, value) => registry.set(name, value) },
@@ -54,13 +55,15 @@ function fixture(attributes = { "data-condition-field": "entity_id" }) {
   let renders = 0;
   panel._render = () => { renders += 1; panel.shadowRoot.activeElement = null; };
   field.focus();
-  return { panel, field, rule, alarm, timers, window: context.window, renders: () => renders };
+  return { panel, field, rule, alarm, timers, registry, window: context.window, renders: () => renders };
 }
 
 for (const attributes of [
   { "data-condition-field": "entity_id" },
   { "data-condition-field": "operator" },
   { "data-condition-field": "value" },
+  { "data-condition-field": "value_entity" },
+  { "data-condition-field": "value_source" },
   { "data-condition-field": "lower" },
   { "data-condition-field": "upper" },
   { "data-condition-field": "deadband" },
@@ -148,3 +151,96 @@ for (const [entitiesPerRule, expected] of [[1, 2], [4, 8], [undefined, 8]]) {
     assert.equal(confirmation.entities, expected);
   });
 }
+
+
+test("dynamic threshold survives edit, payload and advanced promotion", () => {
+  const { panel, rule } = fixture();
+  rule.threshold_entity = "input_number.limit";
+  panel._rules = [rule];
+  panel._startEditRule(rule.id);
+  assert.equal(panel._ruleDraft.threshold_source, "entity");
+  let payload = panel._rulePayload(panel._ruleDraft);
+  assert.equal(payload.threshold_entity, "input_number.limit");
+  assert.equal(payload.threshold, null);
+  panel._promoteSimple();
+  payload = panel._rulePayload(panel._ruleDraft);
+  assert.equal(payload.condition_expression.conditions[0].value_entity, "input_number.limit");
+  assert.equal(Object.hasOwn(payload.condition_expression.conditions[0], "value"), false);
+  assert.equal(panel._ruleDraft.condition_expression.conditions[0].value, 25, "payload normalization must not mutate the live draft");
+});
+
+test("switching to fixed clears stale entity references and summary", () => {
+  const { panel } = fixture();
+  panel._ruleDraft = { entity_id: "sensor.temperature", condition: "above", threshold: 28, threshold_entity: "input_number.limit", threshold_source: "fixed" };
+  let payload = panel._rulePayload(panel._ruleDraft);
+  assert.equal(payload.threshold_entity, null);
+  assert.equal(payload.threshold, 28);
+  assert.equal(panel._draftConditionText(panel._ruleDraft).includes("input_number.limit"), false);
+  const node = { type: "condition", entity_id: "sensor.temperature", operator: "above", value: 28, value_entity: "input_number.limit", value_source: "fixed" };
+  panel._normalizeConditionDraft(node);
+  assert.equal(Object.hasOwn(node, "value_entity"), false);
+  assert.equal(node.value, 28);
+});
+
+test("unsupported comparison modes remove dynamic references", () => {
+  const { panel } = fixture();
+  const node = { type: "condition", entity_id: "sensor.temperature", operator: "is_on", value_entity: "input_number.limit", value_source: "entity" };
+  panel._normalizeConditionDraft(node);
+  assert.equal(Object.hasOwn(node, "value_entity"), false);
+  const payload = panel._rulePayload({ entity_id: "sensor.temperature", condition: "is_on", threshold_source: "entity", threshold_entity: "input_number.limit" });
+  assert.equal(payload.threshold_entity, null);
+});
+
+test("comparison row exposes current setpoint and escapes entity names", () => {
+  const { panel } = fixture();
+  panel._hass.states = { "input_number.limit": {state: "25", attributes: {friendly_name: "Limit <script>"}} };
+  const markup = panel._conditionRow({ entity_id: "sensor.temperature", operator: "above", value_entity: "input_number.limit" }, "simple");
+  assert(markup.includes('data-condition-field="value_source"'));
+  assert(markup.includes('data-condition-field="value_entity"'));
+  assert(markup.includes("Limit &lt;script&gt;"));
+  assert(!markup.includes('data-condition-field="value"'));
+});
+
+test("card settings normalize invalid options and keep localized link fallback", () => {
+  const { registry } = fixture();
+  const card = new (registry.get("alarmgrid-card"))();
+  card.setConfig({color_scheme:"neutral", flash_style:"none", open_panel_text:"  Alarm manager  "});
+  assert.equal(card._config.color_scheme, "neutral");
+  assert.equal(card._config.flash_style, "none");
+  assert.equal(card._config.open_panel_text, "Alarm manager");
+  card.setConfig({color_scheme:"bad", flash_style:"bad", open_panel_text:123});
+  assert.equal(card._config.color_scheme, "default");
+  assert.equal(card._config.flash_style, "panel");
+  assert.equal(card._config.open_panel_text, "");
+});
+
+test("only unacknowledged card rows are marked for flashing", () => {
+  const { registry } = fixture();
+  const card = new (registry.get("alarmgrid-card"))();
+  card.setConfig({});
+  for (const state of ["ACTIVE_UNACK", "CLEARED_UNACK", "ACTIVE_ACK", "SHELVED", "DISABLED"]) {
+    const html = card._alarmItem({id:"alarm", name:"Alarm", priority:"high", lifecycle_state:state});
+    assert.equal(html.includes(" is-unack"), state.endsWith("_UNACK"), state);
+  }
+  assert(card._styles().includes("prefers-reduced-motion:reduce"));
+  assert(card._styles().includes(".flash-panel .alarm-item.is-unack"));
+  assert(card._styles().includes(".flash-subtle .is-unack .accent"));
+});
+
+test("visual card editor emits and restores the new preferences", () => {
+  const { registry } = fixture();
+  const editor = new (registry.get("alarmgrid-card-editor"))();
+  editor._render = () => {};
+  editor._syncDependentControls = () => {};
+  let emitted;
+  editor._emitConfigChanged = () => { emitted = {...editor._config}; };
+  editor.setConfig({});
+  editor._setStringOption("color_scheme", "neutral", "default");
+  editor._setStringOption("flash_style", "none", "panel");
+  editor._setStringOption("open_panel_text", "Open alarm manager");
+  assert.equal(emitted.color_scheme, "neutral");
+  assert.equal(emitted.flash_style, "none");
+  assert.equal(emitted.open_panel_text, "Open alarm manager");
+  editor._setStringOption("open_panel_text", "");
+  assert.equal(Object.hasOwn(emitted, "open_panel_text"), false);
+});

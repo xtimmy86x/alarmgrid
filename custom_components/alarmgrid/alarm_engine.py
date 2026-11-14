@@ -200,7 +200,15 @@ class AlarmEngine:
             self._previous_entity_states[entity_id] = previous
         self._current_entity_states[entity_id] = state
         for rule_id in sorted(self._dependency_index.get(entity_id, ())):
-            await self.evaluate_rule(rule_id, state, previous)
+            rule = self.rules[rule_id]
+            if rule.threshold_entity:
+                await self.evaluate_rule(
+                    rule_id,
+                    self._current_entity_states.get(rule.entity_id),
+                    self._previous_entity_states.get(rule.entity_id),
+                )
+            else:
+                await self.evaluate_rule(rule_id, state, previous)
 
     def seed_entity_states(self, states: dict[str, Any]) -> None:
         """Seed the multi-entity cache from the currently tracked HA states."""
@@ -333,11 +341,21 @@ class AlarmEngine:
         else:
             result = evaluate_rule(
                 rule, new_state, previous_state, currently_active=runtime.is_active,
+                current_states=self._current_entity_states,
             )
         runtime.last_state = result.source_state
         runtime.last_value = result.source_value
         if result.evaluation_details is not None:
             self._evaluation_details[rule_id] = result.evaluation_details
+        else:
+            self._evaluation_details.pop(rule_id, None)
+
+        if result.evaluation_details and result.evaluation_details.get("invalid"):
+            runtime.pending_active_since = None
+            runtime.pending_clear_since = None
+            await self._persist()
+            self._notify()
+            return result
 
         if result.matched:
             await self._handle_matched_evaluation(rule, runtime, result, now)
@@ -870,6 +888,7 @@ class AlarmEngine:
             "condition_mode": "advanced" if rule.condition_expression else "simple",
             "source_entities": sorted(rule.source_entity_ids),
             "threshold": rule.threshold,
+            "threshold_entity": rule.threshold_entity,
             "deadband": rule.deadband,
             "requires_ack": rule.requires_ack,
             "audible": rule.audible,
@@ -951,7 +970,12 @@ class AlarmEngine:
                 "generated_message": message == result.message,
                 "description": rule.description,
             }
-            if result.evaluation_details is not None:
+            if rule.threshold_entity and result.evaluation_details is not None:
+                presentation.update(
+                    condition=rule.condition.value,
+                    threshold=result.evaluation_details.get("threshold"),
+                )
+            elif result.evaluation_details is not None:
                 presentation.update(
                     {
                         key: result.evaluation_details[key]

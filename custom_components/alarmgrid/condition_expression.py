@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from math import isfinite
 from typing import Any
 
 from .alarm_models import AlarmValidationError
@@ -50,7 +52,10 @@ def _number(value: Any, field: str) -> float:
     if isinstance(value, bool):
         raise AlarmValidationError(f"{field} must be numeric")
     try:
-        return float(value)
+        number = float(value)
+        if not isfinite(number):
+            raise AlarmValidationError(f"{field} must be finite")
+        return number
     except (TypeError, ValueError) as exc:
         raise AlarmValidationError(f"{field} must be numeric") from exc
 
@@ -107,6 +112,15 @@ def validate_condition_expression(expression: Any) -> dict[str, Any]:
             "entity_id": entity_id,
             "operator": operator,
         }
+        value_entity = str(node.get("value_entity") or "").strip()
+        if node.get("value_source") == "entity" and not value_entity:
+            raise AlarmValidationError("value_entity is required")
+        if value_entity:
+            if operator not in VALUE_OPERATORS:
+                raise AlarmValidationError("value_entity requires a single-value comparison")
+            if not re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", value_entity):
+                raise AlarmValidationError("value_entity must be an entity ID")
+            result["value_entity"] = value_entity
         if operator in RANGE_OPERATORS:
             lower, upper = (
                 _number(node.get("lower"), "lower"),
@@ -115,7 +129,7 @@ def validate_condition_expression(expression: Any) -> dict[str, Any]:
             if lower >= upper:
                 raise AlarmValidationError("lower must be less than upper")
             result.update(lower=lower, upper=upper)
-        elif operator in VALUE_OPERATORS:
+        elif operator in VALUE_OPERATORS and not value_entity:
             if "value" not in node:
                 raise AlarmValidationError(f"value is required for {operator}")
             result["value"] = (
@@ -136,7 +150,7 @@ def validate_condition_expression(expression: Any) -> dict[str, Any]:
 def expression_entity_ids(expression: Mapping[str, Any]) -> set[str]:
     """Return every source entity referenced by an expression."""
     if expression.get("type") == "condition":
-        return {str(expression["entity_id"])}
+        return {str(expression["entity_id"])} | ({str(expression["value_entity"])} if expression.get("value_entity") else set())
     result: set[str] = set()
     for child in expression.get("conditions", []):
         result.update(expression_entity_ids(child))
@@ -163,6 +177,35 @@ def evaluate_condition_expression(
 
     def leaf(node: Mapping[str, Any]) -> bool:
         entity_id, operator = str(node["entity_id"]), str(node["operator"])
+        reference = node.get("value_entity")
+        expected = node.get("value")
+        if reference:
+            raw_expected = current_states.get(reference)
+            expected = getattr(raw_expected, "state", raw_expected)
+            reason = None
+            if expected is None:
+                reason = "threshold_entity_not_found"
+            elif str(expected).strip().lower() in {"unavailable", "unknown", "none", ""}:
+                reason = "threshold_entity_unavailable"
+            elif operator in NUMERIC_OPERATORS:
+                try:
+                    _number(expected, "value")
+                except AlarmValidationError:
+                    reason = "threshold_not_numeric"
+            if reason:
+                source = current_states.get(entity_id)
+                leaves.append({
+                    "entity_id": entity_id,
+                    "operator": operator,
+                    "matched": False,
+                    "current_value": getattr(source, "state", source),
+                    "reason": reason,
+                    "invalid": True,
+                    "value_entity": reference,
+                    "expected": expected,
+                })
+                return False
+            node = {**node, "value": expected}
         if entity_id not in current_states:
             leaves.append(
                 {
@@ -171,6 +214,7 @@ def evaluate_condition_expression(
                     "matched": False,
                     "current_value": None,
                     "reason": "entity_not_found",
+                    "invalid": bool(reference),
                 }
             )
             return False
@@ -180,7 +224,7 @@ def evaluate_condition_expression(
         matched, reason = False, None
         if operator == "unavailable":
             matched = normalized == "unavailable"
-        elif normalized == "unavailable":
+        elif normalized == "unavailable" or (reference and normalized in {"unknown", "none", ""}):
             reason = "entity_unavailable"
         elif operator == "state_changed":
             matched = (
@@ -199,8 +243,8 @@ def evaluate_condition_expression(
             matched = state != str(node["value"])
         else:
             try:
-                value = float(state)
-            except (TypeError, ValueError):
+                value = _number(state, "source")
+            except (TypeError, ValueError, AlarmValidationError):
                 reason = "not_numeric"
             else:
                 db = float(node.get("deadband", 0))
@@ -238,6 +282,15 @@ def evaluate_condition_expression(
             "matched": matched,
             "current_value": state,
         }
+        if reference:
+            from .alarm_rules import parse_numeric_state
+
+            if operator in {"equal", "not_equal"} and not reason:
+                left, right = parse_numeric_state(state), parse_numeric_state(expected)
+                if left is not None and right is not None:
+                    matched = left == right if operator == "equal" else left != right
+                    item["matched"] = matched
+            item.update(value_entity=reference, expected=expected, invalid=bool(reason))
         if reason:
             item["reason"] = reason
         leaves.append(item)
@@ -250,11 +303,14 @@ def evaluate_condition_expression(
         return all(values) if node["operator"] == "and" else any(values)
 
     matched = visit(expression)
+    invalid = any(item.get("invalid", False) for item in leaves)
+    matched = matched and not invalid
     matched_count = sum(item["matched"] for item in leaves)
     return ExpressionEvaluationResult(
         matched,
         {
             "matched": matched,
+            "invalid": invalid,
             "matched_conditions": matched_count,
             "total_conditions": len(leaves),
             "conditions": leaves,

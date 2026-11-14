@@ -3,6 +3,7 @@ const ALARMS_UPDATED_EVENT = "alarmgrid_alarms_updated";
 // The card and its visual editor intentionally share one source of truth.  The
 // editor omits values matching these defaults to keep storage/YAML concise.
 const CARD_DEFAULTS = Object.freeze({
+  color_scheme: "default", flash_style: "panel", open_panel_text: "",
   title: "AlarmGrid", view: "active", max_alarms: 5, theme: "auto",
   header_icon: "mdi:alarm-light", hide_header: false,
   show_header_icon: true, show_header_status: true, show_header_actions: true,
@@ -19,6 +20,9 @@ const CARD_PRIORITIES = ["critical", "high", "medium", "low", "info", "status"];
 
 const TRANSLATIONS = {
   en: {
+    threshold_source: "Compare with", source_fixed: "Fixed value", source_entity: "Entity", threshold_entity_label: "Threshold entity",
+    threshold_entity_not_found: "Threshold entity not found", threshold_entity_unavailable: "Threshold entity unavailable", threshold_not_numeric: "Threshold entity is not numeric",
+
     default_title: "AlarmGrid",
     menu: "Menu",
     open_sidebar: "Open sidebar",
@@ -144,11 +148,11 @@ const TRANSLATIONS = {
     no_items_to_delete: "No {label} to delete",
     confirm_delete_rules: "Delete {count} {label} and about {entities} entities? Source entities will not be removed.",
     deleted_rules: "Deleted {count} rules and {entities} entities",
-    more_actions: "More actions", suspend_alarm: "Suspend alarm", disable_alarm: "Disable alarm",
-    unshelve_now: "Unshelve now", enable_alarm: "Enable alarm", suspend_for: "Suspend for", custom_duration: "Custom…",
+    more_actions: "More actions", suspend_alarm: "Shelve alarm", disable_alarm: "Disable alarm",
+    unshelve_now: "Unshelve now", enable_alarm: "Enable alarm", suspend_for: "Shelve for", custom_duration: "Custom…",
     duration: "Duration", minutes: "minutes", hours: "hours", days: "days", comment_optional: "Comment / Reason (optional)",
     confirm_disable_title: 'Disable "{name}"?', confirm_disable_message: "This alarm will no longer be generated until it is manually enabled again.",
-    suspend: "Suspend", disable: "Disable", shelved_until: "Suspended until {time}", remaining: "{time} remaining",
+    suspend: "Shelve", disable: "Disable", shelved_until: "Shelved until {time}", remaining: "{time} remaining",
     alarm_disabled: "Alarm disabled", expiring: "Expiring…", shelved_temporary: "Shelved · temporary", disabled_persistent: "Disabled · until manually enabled",
     duration_invalid: "Enter a duration greater than zero.", duration_15m: "15 minutes", custom: "Custom…",
     nav_sections: "AlarmGrid sections", nav_alarms: "Alarms", nav_log: "Log", nav_config: "Configuration",
@@ -194,6 +198,9 @@ const TRANSLATIONS = {
     badge_cleared_ack: "cleared", badge_shelved: "shelved", badge_disabled: "disabled",
   },
   it: {
+    threshold_source: "Confronta con", source_fixed: "Valore fisso", source_entity: "Entità", threshold_entity_label: "Entità soglia",
+    threshold_entity_not_found: "Entità soglia non trovata", threshold_entity_unavailable: "Entità soglia non disponibile", threshold_not_numeric: "Il valore dell’entità soglia non è numerico",
+
     default_title: "Allarmi Industriali",
     menu: "Menu",
     open_sidebar: "Apri barra laterale",
@@ -1129,7 +1136,7 @@ class AlarmGrid extends HTMLElement {
     const range = ["between", "outside_range"].includes(node.operator);
     const unit = this._entityUnit(node.entity_id);
     const withUnit = (value) => (unit && value !== "" && value != null ? `${value} ${unit}` : value);
-    const expected = range ? { lower: withUnit(node.lower ?? ""), upper: withUnit(node.upper ?? "") } : withUnit(node.value ?? "");
+    const expected = node.value_source !== "fixed" && node.value_entity ? `${this._entityLabel(node.value_entity)} (${this._hass?.states?.[node.value_entity]?.state ?? "—"})` : range ? { lower: withUnit(node.lower ?? ""), upper: withUnit(node.upper ?? "") } : withUnit(node.value ?? "");
     const deadband = Number(node.deadband || 0);
     const hysteresis = deadband > 0 ? ` ${this._t("summary_hysteresis", { value: withUnit(deadband) })}` : "";
     return `${this._entityLabel(node.entity_id)} ${this._expectationLabel({ operator: node.operator, expected })}${hysteresis}`;
@@ -1147,7 +1154,7 @@ class AlarmGrid extends HTMLElement {
 
   _draftConditionText(draft) {
     if (draft.condition_expression) return this._expressionText(draft.condition_expression);
-    return this._conditionText({ entity_id: draft.entity_id, operator: draft.condition, value: draft.threshold, deadband: draft.deadband });
+    return this._conditionText({ entity_id: draft.entity_id, operator: draft.condition, value: draft.threshold, value_entity: draft.threshold_entity, value_source: draft.threshold_source, deadband: draft.deadband });
   }
 
   _ruleSummaryHtml() {
@@ -1192,7 +1199,10 @@ class AlarmGrid extends HTMLElement {
     const unit = state?.attributes?.unit_of_measurement || "";
     const current = state ? `${state.state}${unit ? ` ${unit}` : ""}` : "—";
     const unitSuffix = unit ? ` (${this._escape(unit)})` : "";
-    const valueFields = !needsValue ? "" : range
+    const canReference = needsValue && !range;
+    const dynamic = canReference && (node.value_source === "entity" || (node.value_source !== "fixed" && Boolean(node.value_entity)));
+    const sourceField = canReference ? `<label class="field"><span class="field-label">${this._t("threshold_source")}</span><select data-condition-field="value_source"><option value="fixed" ${!dynamic ? "selected" : ""}>${this._t("source_fixed")}</option><option value="entity" ${dynamic ? "selected" : ""}>${this._t("source_entity")}</option></select></label>` : "";
+    const valueFields = dynamic ? `<label class="field entity-field"><span class="field-label">${this._t("threshold_entity_label")}</span><input list="entity-id-options" value="${this._escape(node.value_entity || "")}" data-condition-field="value_entity" placeholder="input_number.…"><small class="help">${this._escape(this._entityLabel(node.value_entity))} · ${this._escape(this._hass?.states?.[node.value_entity]?.state ?? "—")}</small></label>` : !needsValue ? "" : range
       ? `<label class="field"><span class="field-label">${this._t("label_lower")}${unitSuffix}</span><input type="number" step="any" value="${this._escape(node.lower ?? "")}" data-condition-field="lower"></label><label class="field"><span class="field-label">${this._t("label_upper")}${unitSuffix}</span><input type="number" step="any" value="${this._escape(node.upper ?? "")}" data-condition-field="upper"></label>`
       : `<label class="field"><span class="field-label">${numeric ? this._t("col_threshold") : this._t("label_value")}${unitSuffix}</span><input ${numeric ? 'type="number" step="any"' : ""} value="${this._escape(node.value ?? "")}" data-condition-field="value"></label>`;
     return `<div class="condition-row" data-condition-path="${path}">
@@ -1200,7 +1210,7 @@ class AlarmGrid extends HTMLElement {
       <div class="condition-fields">
         <label class="field entity-field"><span class="field-label">${this._t("label_entity")}</span><input list="entity-id-options" value="${this._escape(node.entity_id || "")}" data-condition-field="entity_id" placeholder="sensor.…"><small class="help">${this._escape(state?.attributes?.friendly_name || "")}</small></label>
         <label class="field"><span class="field-label">${this._t("label_operator")}</span><select data-condition-field="operator">${this._operatorOptions(node.operator)}</select></label>
-        ${valueFields}
+        ${sourceField}${valueFields}
         ${numeric ? `<label class="field"><span class="field-label">${this._t("deadband_hysteresis")}${unitSuffix}</span><input type="number" min="0" step="any" value="${this._escape(node.deadband ?? 0)}" data-condition-field="deadband"><small class="help">${this._t("hysteresis_help")}</small></label>` : ""}
       </div></div>`;
   }
@@ -1223,13 +1233,13 @@ class AlarmGrid extends HTMLElement {
 
   _conditionBuilder(draft) {
     if (draft.condition_expression) return this._groupBuilder(draft.condition_expression);
-    const leaf = {entity_id:draft.entity_id,operator:draft.condition,value:draft.threshold,deadband:draft.deadband || 0};
+    const leaf = {entity_id:draft.entity_id,operator:draft.condition,value:draft.threshold,value_entity:draft.threshold_entity,value_source:draft.threshold_source,deadband:draft.deadband || 0};
     return `<div class="condition-group root"><div class="group-head match-sentence"><span>${this._t("triggers_when_single")}</span></div>${this._conditionRow(leaf, "simple")}<div class="group-actions"><button type="button" data-add-condition="simple">${this._t("add_condition")}</button><button type="button" data-add-group="simple">${this._t("add_group")}</button></div></div>`;
   }
 
   _conditionSummary(rule) {
     if (!rule.condition_expression) {
-      return this._conditionText({ entity_id: rule.entity_id, operator: rule.condition, value: rule.threshold ?? "", deadband: rule.deadband })
+      return this._conditionText({ entity_id: rule.entity_id, operator: rule.condition, value: rule.threshold ?? "", value_entity: rule.threshold_entity, deadband: rule.deadband })
         || `${rule.entity_id || ""} ${rule.condition || ""} ${rule.threshold ?? ""}`.trim();
     }
     const count = (node) => node.type === "condition" ? 1 : node.conditions.reduce((total, child) => total + count(child), 0);
@@ -1285,12 +1295,12 @@ class AlarmGrid extends HTMLElement {
       row.querySelectorAll("[data-condition-field]").forEach((field) => {
         const name = field.dataset.conditionField;
         if (path === "simple") {
-          const legacyFields = {entity_id:"entity_id",operator:"condition",value:"threshold",deadband:"deadband"};
+          const legacyFields = {entity_id:"entity_id",operator:"condition",value:"threshold",value_entity:"threshold_entity",value_source:"threshold_source",deadband:"deadband"};
           const target = legacyFields[name];
           if (target) this._ruleDraft[target] = field.value;
           return;
         }
-        if (["entity_id","operator","value","lower","upper","deadband"].includes(name)) node[name] = field.value;
+        if (["entity_id","operator","value","value_entity","value_source","lower","upper","deadband"].includes(name)) node[name] = field.value;
       });
     });
   }
@@ -1325,7 +1335,7 @@ class AlarmGrid extends HTMLElement {
   }
 
   _promoteSimple() {
-    if (!this._ruleDraft.condition_expression) this._ruleDraft.condition_expression = {type:"group",operator:"and",conditions:[{type:"condition",entity_id:this._ruleDraft.entity_id,operator:this._ruleDraft.condition,value:this._ruleDraft.threshold,deadband:this._ruleDraft.deadband}]};
+    if (!this._ruleDraft.condition_expression) this._ruleDraft.condition_expression = {type:"group",operator:"and",conditions:[{type:"condition",entity_id:this._ruleDraft.entity_id,operator:this._ruleDraft.condition,value:this._ruleDraft.threshold,value_entity:this._ruleDraft.threshold_entity,value_source:this._ruleDraft.threshold_source,deadband:this._ruleDraft.deadband}]};
   }
 
   _entityOptions() {
@@ -1420,22 +1430,23 @@ class AlarmGrid extends HTMLElement {
         this._clearRulePreview();
         const path = field.closest("[data-condition-path]")?.dataset.conditionPath;
         if (!path) return;
-        if (path === "simple") { const map = {entity_id:"entity_id",operator:"condition",value:"threshold",deadband:"deadband"}; const target = map[field.dataset.conditionField]; if (target) this._ruleDraft[target] = field.value; }
+        if (path === "simple") { const map = {entity_id:"entity_id",operator:"condition",value:"threshold",value_entity:"threshold_entity",value_source:"threshold_source",deadband:"deadband"}; const target = map[field.dataset.conditionField]; if (target) this._ruleDraft[target] = field.value; }
         else {
           const node = this._expressionCondition(path); if (!node) return;
           node[field.dataset.conditionField] = field.value;
         }
-        if (field.dataset.conditionField === "operator") {
+        if (["operator", "value_source"].includes(field.dataset.conditionField)) {
           this._syncConditionBuilderFromDom();
+          if (path === "simple" && ["greater_or_equal", "less_or_equal", "between", "outside_range"].includes(this._ruleDraft.condition)) this._promoteSimple();
           this._render();
           return;
         }
         this._refreshRuleSummary();
       };
-      if (field.dataset.conditionField !== "operator") field.addEventListener("input", updateConditionField);
+      if (!["operator", "value_source"].includes(field.dataset.conditionField)) field.addEventListener("input", updateConditionField);
       field.addEventListener("change", updateConditionField);
       // Re-render once a new entity is committed so its current value and unit appear.
-      if (field.dataset.conditionField === "entity_id") field.addEventListener("change", () => {
+      if (["entity_id", "value_entity"].includes(field.dataset.conditionField)) field.addEventListener("change", () => {
         if (builderRevision !== this._builderRevision || !this._hass?.states?.[field.value]) return;
         this._syncConditionBuilderFromDom();
         this._render();
@@ -1509,6 +1520,11 @@ class AlarmGrid extends HTMLElement {
 
   _rulePayload(draft) {
     const fields = { ...draft };
+    const supported = ["above", "below", "equal", "not_equal", "contains"].includes(fields.condition);
+    const dynamic = supported && (fields.threshold_source === "entity" || (fields.threshold_source !== "fixed" && Boolean(fields.threshold_entity)));
+    fields.threshold_source = dynamic ? "entity" : "fixed";
+    fields.threshold_entity = dynamic ? (fields.threshold_entity || "").trim() : null;
+    if (dynamic) fields.threshold = null;
     if (fields.condition_expression) fields.condition_expression = structuredClone(fields.condition_expression);
     this._normalizeConditionDraft(fields.condition_expression);
     const areaName = this._entityAreaName(fields.entity_id || this._draftPrimaryEntity());
@@ -1522,7 +1538,7 @@ class AlarmGrid extends HTMLElement {
     Object.keys(fields).forEach((key) => {
       if (fields[key] === "") delete fields[key];
     });
-    if (fields.threshold !== undefined && fields.threshold !== "") fields.threshold = Number(fields.threshold);
+    if (["above", "below"].includes(fields.condition) && fields.threshold != null && fields.threshold !== "") fields.threshold = Number(fields.threshold);
     try {
       await this._callWS({ type: "alarmgrid/create_rule", rule: fields });
       this._rulesResult = this._t("rule_created", { id: fields.id || "" });
@@ -1539,7 +1555,7 @@ class AlarmGrid extends HTMLElement {
   async _testRule() {
     if (this._rulePreviewLoading) return;
     this._syncConditionBuilderFromDom();
-    const rule = structuredClone(this._ruleDraft);
+    const rule = this._rulePayload(this._ruleDraft);
     this._normalizeConditionDraft(rule.condition_expression);
     Object.keys(rule).forEach((key) => { if (rule[key] === "") delete rule[key]; });
     this._rulePreviewLoading = true;
@@ -1576,7 +1592,14 @@ class AlarmGrid extends HTMLElement {
     if (!node || typeof node !== "object") return;
     if (node.type === "group" && Array.isArray(node.conditions)) {
       node.conditions.forEach((child) => this._normalizeConditionDraft(child));
-    } else if (node.type === "condition" && node.deadband === "") node.deadband = 0;
+    } else if (node.type === "condition") {
+      if (node.deadband === "") node.deadband = 0;
+      const supported = ["above", "below", "greater_or_equal", "less_or_equal", "equal", "not_equal", "contains"].includes(node.operator);
+      const dynamic = supported && (node.value_source === "entity" || (node.value_source !== "fixed" && Boolean(node.value_entity)));
+      node.value_source = dynamic ? "entity" : "fixed";
+      if (dynamic) { node.value_entity = (node.value_entity || "").trim(); delete node.value; }
+      else delete node.value_entity;
+    }
   }
 
   _startEditRule(ruleId) {
@@ -1592,6 +1615,8 @@ class AlarmGrid extends HTMLElement {
       name: rule.name || "",
       condition: rule.condition || "above",
       threshold: rule.threshold ?? "",
+      threshold_entity: rule.threshold_entity || "",
+      threshold_source: rule.threshold_entity ? "entity" : "fixed",
       priority: rule.priority || "medium",
       telegram_notification_policy: rule.telegram_notification_policy || "inherit",
       system: rule.system || "", tag: rule.tag || "", instructions: rule.instructions || "",
@@ -1628,7 +1653,7 @@ class AlarmGrid extends HTMLElement {
     Object.keys(changes).forEach((key) => {
       if (changes[key] === "") delete changes[key];
     });
-    if (changes.threshold !== undefined && changes.threshold !== null) changes.threshold = Number(changes.threshold);
+    if (["above", "below"].includes(changes.condition) && changes.threshold != null) changes.threshold = Number(changes.threshold);
     try {
       await this._callWS({
         type: "alarmgrid/update_rule",
@@ -2128,6 +2153,9 @@ class AlarmGrid extends HTMLElement {
 
 const EDITOR_TRANSLATIONS = {
   en: {
+    editor_color_scheme: "Color scheme", scheme_default: "Default", scheme_neutral: "Neutral HMI",
+    editor_flash_style: "Alarm flashing", flash_panel: "Like the panel", flash_subtle: "Subtle", flash_none: "Off", editor_open_panel_text: "Open panel link text",
+
     editor_general: "General", editor_header: "Header", editor_content: "Content", editor_actions: "Actions", editor_appearance: "Advanced appearance",
     editor_title: "Title", editor_view: "View", editor_max_alarms: "Maximum alarms", editor_theme: "Theme", editor_show_header: "Show header",
     editor_header_icon: "Header icon", editor_show_header_icon: "Show header icon", editor_show_header_status: "Show header status", editor_show_header_actions: "Show header actions",
@@ -2137,6 +2165,9 @@ const EDITOR_TRANSLATIONS = {
     active: "Active alarms", unacknowledged: "Unacknowledged", shelved: "Shelved", disabled_view: "Disabled", inactive: "Shelved + disabled",
   },
   it: {
+    editor_color_scheme: "Schema colori", scheme_default: "Predefinito", scheme_neutral: "HMI neutro",
+    editor_flash_style: "Lampeggio allarmi", flash_panel: "Come il pannello", flash_subtle: "Discreto", flash_none: "Disattivato", editor_open_panel_text: "Testo collegamento al pannello",
+
     editor_general: "Generale", editor_header: "Header", editor_content: "Contenuto", editor_actions: "Azioni", editor_appearance: "Aspetto avanzato",
     editor_title: "Titolo", editor_view: "Vista", editor_max_alarms: "Numero massimo di allarmi", editor_theme: "Tema", editor_show_header: "Mostra header",
     editor_header_icon: "Icona header", editor_show_header_icon: "Mostra icona header", editor_show_header_status: "Mostra stato header", editor_show_header_actions: "Mostra azioni header",
@@ -2318,6 +2349,9 @@ class AlarmGridCardEditor extends HTMLElement {
     </style><div class="editor">
       <section class="section"><h3 class="section-title">${this._t("editor_general")}</h3><div class="grid">
         ${text("title", "editor_title")}
+        ${text("open_panel_text", "editor_open_panel_text")}
+        <label class="field"><span>${this._t("editor_color_scheme")}</span><select data-string="color_scheme">${["default","neutral"].map((value) => `<option value="${value}" ${this._value("color_scheme") === value ? "selected" : ""}>${this._t(`scheme_${value}`)}</option>`).join("")}</select></label>
+        <label class="field"><span>${this._t("editor_flash_style")}</span><select data-string="flash_style">${["panel","subtle","none"].map((value) => `<option value="${value}" ${this._value("flash_style") === value ? "selected" : ""}>${this._t(`flash_${value}`)}</option>`).join("")}</select></label>
         <label class="field"><span>${this._t("editor_view")}</span><select data-string="view">${["active","unacknowledged","shelved","disabled","inactive"].map((view) => `<option value="${view}" ${this._value("view") === view ? "selected" : ""}>${this._t(view === "disabled" ? "disabled_view" : view)}</option>`).join("")}</select></label>
         ${text("max_alarms", "editor_max_alarms", "number", 'min="0" step="1" data-number="max_alarms"')}
         <label class="field"><span>${this._t("editor_theme")}</span><select data-string="theme">${["auto","light","dark"].map((theme) => `<option ${this._value("theme") === theme ? "selected" : ""}>${theme}</option>`).join("")}</select></label>
@@ -2378,6 +2412,9 @@ class AlarmGridCard extends HTMLElement {
     this._config = {
       ...config,
       title: config.title || CARD_DEFAULTS.title,
+      color_scheme: config.color_scheme === "neutral" ? "neutral" : "default",
+      flash_style: ["panel", "subtle", "none"].includes(config.flash_style) ? config.flash_style : "panel",
+      open_panel_text: typeof config.open_panel_text === "string" ? config.open_panel_text.trim() : "",
       header_icon: typeof config.header_icon === "string" && config.header_icon.trim() ? config.header_icon.trim() : CARD_DEFAULTS.header_icon,
       show_header_icon: config.show_header_icon !== false,
       show_header_status: config.show_header_status !== false,
@@ -2616,13 +2653,13 @@ class AlarmGridCard extends HTMLElement {
       dialogRoot.dataset.dialogRoot = "";
       this.shadowRoot.replaceChildren(cardRoot, dialogRoot);
     }
-    cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass}">
+    cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass} scheme-${this._config.color_scheme} flash-${this._config.flash_style}">
       ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · <span class="horn-on">${this._t("horn_active")}</span>` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
       ${this._config.show_summary ? `<section class="summary" aria-label="${this._t("alarm_summary")}">${chip("critical", count("critical"), this._t("priority_critical"))}${chip("high", count("high"), this._t("priority_high"))}${chip("unack", unack, this._t("metric_unack", { count: "" }).trim())}${chip("", shelved, this._t("chip_shelved"))}${chip("", disabled, this._t("chip_disabled"))}</section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}
       <section class="alarm-list">${shown.length ? shown.map((alarm) => this._alarmItem(alarm)).join("") : `<div class="empty"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${this._t("no_alarms")}</span></div>`}</section>
       ${visible.length > shown.length ? `<button class="more" data-action="open-panel">${this._t("more_alarms", { count: visible.length - shown.length })}</button>` : ""}
-      ${this._config.show_open_panel ? `<footer><button data-action="open-panel">${this._t("open_alarmgrid")} <span aria-hidden="true">→</span></button></footer>` : ""}
+      ${this._config.show_open_panel ? `<footer><button data-action="open-panel">${this._escape(this._config.open_panel_text || this._t("open_alarmgrid"))} <span aria-hidden="true">→</span></button></footer>` : ""}
     </ha-card>`;
     if (this._dialog && !dialogRoot.querySelector("dialog")) {
       dialogRoot.innerHTML = this._dialogMarkup();
@@ -2686,7 +2723,7 @@ class AlarmGridCard extends HTMLElement {
       .action-menu { position:relative; flex:none; } .action-menu[open] { z-index:4; } .action-menu summary { box-sizing:border-box; list-style:none; cursor:pointer; color:var(--primary-text-color); border-radius:var(--ha-card-border-radius, 12px); } .action-menu summary::-webkit-details-marker { display:none; } .action-menu summary::marker { content:""; } .action-menu summary:hover { background:color-mix(in srgb, var(--primary-text-color) 8%, transparent); } .action-menu summary:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px; } .action-menu summary ha-icon { display:block; width:24px; height:24px; color:var(--primary-text-color); }
       .menu-popover { position:absolute; z-index:4; right:0; bottom:calc(100% + 4px); box-sizing:border-box; min-width:170px; max-width:min(240px, calc(100vw - 32px)); padding:5px; border:1px solid var(--divider-color); border-radius:10px; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); box-shadow:var(--ha-card-box-shadow, 0 3px 12px rgba(0,0,0,.2)); } .menu-popover button { display:block; width:100%; min-height:40px; padding:8px 10px; color:var(--primary-text-color); text-align:left; } .destructive-text { color:var(--error-color)!important; }
       .state-shelved .accent { background:var(--info-color, var(--primary-color)); } .state-disabled .accent { background:var(--disabled-text-color, var(--secondary-text-color)); }
-      dialog { width:min(420px, calc(100vw - 32px)); box-sizing:border-box; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); padding:20px; } dialog::backdrop { background:rgba(0,0,0,.45); } dialog form, dialog label { display:grid; gap:8px; } dialog h3, dialog p { margin:0 0 12px; } dialog select, dialog input, dialog textarea { box-sizing:border-box; width:100%; min-height:42px; padding:8px; color:inherit; background:var(--input-fill-color, transparent); border:1px solid var(--divider-color); border-radius:8px; font:inherit; } .custom-duration { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:end; } .custom-duration[hidden] { display:none; } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; } .dialog-actions button { min-height:44px; padding:0 14px; color:var(--primary-color); } .dialog-actions .destructive { color:var(--text-primary-color, white); background:var(--error-color); } .validation { min-height:1.2em; color:var(--error-color); font-size:.85rem; } .is-unack .accent, .is-unack .priority-dot { animation:cardPulse 1.8s ease-in-out infinite; }
+      dialog { width:min(420px, calc(100vw - 32px)); box-sizing:border-box; color:var(--primary-text-color); background:var(--ha-card-background, var(--card-background-color)); border:1px solid var(--divider-color); border-radius:var(--ha-card-border-radius, 12px); padding:20px; } dialog::backdrop { background:rgba(0,0,0,.45); } dialog form, dialog label { display:grid; gap:8px; } dialog h3, dialog p { margin:0 0 12px; } dialog select, dialog input, dialog textarea { box-sizing:border-box; width:100%; min-height:42px; padding:8px; color:inherit; background:var(--input-fill-color, transparent); border:1px solid var(--divider-color); border-radius:8px; font:inherit; } .custom-duration { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:end; } .custom-duration[hidden] { display:none; } .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; } .dialog-actions button { min-height:44px; padding:0 14px; color:var(--primary-color); } .dialog-actions .destructive { color:var(--text-primary-color, white); background:var(--error-color); } .validation { min-height:1.2em; color:var(--error-color); font-size:.85rem; } .flash-subtle .is-unack .accent, .flash-subtle .is-unack .priority-dot { animation:cardPulse 1.8s ease-in-out infinite; }
       @keyframes cardPulse { 50% { opacity:.42; } } @media (prefers-reduced-motion:reduce) { .is-unack .accent, .is-unack .priority-dot { animation:none; } }
       .empty { display:flex; justify-content:center; align-items:center; gap:8px; min-height:96px; color:var(--secondary-text-color); text-align:center; }
       .empty ha-icon { color:var(--primary-color); } .error { margin:0 16px 10px; padding:10px; color:var(--error-color); border:1px solid var(--error-color); border-radius:var(--ha-card-border-radius, 12px); }
@@ -2702,6 +2739,20 @@ class AlarmGridCard extends HTMLElement {
       .badge-state { font-weight:600; letter-spacing:.02em; }
       .alarm-details .value { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--primary-text-color); }
       .alarm-details .state { display:block; color:var(--primary-text-color); } .alarm-details .value + .state, .alarm-details:not(:empty) .state { margin-top:2px; }
+
+      .flash-panel .alarm-item.is-unack { background:var(--flash-color); color:#101316; border-color:var(--flash-color); animation:cardFlash 1s step-end infinite; }
+      .flash-panel .priority-critical { --flash-color:#ef2b1d; } .flash-panel .priority-high { --flash-color:#ff9f00; } .flash-panel .priority-medium { --flash-color:#ffd800; }
+      .flash-panel .priority-low { --flash-color:#58a6ff; } .flash-panel .priority-info { --flash-color:#83d2e6; } .flash-panel .priority-status { --flash-color:#7ee787; }
+      .flash-panel .alarm-item.state-cleared_unack { --flash-color:#d85b9d; }
+      .flash-panel .is-unack :is(.priority-badge,time,.alarm-details,.alarm-tag,.value,.state,.item-actions>button,.action-menu summary) { color:#101316; }
+      .flash-panel .is-unack .accent { background:#101316; }
+      @keyframes cardFlash { 50% { filter:brightness(1.25); } }
+      .scheme-neutral footer button, .scheme-neutral .item-actions>button, .scheme-neutral .empty ha-icon { color:var(--primary-text-color); }
+      .scheme-neutral .heading>ha-icon { color:var(--secondary-text-color); background:color-mix(in srgb, var(--primary-text-color) 8%, transparent); }
+      .scheme-neutral .chip.zero :is(b,.chip-dot) { color:var(--secondary-text-color); }
+      .scheme-neutral .alarm-item:is(.state-shelved,.state-disabled) { --priority:var(--secondary-text-color); background:var(--ha-card-background, var(--card-background-color)); }
+      .scheme-neutral :is(.state-shelved,.state-disabled) .accent { background:var(--secondary-text-color); }
+      @media (prefers-reduced-motion:reduce) { .flash-panel .alarm-item.is-unack, .flash-subtle .is-unack .accent, .flash-subtle .is-unack .priority-dot { animation:none; } }
       @media (max-width:420px) { header { padding-inline:12px; } .summary { padding-inline:12px; } .alarm-footer { align-items:flex-start; flex-direction:column; } .item-actions { align-self:flex-end; } }
     `;
   }

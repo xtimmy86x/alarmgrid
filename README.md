@@ -360,6 +360,34 @@ Existing configurations remain valid: legacy `tab: active` and `tab: unacknowled
 The integration registers the static frontend path even when the sidebar panel option is disabled, and it persists the Lovelace resource in storage-mode dashboards so the card is still loaded after a browser refresh.
 
 
+### Card appearance and link text
+
+The visual card editor exposes **Color scheme**, **Alarm flashing**, and
+**Open panel link text**. The same settings are available in YAML:
+
+```yaml
+type: custom:alarmgrid-card
+color_scheme: neutral
+flash_style: panel
+open_panel_text: Open Alarm Manager
+```
+
+- `color_scheme`: `default` (existing styling) or `neutral`. The neutral style
+  uses grayscale navigation, header decoration, empty-state indicators and
+  suppressed alarms, reserving alarm colors for alarm states. It is inspired by
+  high-performance HMI principles; it is not an ISA-101 compliance claim.
+- `flash_style`: `panel` (default), `subtle` (the previous accent/dot pulse), or
+  `none`. Panel mode uses the main panel's vivid priority colors, pink cleared
+  alarms, and 1-second brightness flash for unacknowledged alarms. Acknowledged,
+  shelved and disabled alarms do not flash. The operating system's reduced-motion
+  preference disables animation in both animated modes.
+- `open_panel_text`: replaces the footer link label. An empty or omitted value
+  restores the localized “Open AlarmGrid” label. `show_open_panel: false` still
+  hides the link.
+
+Existing card configurations remain valid. Use `flash_style: subtle` to retain
+exactly the previous flashing style; the neutral palette is opt-in.
+
 ## Entities
 
 Global entities include:
@@ -412,6 +440,7 @@ Common fields:
 - `system`: equipment group, such as `SOFAR Inverter`, `Grid`, or `Electric Heater`.
 - `condition`: one of `above`, `below`, `equal`, `not_equal`, `contains`, `is_on`, `is_off`, `state_changed`, `unavailable`, `unavailable_for`, `unknown_for`, `manual`.
 - `threshold`: numeric value for `above` and `below`, or expected text for text conditions.
+- `threshold_entity`: optional entity ID supplying the live comparison value instead of `threshold`.
 - `deadband`: hysteresis for numeric alarms.
 - `priority`: `critical`, `high`, `medium`, `low`, `info`, or `status`.
 - `instructions`: short operator guidance shown in the panel.
@@ -423,6 +452,64 @@ Timing fields are in seconds:
 - `delay_on_seconds`: the source condition must remain true for this long before the alarm activates. Use `5` for "alarm only if this condition lasts longer than 5 seconds".
 - `delay_off_seconds`: the source condition must remain clear for this long before an active alarm clears.
 - `min_active_duration_seconds`: once activated, keep the alarm active for at least this long even if the source clears sooner.
+
+### Entity-based thresholds
+
+In the rule editor, select **Compare with → Entity** and choose the setpoint
+entity. Both source and setpoint changes trigger evaluation; no template sensor
+is required. The editor summary and **Test rule** preview show the referenced
+entity/current threshold. Rule storage and CSV import/export preserve references.
+
+For a simple rule, use `threshold_entity` instead of a fixed `threshold`:
+
+```yaml
+rule:
+  id: temperature_above_setpoint
+  name: Temperature above setpoint
+  entity_id: sensor.room_temperature
+  condition: above
+  threshold_entity: input_number.temperature_limit
+  deadband: 0.5
+  priority: high
+```
+
+In an advanced AND/OR expression, use `value_entity` instead of `value` on a leaf:
+
+```yaml
+condition_expression:
+  type: group
+  operator: and
+  conditions:
+    - type: condition
+      entity_id: sensor.room_temperature
+      operator: greater_or_equal
+      value_entity: input_number.temperature_limit
+    - type: condition
+      entity_id: binary_sensor.heating_enabled
+      operator: is_on
+```
+
+Entity operands support `above`, `below`, `equal`, `not_equal`, and `contains`;
+advanced leaves also support `greater_or_equal` and `less_or_equal`. Range bounds
+(`between` / `outside_range`) remain fixed values. Numeric comparisons require
+finite numbers. Entity-to-entity equality compares numeric states numerically
+(`20` equals `20.0`) and other states as literal text. No unit conversion is
+performed: select compatible units. Existing fixed-threshold rules retain their
+comparison behavior.
+
+If a referenced entity is missing, unknown, unavailable, or non-numeric for a
+numeric comparison, evaluation is invalid: AlarmGrid preserves the rule's last
+lifecycle state, resets pending on/off delays, and resumes when valid readings
+return. For AND/OR rules this holds the entire rule when any dynamic comparison
+is invalid, even if another OR branch matches. **Test rule** identifies the
+invalid operand. This prevents a lost setpoint from generating a false clear;
+it does not create a separate availability alarm. Add an availability rule if
+that condition needs its own notification.
+
+Telegram activation messages snapshot the resolved simple threshold at the time
+of the event. Later setpoint changes do not rewrite history or queued messages.
+To switch a rule back to a fixed threshold via `update_rule`, set
+`threshold_entity: null` and supply `threshold`.
 
 ### High Temperature Rule
 
