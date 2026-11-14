@@ -27,6 +27,7 @@ from .const import (
     SERVICE_UNSILENCE_HORN,
     SERVICE_UPDATE_RULE,
 )
+from .operator_identity import async_context_operator
 from .rule_management import remove_per_rule_entity_registry_entries
 
 RULE_ID = "rule_id"
@@ -100,7 +101,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
     async def _handler(call: ServiceCall) -> Any:
         runtime = _first_runtime(hass)
         engine = runtime.engine
-        operator = call.context.user_id
+        operator = await async_context_operator(hass, call.context)
         data = call.data
 
         if call.service == SERVICE_ACKNOWLEDGE_ALARM:
@@ -144,18 +145,18 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             await engine.enable_alarm(data[RULE_ID], operator=operator)
             return
         if call.service == SERVICE_CREATE_RULE:
-            await engine.create_rule(data[RULE])
+            await engine.create_rule(data[RULE], operator=operator)
             await runtime.rule_store.async_save_rules(engine.rules.values())
             await runtime.async_refresh_rules()
             return
         if call.service == SERVICE_UPDATE_RULE:
-            await engine.update_rule(data[RULE_ID], data[CHANGES])
+            await engine.update_rule(data[RULE_ID], data[CHANGES], operator=operator)
             await runtime.rule_store.async_save_rules(engine.rules.values())
             await runtime.async_refresh_rules()
             return
         if call.service == SERVICE_DELETE_RULE:
             rule = engine.rules[data[RULE_ID]]
-            await engine.delete_rule(data[RULE_ID])
+            await engine.delete_rule(data[RULE_ID], operator=operator)
             remove_per_rule_entity_registry_entries(
                 hass, runtime.entry_id, [rule]
             )

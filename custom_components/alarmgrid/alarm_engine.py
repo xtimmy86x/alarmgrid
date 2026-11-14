@@ -672,7 +672,9 @@ class AlarmEngine:
         self._notify()
 
     @_serialized
-    async def create_rule(self, data: dict[str, Any]) -> AlarmRule:
+    async def create_rule(
+        self, data: dict[str, Any], *, operator: str | None = None
+    ) -> AlarmRule:
         """Create a new alarm rule."""
 
         rule = AlarmRule.from_dict(data)
@@ -681,13 +683,15 @@ class AlarmEngine:
         self.rules[rule.id] = rule
         self._rebuild_dependency_index()
         self.states[rule.id] = AlarmRuntimeState(rule_id=rule.id)
-        await self._record_event(rule, AlarmEventType.RULE_CREATED)
+        await self._record_event(rule, AlarmEventType.RULE_CREATED, operator=operator)
         await self._persist()
         self._notify()
         return rule
 
     @_serialized
-    async def update_rule(self, rule_id: str, changes: dict[str, Any]) -> AlarmRule:
+    async def update_rule(
+        self, rule_id: str, changes: dict[str, Any], *, operator: str | None = None
+    ) -> AlarmRule:
         """Update a rule by re-validating the merged rule data."""
 
         if rule_id not in self.rules:
@@ -700,23 +704,23 @@ class AlarmEngine:
         self._rebuild_dependency_index()
         runtime = self.states[rule_id]
         if not rule.enabled and runtime.lifecycle_state != AlarmLifecycleState.DISABLED:
-            await self.disable_alarm(rule_id)
+            await self.disable_alarm(rule_id, operator=operator)
         elif rule.enabled and runtime.lifecycle_state == AlarmLifecycleState.DISABLED:
-            await self.enable_alarm(rule_id)
-        await self._record_event(rule, AlarmEventType.RULE_UPDATED)
+            await self.enable_alarm(rule_id, operator=operator)
+        await self._record_event(rule, AlarmEventType.RULE_UPDATED, operator=operator)
         await self._persist()
         self._notify()
         return rule
 
     @_serialized
-    async def delete_rule(self, rule_id: str) -> None:
+    async def delete_rule(self, rule_id: str, *, operator: str | None = None) -> None:
         """Delete an alarm rule."""
 
         rule = self.rules.pop(rule_id)
         self.states.pop(rule_id, None)
         self._evaluation_details.pop(rule_id, None)
         self._rebuild_dependency_index()
-        await self._record_event(rule, AlarmEventType.RULE_DELETED)
+        await self._record_event(rule, AlarmEventType.RULE_DELETED, operator=operator)
         await self._persist()
 
     def active_count(self) -> int:

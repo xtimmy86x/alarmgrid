@@ -12,6 +12,7 @@ from homeassistant.exceptions import HomeAssistantError
 
 from .alarm_models import AlarmPriority
 from .const import DOMAIN
+from .operator_identity import user_operator
 from .rule_management import (
     delete_rules,
     export_rules_csv,
@@ -171,10 +172,14 @@ async def websocket_import_rules(
     for rule in rules:
         rule_data = rule.to_dict()
         if rule.id in runtime.engine.rules:
-            await runtime.engine.update_rule(rule.id, rule_data)
+            await runtime.engine.update_rule(
+                rule.id, rule_data, operator=user_operator(connection.user)
+            )
             updated_ids.append(rule.id)
         else:
-            await runtime.engine.create_rule(rule_data)
+            await runtime.engine.create_rule(
+                rule_data, operator=user_operator(connection.user)
+            )
             created_ids.append(rule.id)
 
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
@@ -204,7 +209,9 @@ async def websocket_create_rule(
     """Create an alarm rule."""
 
     runtime = _runtime(hass)
-    rule = await runtime.engine.create_rule(msg["rule"])
+    rule = await runtime.engine.create_rule(
+        msg["rule"], operator=user_operator(connection.user)
+    )
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
     await runtime.async_refresh_rules()
     connection.send_result(msg["id"], {"rule": rule.to_dict()})
@@ -251,7 +258,9 @@ async def websocket_update_rule(
     """Update an alarm rule."""
 
     runtime = _runtime(hass)
-    rule = await runtime.engine.update_rule(msg["rule_id"], msg["changes"])
+    rule = await runtime.engine.update_rule(
+        msg["rule_id"], msg["changes"], operator=user_operator(connection.user)
+    )
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
     await runtime.async_refresh_rules()
     connection.send_result(msg["id"], {"rule": rule.to_dict()})
@@ -273,7 +282,9 @@ async def websocket_delete_rule(
 
     runtime = _runtime(hass)
     rule = runtime.engine.rules[msg["rule_id"]]
-    await runtime.engine.delete_rule(msg["rule_id"])
+    await runtime.engine.delete_rule(
+        msg["rule_id"], operator=user_operator(connection.user)
+    )
     remove_per_rule_entity_registry_entries(hass, runtime.entry_id, [rule])
     await runtime.rule_store.async_save_rules(runtime.engine.rules.values())
     await runtime.async_refresh_rules()
@@ -295,7 +306,9 @@ async def websocket_delete_rules(
     """Delete selected alarm rules."""
 
     runtime = _runtime(hass)
-    result = await delete_rules(runtime.engine, rule_ids=msg["rule_ids"])
+    result = await delete_rules(
+        runtime.engine, rule_ids=msg["rule_ids"], operator=user_operator(connection.user)
+    )
     removed_entity_ids = remove_per_rule_entity_registry_entries(
         hass, runtime.entry_id, result.deleted_rules
     )
@@ -332,7 +345,7 @@ async def websocket_acknowledge(
     """Acknowledge one alarm."""
 
     await _runtime(hass).engine.acknowledge_alarm(
-        msg["rule_id"], operator=connection.user.id, comment=msg.get("comment")
+        msg["rule_id"], operator=user_operator(connection.user), comment=msg.get("comment")
     )
     connection.send_result(msg["id"], {"acknowledged": True})
 
@@ -356,7 +369,7 @@ async def websocket_acknowledge_all(
     count = await _runtime(hass).engine.acknowledge_all(
         priority=msg.get("priority"),
         area=msg.get("area"),
-        operator=connection.user.id,
+        operator=user_operator(connection.user),
         comment=msg.get("comment"),
     )
     connection.send_result(msg["id"], {"acknowledged": count})
@@ -377,7 +390,7 @@ async def websocket_silence(
     """Silence horn."""
 
     await _runtime(hass).engine.silence_horn(
-        msg.get("duration_seconds"), operator=connection.user.id
+        msg.get("duration_seconds"), operator=user_operator(connection.user)
     )
     connection.send_result(msg["id"], {"silenced": True})
 
@@ -401,7 +414,7 @@ async def websocket_shelve(
     await _runtime(hass).engine.shelve_alarm(
         msg["rule_id"],
         duration_minutes=msg["duration_minutes"],
-        operator=connection.user.id,
+        operator=user_operator(connection.user),
         comment=msg.get("comment"),
     )
     connection.send_result(msg["id"], {"shelved": True})
@@ -422,7 +435,7 @@ async def websocket_unshelve(
     """Restore a temporarily shelved alarm."""
 
     await _runtime(hass).engine.unshelve_alarm(
-        msg["rule_id"], operator=connection.user.id
+        msg["rule_id"], operator=user_operator(connection.user)
     )
     connection.send_result(msg["id"], {"unshelved": True})
 
@@ -443,7 +456,7 @@ async def websocket_disable(
     """Disable an alarm until it is manually enabled."""
 
     await _runtime(hass).engine.disable_alarm(
-        msg["rule_id"], operator=connection.user.id, comment=msg.get("comment")
+        msg["rule_id"], operator=user_operator(connection.user), comment=msg.get("comment")
     )
     connection.send_result(msg["id"], {"disabled": True})
 
@@ -463,7 +476,7 @@ async def websocket_enable(
     """Re-enable a disabled alarm."""
 
     await _runtime(hass).engine.enable_alarm(
-        msg["rule_id"], operator=connection.user.id
+        msg["rule_id"], operator=user_operator(connection.user)
     )
     connection.send_result(msg["id"], {"enabled": True})
 

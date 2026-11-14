@@ -170,6 +170,30 @@ class TelegramActionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         await self.subject.handle_callback({"id": f"query-{action}", "data": f"ag:token:{action}", "chat_id": 10, "message": {"message_id": 20}, "bot": {"config_entry_id": "bot-one"}, **sender})
         self.assertEqual(self.services.calls[-1][1], "answer_callback_query")
 
+    async def test_action_comments_follow_ha_language_in_history_and_notifications(self):
+        from custom_components.alarmgrid.alarm_notifications import format_telegram_message
+
+        for language, expected in (
+            ("it", ("Sospeso da Telegram", "Disabilitato da Telegram")),
+            ("en", ("Shelved from Telegram", "Disabled from Telegram")),
+            ("de", ("Shelved from Telegram", "Disabled from Telegram")),
+        ):
+            with self.subTest(language=language):
+                self.engine = AlarmEngine([self.rule])
+                self.engine.states["alarm"].lifecycle_state = AlarmLifecycleState.ACTIVE_UNACK
+                hass = SimpleNamespace(config=SimpleNamespace(language=language), services=self.services)
+                self.subject = TelegramInteractiveManager(hass, self.engine, {})
+                self.subject.add_session("token", "alarm", "notify.telegram", 10, 20, "alarm", "bot-one")
+                await self.callback("s60", from_first="Mario")
+                await self.callback("disable_confirm", from_first="Mario")
+                for event, comment in zip(self.engine.history_store.events, expected):
+                    self.assertEqual(event.to_dict()["message"], comment)
+                    message = format_telegram_message(event, language)
+                    self.assertIn(comment, message)
+                    self.assertIn("Mario (Telegram)", message)
+                    if language == "it":
+                        self.assertNotIn("from Telegram", message)
+
     async def test_ack_changes_real_engine_state_and_operator(self):
         await self.callback("ack")
         state = self.engine.states["alarm"]

@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity_base import AlarmGridEntity, PerAlarmEntity
+from .operator_identity import async_context_operator
 from .rule_management import remove_per_rule_entity_registry_entries
 
 
@@ -25,7 +26,8 @@ class AlarmActionButton(AlarmGridEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Handle button press."""
 
-        await self._action()
+        operator = await async_context_operator(self.hass, self._context)
+        await self._action(operator)
 
 
 class PerAlarmButton(PerAlarmEntity, ButtonEntity):
@@ -40,7 +42,8 @@ class PerAlarmButton(PerAlarmEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Handle button press."""
 
-        await self._action(self.rule_id)
+        operator = await async_context_operator(self.hass, self._context)
+        await self._action(self.rule_id, operator)
 
 
 async def async_setup_entry(
@@ -53,7 +56,7 @@ async def async_setup_entry(
     runtime = hass.data[DOMAIN][entry.entry_id]
     engine = runtime.engine
 
-    async def _test_sound() -> None:
+    async def _test_sound(operator: str) -> None:
         await runtime.sound_manager.test_sound()
         engine.notify_listeners()
 
@@ -62,19 +65,19 @@ async def async_setup_entry(
             runtime,
             "acknowledge_all",
             "Acknowledge All",
-            lambda: engine.acknowledge_all(operator="entity"),
+            lambda operator: engine.acknowledge_all(operator=operator),
         ),
         AlarmActionButton(
             runtime,
             "silence_horn",
             "Silence Horn",
-            lambda: engine.silence_horn(operator="entity"),
+            lambda operator: engine.silence_horn(operator=operator),
         ),
         AlarmActionButton(
             runtime,
             "unsilence_horn",
             "Unsilence Horn",
-            lambda: engine.unsilence_horn(operator="entity"),
+            lambda operator: engine.unsilence_horn(operator=operator),
         ),
         AlarmActionButton(
             runtime,
@@ -100,15 +103,15 @@ async def async_setup_entry(
                     rule_id,
                     f"ack_{rule.slug}",
                     f"Acknowledge {rule.name}",
-                    lambda rid: engine.acknowledge_alarm(rid, operator="entity"),
+                    lambda rid, operator: engine.acknowledge_alarm(rid, operator=operator),
                 ),
                 PerAlarmButton(
                     runtime,
                     rule_id,
                     f"shelve_{rule.slug}",
                     f"Shelve {rule.name}",
-                    lambda rid: engine.shelve_alarm(
-                        rid, duration_minutes=60, operator="entity"
+                    lambda rid, operator: engine.shelve_alarm(
+                        rid, duration_minutes=60, operator=operator
                     ),
                 ),
                 PerAlarmButton(
@@ -116,7 +119,7 @@ async def async_setup_entry(
                     rule_id,
                     f"disable_{rule.slug}",
                     f"Disable {rule.name}",
-                    lambda rid: engine.disable_alarm(rid, operator="entity"),
+                    lambda rid, operator: engine.disable_alarm(rid, operator=operator),
                 ),
             ]
         )

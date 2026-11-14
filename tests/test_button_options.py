@@ -16,16 +16,19 @@ from custom_components.alarmgrid.rule_management import per_rule_button_unique_i
 
 
 @contextmanager
-def button_platform(registry):
+def button_platform(registry, platform_name="button"):
     """Load actual entity classes without requiring a full HA installation."""
     modules = {name: ModuleType(name) for name in (
         "homeassistant", "homeassistant.components", "homeassistant.components.button",
+        "homeassistant.components.switch",
         "homeassistant.config_entries", "homeassistant.core", "homeassistant.helpers",
         "homeassistant.helpers.entity", "homeassistant.helpers.entity_platform",
         "homeassistant.helpers.entity_registry",
     )}
     modules["homeassistant.components.button"].ButtonEntity = type("ButtonEntity", (), {})
     modules["homeassistant.components.button"].ButtonEntityDescription = SimpleNamespace
+    modules["homeassistant.components.switch"].SwitchEntity = type("SwitchEntity", (), {})
+    modules["homeassistant.components.switch"].SwitchEntityDescription = SimpleNamespace
     modules["homeassistant.config_entries"].ConfigEntry = object
     modules["homeassistant.core"].HomeAssistant = object
     modules["homeassistant.helpers.entity"].Entity = type("Entity", (), {})
@@ -37,7 +40,7 @@ def button_platform(registry):
     )
     root = Path(__file__).resolve().parents[1] / "custom_components/alarmgrid"
     with patch.dict(sys.modules, modules):
-        for filename in ("entity_base", "button"):
+        for filename in ("entity_base", platform_name):
             name = f"custom_components.alarmgrid.{filename}"
             spec = importlib.util.spec_from_file_location(name, root / f"{filename}.py")
             module = importlib.util.module_from_spec(spec)
@@ -65,6 +68,9 @@ class ButtonOptionsTests(unittest.IsolatedAsyncioTestCase):
         entities = []
         with button_platform(self.registry) as platform:
             await platform.async_setup_entry(self.hass, self.entry, entities.extend)
+        for entity in entities:
+            entity.hass = self.hass
+            entity._context = SimpleNamespace(user_id=None)
         return entities
 
     def add_registry_entry(self, entity_id, unique_id, config_entry_id="entry"):
@@ -126,3 +132,39 @@ class ButtonOptionsTests(unittest.IsolatedAsyncioTestCase):
         expected = set().union(*(per_rule_button_unique_ids("entry", rule) for rule in self.runtime.engine.rules.values()))
         self.assertEqual(actual, expected)
         self.assertEqual(len(await self.setup_buttons()), 10)
+
+
+    async def test_button_actions_snapshot_user_context(self):
+        from custom_components.alarmgrid.alarm_notifications import TelegramNotifier
+        from tests.test_notifications import options
+
+        send = AsyncMock()
+        notifier = TelegramNotifier(options(telegram_min_priority="status"), send)
+        self.runtime.engine._event_handler = notifier.notify
+        user = SimpleNamespace(id="user-id", name="Mario Rossi")
+        self.hass.auth = SimpleNamespace(async_get_user=AsyncMock(return_value=user))
+        buttons = {e.entity_description.key: e for e in await self.setup_buttons()}
+        await self.runtime.engine.process_state("binary_sensor.source", "on")
+        send.reset_mock()
+        for name in ("acknowledge_all", "silence_horn", "unsilence_horn", "shelve_alarm", "disable_alarm"):
+            button = buttons[name]
+            button._context = SimpleNamespace(user_id=user.id)
+            await button.async_press()
+            self.assertEqual(self.runtime.engine.history_store.events[-1].operator, "Mario Rossi (Home Assistant)")
+        self.assertEqual(send.await_count, 2)
+        self.assertTrue(all("Mario Rossi (Home Assistant)" in call.args[1] for call in send.await_args_list))
+        # A subsequent automated call must not inherit the previous human actor.
+        buttons["disable_alarm"]._context = SimpleNamespace(user_id=None)
+        await buttons["disable_alarm"].async_press()
+        self.assertEqual(self.runtime.engine.history_store.events[-1].operator, "Home Assistant (system/automation)")
+
+    async def test_sound_switch_uses_action_context(self):
+        self.runtime.sound_manager.sound_mode = "browser_only"
+        self.hass.auth = SimpleNamespace(async_get_user=AsyncMock(return_value=SimpleNamespace(id="user-id", name="Maria")))
+        with button_platform(self.registry, "switch") as platform:
+            switch = platform.SoundEnabledSwitch(self.runtime)
+        switch.hass = self.hass
+        switch._context = SimpleNamespace(user_id="user-id")
+        await switch.async_turn_off()
+        await switch.async_turn_on()
+        self.assertEqual([event.operator for event in self.runtime.engine.history_store.events], ["Maria (Home Assistant)"] * 2)

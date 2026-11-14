@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, SOUND_MODE_NONE
 from .entity_base import AlarmGridEntity
+from .operator_identity import async_context_operator
 
 
 class SoundEnabledSwitch(AlarmGridEntity, SwitchEntity):
@@ -34,14 +35,16 @@ class SoundEnabledSwitch(AlarmGridEntity, SwitchEntity):
 
         if self.runtime.sound_manager.sound_mode == SOUND_MODE_NONE:
             self.runtime.sound_manager.sound_mode = self._previous_mode or "browser_only"
-        await self.runtime.engine.unsilence_horn(operator="entity")
+        operator = await async_context_operator(self.hass, self._context)
+        await self.runtime.engine.unsilence_horn(operator=operator)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable sound."""
 
         self._previous_mode = self.runtime.sound_manager.sound_mode
         self.runtime.sound_manager.sound_mode = SOUND_MODE_NONE
-        await self.runtime.engine.silence_horn(operator="entity")
+        operator = await async_context_operator(self.hass, self._context)
+        await self.runtime.engine.silence_horn(operator=operator)
 
 
 async def async_setup_entry(

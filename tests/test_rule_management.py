@@ -27,7 +27,7 @@ class FakeEngine:
         self.rules = {rule.id: rule for rule in rules}
         self.delete_rule_calls: list[str] = []
 
-    async def delete_rule(self, rule_id: str) -> None:
+    async def delete_rule(self, rule_id: str, *, operator: str | None = None) -> None:
         self.delete_rule_calls.append(rule_id)
         self.rules.pop(rule_id)
 

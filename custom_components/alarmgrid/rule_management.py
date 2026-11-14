@@ -153,6 +153,7 @@ async def delete_rules(
     engine: Any,
     *,
     rule_ids: Sequence[str],
+    operator: str | None = None,
 ) -> RuleDeletionResult:
     """Delete selected rules from an alarm engine."""
 
@@ -168,7 +169,7 @@ async def delete_rules(
     deleted_rules: list[AlarmRule] = []
     for rule_id in target_rule_ids:
         rule = engine.rules[rule_id]
-        await engine.delete_rule(rule_id)
+        await engine.delete_rule(rule_id, operator=operator)
         deleted_rules.append(rule)
 
     return RuleDeletionResult(deleted_rules, skipped_rule_ids)
