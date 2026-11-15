@@ -43,6 +43,12 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
   default. Turning it off removes per-rule action buttons while keeping alarm
   sensors, global buttons, and panel/card/Telegram actions available.
 - Updated frontend cache busting and entity-count estimates.
+- Moved the integration options to the panel **Settings** page, grouped into
+  Sound, Alarm handling, Telegram notifications, and Panel and entities, with
+  inline explanations and validation. Administrators save from the panel; other
+  users see the settings read-only. The options flow uses the same settings in
+  collapsible sections and no longer lists options that had no effect.
+- The flapping detection threshold option is now applied to the alarm engine.
 - Existing configuration, rules, and history remain compatible.
 
 ## What's New in v2.1.1

@@ -23,35 +23,120 @@
     "step": {
       "init": {
         "title": "Opzioni AlarmGrid",
-        "description": "Configura il comportamento degli allarmi e il canale opzionale di notifica Telegram.",
-        "data": {
-          "create_rule_buttons": "Crea pulsanti per ogni regola",
-          "telegram_enabled": "Abilita notifiche Telegram",
-          "telegram_targets": "Entità notify Telegram",
-          "telegram_min_priority": "Priorità minima Telegram",
-          "telegram_notify_activated": "Notifica attivazione",
-          "telegram_notify_cleared": "Notifica rientro",
-          "telegram_notify_acknowledged": "Notifica riconoscimento",
-          "telegram_notify_shelved": "Notifica shelving",
-          "telegram_notify_unshelved": "Notifica fine shelving",
-          "telegram_notify_disabled": "Notifica disabilitazione",
-          "telegram_notify_enabled": "Notifica abilitazione",
-          "telegram_interactive_enabled": "Abilita azioni Telegram interattive",
-          "telegram_callback_event_entities": "Event entity callback Telegram",
-          "telegram_interactive_ack": "Consenti ACK",
-          "telegram_interactive_shelve": "Consenti sospensione",
-          "telegram_interactive_disable": "Consenti disabilitazione"
-        },
-        "data_description": {
-          "create_rule_buttons": "Crea i pulsanti di riconoscimento, sospensione e disabilitazione per ogni regola. Disattivando questa opzione vengono rimossi i pulsanti già creati per le regole; i pulsanti globali restano disponibili."
+        "description": "Le stesse impostazioni, con spiegazioni, sono disponibili nel pannello AlarmGrid alla voce Impostazioni. Il salvataggio ricarica AlarmGrid.",
+        "sections": {
+          "sound": {
+            "name": "Suono",
+            "description": "Come vengono segnalati gli allarmi",
+            "data": {
+              "sound_mode": "Uscita audio",
+              "media_players": "Media player",
+              "repeat_interval_seconds": "Ripeti ogni (secondi)"
+            },
+            "data_description": {
+              "sound_mode": "Dove suona la sirena degli allarmi.",
+              "media_players": "Player che riproducono il suono quando l'uscita media player è attiva.",
+              "repeat_interval_seconds": "Ogni quanto si ripete la sirena finché ci sono allarmi non riconosciuti."
+            }
+          },
+          "alarm_handling": {
+            "name": "Gestione allarmi",
+            "description": "Protezione da flood e flapping",
+            "data": {
+              "alarm_flood_threshold": "Soglia flood",
+              "alarm_flood_window_seconds": "Finestra flood (secondi)",
+              "auto_shelve_flapping_alarms": "Sospendi automaticamente gli allarmi instabili",
+              "flapping_detection_threshold": "Soglia flapping"
+            },
+            "data_description": {
+              "alarm_flood_threshold": "Numero di nuovi allarmi oltre il quale si parla di alarm flood.",
+              "alarm_flood_window_seconds": "Intervallo di tempo in cui viene contata la soglia flood.",
+              "auto_shelve_flapping_alarms": "Sospende un allarme che continua a cambiare stato.",
+              "flapping_detection_threshold": "Cambi di stato in 5 minuti oltre i quali un allarme è considerato instabile."
+            }
+          },
+          "telegram": {
+            "name": "Notifiche Telegram",
+            "description": "Invia gli eventi degli allarmi su Telegram",
+            "data": {
+              "telegram_enabled": "Abilita notifiche Telegram",
+              "telegram_targets": "Entità notify",
+              "telegram_min_priority": "Priorità minima",
+              "telegram_notify_activated": "Allarme attivato",
+              "telegram_notify_cleared": "Allarme rientrato",
+              "telegram_notify_acknowledged": "Allarme riconosciuto",
+              "telegram_notify_shelved": "Allarme sospeso",
+              "telegram_notify_unshelved": "Fine sospensione",
+              "telegram_notify_disabled": "Allarme disabilitato",
+              "telegram_notify_enabled": "Allarme abilitato"
+            },
+            "data_description": {
+              "telegram_targets": "Entità notify di Telegram che ricevono i messaggi.",
+              "telegram_min_priority": "Gli allarmi sotto questa priorità non vengono inviati."
+            }
+          },
+          "telegram_interactive": {
+            "name": "Azioni interattive Telegram",
+            "description": "Pulsanti nei messaggi Telegram",
+            "data": {
+              "telegram_interactive_enabled": "Abilita azioni interattive",
+              "telegram_callback_event_entities": "Event entity di callback",
+              "telegram_interactive_ack": "Consenti riconoscimento",
+              "telegram_interactive_shelve": "Consenti sospensione",
+              "telegram_interactive_disable": "Consenti disabilitazione"
+            },
+            "data_description": {
+              "telegram_interactive_enabled": "Richiede le notifiche Telegram attive.",
+              "telegram_callback_event_entities": "Event entity che ricevono la pressione dei pulsanti Telegram."
+            }
+          },
+          "integration": {
+            "name": "Pannello ed entità",
+            "description": "Barra laterale ed entità generate",
+            "data": {
+              "panel_title": "Titolo nella barra laterale",
+              "create_rule_buttons": "Crea pulsanti per ogni regola"
+            },
+            "data_description": {
+              "panel_title": "Nome del pannello nella barra laterale.",
+              "create_rule_buttons": "Pulsanti di riconoscimento, sospensione e disabilitazione per ogni regola. Disattivando l'opzione vengono rimossi quelli già creati; i pulsanti globali restano."
+            }
+          }
         }
       }
     },
     "error": {
-      "telegram_targets_required": "Seleziona almeno un destinatario per le notifiche.",
+      "telegram_targets_required": "Seleziona almeno un'entità notify di Telegram.",
       "telegram_required": "Abilita prima le notifiche Telegram.",
-      "telegram_callback_entities_required": "Seleziona almeno una event entity callback Telegram.",
-      "telegram_action_required": "Consenti almeno una azione interattiva."
+      "telegram_callback_entities_required": "Seleziona almeno una event entity di callback Telegram.",
+      "telegram_action_required": "Consenti almeno un'azione interattiva.",
+      "invalid_number": "Inserisci un numero intero.",
+      "out_of_range": "Valore fuori intervallo.",
+      "invalid_entity": "È stata selezionata un'entità del tipo sbagliato.",
+      "too_long": "Testo troppo lungo.",
+      "invalid_choice": "Scelta non valida.",
+      "invalid_boolean": "Valore non valido.",
+      "invalid_entities": "Elenco entità non valido."
+    }
+  },
+  "selector": {
+    "sound_mode": {
+      "options": {
+        "none": "Disattivato",
+        "browser_only": "Solo browser",
+        "media_player_only": "Solo media player",
+        "browser_and_media_player": "Browser e media player"
+      }
+    },
+    "telegram_min_priority": {
+      "options": {
+        "critical": "Critica",
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Bassa",
+        "info": "Info",
+        "status": "Stato"
+      }
     }
   }
 }

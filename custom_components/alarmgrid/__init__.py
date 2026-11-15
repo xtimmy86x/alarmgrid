@@ -23,6 +23,7 @@ from .const import (
     CONF_ALARM_FLOOD_WINDOW_SECONDS,
     CONF_AUTO_SHELVE_FLAPPING,
     CONF_CREATE_RULE_BUTTONS,
+    CONF_FLAPPING_DETECTION_THRESHOLD,
     CONF_MEDIA_PLAYERS,
     CONF_REPEAT_INTERVAL_SECONDS,
     CONF_SOUND_MODE,
@@ -179,6 +180,12 @@ async def async_setup_entry(
     engine.auto_shelve_flapping = bool(
         options.get(
             CONF_AUTO_SHELVE_FLAPPING, DEFAULT_OPTIONS[CONF_AUTO_SHELVE_FLAPPING]
+        )
+    )
+    engine.flapping_threshold = int(
+        options.get(
+            CONF_FLAPPING_DETECTION_THRESHOLD,
+            DEFAULT_OPTIONS[CONF_FLAPPING_DETECTION_THRESHOLD],
         )
     )
     interactive_manager = None

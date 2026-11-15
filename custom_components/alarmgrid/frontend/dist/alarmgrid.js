@@ -377,6 +377,92 @@ const TRANSLATIONS = {
   },
 };
 
+// Copy for the panel Settings page. Field keys match custom_components/alarmgrid/settings.py.
+const SETTINGS_TEXT = {
+  en: {
+    intro: "Changes are applied when you save. AlarmGrid reloads for a few seconds; alarms are kept.",
+    read_only: "Only Home Assistant administrators can change these settings.",
+    loading: "Loading settings…", load_error: "Could not load settings: {error}",
+    unsaved: "You have unsaved changes", save: "Save", discard: "Discard", saving: "Saving…",
+    saved: "Saved. AlarmGrid is reloading…", saved_no_change: "Nothing to save.", save_error: "Could not save: {error}", fix_errors: "Fix the highlighted fields.",
+    s_sound: "Sound", s_sound_desc: "How alarms are announced",
+    s_alarm_handling: "Alarm handling", s_alarm_handling_desc: "Protection against alarm floods and flapping alarms",
+    s_telegram: "Telegram notifications", s_telegram_desc: "Send alarm events to Telegram chats",
+    s_telegram_interactive: "Interactive actions", s_telegram_interactive_desc: "Inline buttons that let operators act from Telegram",
+    s_integration: "Panel and entities", s_integration_desc: "Sidebar and generated Home Assistant entities",
+    sound_status: "Current status", horn: "Horn", horn_on: "Sounding", horn_off: "Idle", audible_alarms: "Audible alarms",
+    test_sound: "Test sound", events_title: "Send a message when an alarm is…",
+    add_entity: "Add entity…", remove: "Remove", no_entities: "None selected", entity_missing: "not found", no_candidates: "No {domain} entities available",
+    restart_hint: "Instance name and sidebar visibility are chosen when AlarmGrid is added.",
+    f_sound_mode: "Sound output", h_sound_mode: "Where the alarm horn plays.",
+    f_media_players: "Media players", h_media_players: "Players that play the alarm sound when media player output is on.",
+    f_repeat_interval_seconds: "Repeat every", h_repeat_interval_seconds: "How often the horn repeats while alarms are unacknowledged.",
+    f_alarm_flood_threshold: "Flood threshold", h_alarm_flood_threshold: "New alarms within the window that count as an alarm flood.",
+    f_alarm_flood_window_seconds: "Flood window", h_alarm_flood_window_seconds: "Time window used to count the flood threshold.",
+    f_auto_shelve_flapping_alarms: "Auto-shelve flapping alarms", h_auto_shelve_flapping_alarms: "Shelve an alarm automatically when it keeps toggling.",
+    f_flapping_detection_threshold: "Flapping threshold", h_flapping_detection_threshold: "State changes within 5 minutes before an alarm counts as flapping.",
+    f_telegram_enabled: "Enable Telegram notifications", h_telegram_enabled: "Uses the Telegram notify entities configured in Home Assistant.",
+    f_telegram_targets: "Recipients", h_telegram_targets: "Telegram notify entities that receive the messages.",
+    f_telegram_min_priority: "Minimum priority", h_telegram_min_priority: "Alarms below this priority are never sent.",
+    f_telegram_notify_activated: "Activated", f_telegram_notify_cleared: "Cleared", f_telegram_notify_acknowledged: "Acknowledged",
+    f_telegram_notify_shelved: "Shelved", f_telegram_notify_unshelved: "Unshelved", f_telegram_notify_disabled: "Disabled", f_telegram_notify_enabled: "Enabled",
+    f_telegram_interactive_enabled: "Enable interactive actions", h_telegram_interactive_enabled: "Adds buttons to Telegram messages. Requires Telegram notifications.",
+    f_telegram_callback_event_entities: "Callback event entities", h_telegram_callback_event_entities: "Event entities that receive Telegram button presses.",
+    f_telegram_interactive_ack: "Acknowledge", f_telegram_interactive_shelve: "Shelve", f_telegram_interactive_disable: "Disable",
+    allowed_actions: "Allowed actions",
+    f_panel_title: "Sidebar title", h_panel_title: "Name of the AlarmGrid panel in the sidebar. Refresh the browser after saving to see it.",
+    f_create_rule_buttons: "Create buttons for each rule", h_create_rule_buttons: "Acknowledge, shelve and disable buttons for every rule. Turning this off removes existing per-rule buttons; global buttons remain.",
+    sound_mode_none: "Off", sound_mode_browser_only: "Browser only", sound_mode_media_player_only: "Media players only", sound_mode_browser_and_media_player: "Browser and media players",
+    priority_critical: "Critical", priority_high: "High", priority_medium: "Medium", priority_low: "Low", priority_info: "Info", priority_status: "Status",
+    unit_seconds: "s", unit_alarms: "alarms", unit_changes: "changes",
+    e_telegram_targets_required: "Select at least one recipient.", e_telegram_required: "Enable Telegram notifications first.",
+    e_telegram_callback_entities_required: "Select at least one callback event entity.", e_telegram_action_required: "Allow at least one action.",
+    e_invalid_number: "Enter a whole number.", e_out_of_range: "Allowed range: {min}–{max}.", e_invalid_entity: "Wrong entity type.", e_too_long: "Text is too long.",
+    e_invalid_choice: "Invalid choice.", e_invalid_boolean: "Invalid value.", e_invalid_entities: "Invalid entity list.",
+  },
+  it: {
+    intro: "Le modifiche vengono applicate al salvataggio. AlarmGrid si ricarica per qualche secondo; gli allarmi restano.",
+    read_only: "Solo gli amministratori di Home Assistant possono modificare queste impostazioni.",
+    loading: "Caricamento impostazioni…", load_error: "Impossibile caricare le impostazioni: {error}",
+    unsaved: "Ci sono modifiche non salvate", save: "Salva", discard: "Annulla", saving: "Salvataggio…",
+    saved: "Salvato. AlarmGrid si sta ricaricando…", saved_no_change: "Nessuna modifica da salvare.", save_error: "Salvataggio non riuscito: {error}", fix_errors: "Correggi i campi evidenziati.",
+    s_sound: "Suono", s_sound_desc: "Come vengono segnalati gli allarmi",
+    s_alarm_handling: "Gestione allarmi", s_alarm_handling_desc: "Protezione da alarm flood e allarmi instabili",
+    s_telegram: "Notifiche Telegram", s_telegram_desc: "Invia gli eventi degli allarmi nelle chat Telegram",
+    s_telegram_interactive: "Azioni interattive", s_telegram_interactive_desc: "Pulsanti per agire sugli allarmi direttamente da Telegram",
+    s_integration: "Pannello ed entità", s_integration_desc: "Barra laterale ed entità create in Home Assistant",
+    sound_status: "Stato attuale", horn: "Sirena", horn_on: "In funzione", horn_off: "Ferma", audible_alarms: "Allarmi sonori",
+    test_sound: "Prova suono", events_title: "Invia un messaggio quando un allarme viene…",
+    add_entity: "Aggiungi entità…", remove: "Rimuovi", no_entities: "Nessuna selezionata", entity_missing: "non trovata", no_candidates: "Nessuna entità {domain} disponibile",
+    restart_hint: "Nome dell'istanza e visibilità nella barra laterale si scelgono quando si aggiunge AlarmGrid.",
+    f_sound_mode: "Uscita audio", h_sound_mode: "Dove suona la sirena degli allarmi.",
+    f_media_players: "Media player", h_media_players: "Player che riproducono il suono quando l'uscita media player è attiva.",
+    f_repeat_interval_seconds: "Ripeti ogni", h_repeat_interval_seconds: "Ogni quanto si ripete la sirena finché ci sono allarmi non riconosciuti.",
+    f_alarm_flood_threshold: "Soglia flood", h_alarm_flood_threshold: "Nuovi allarmi nella finestra oltre i quali si parla di alarm flood.",
+    f_alarm_flood_window_seconds: "Finestra flood", h_alarm_flood_window_seconds: "Intervallo di tempo in cui viene contata la soglia.",
+    f_auto_shelve_flapping_alarms: "Sospendi automaticamente gli allarmi instabili", h_auto_shelve_flapping_alarms: "Sospende un allarme che continua a cambiare stato.",
+    f_flapping_detection_threshold: "Soglia flapping", h_flapping_detection_threshold: "Cambi di stato in 5 minuti oltre i quali un allarme è considerato instabile.",
+    f_telegram_enabled: "Abilita notifiche Telegram", h_telegram_enabled: "Usa le entità notify di Telegram configurate in Home Assistant.",
+    f_telegram_targets: "Destinatari", h_telegram_targets: "Entità notify di Telegram che ricevono i messaggi.",
+    f_telegram_min_priority: "Priorità minima", h_telegram_min_priority: "Gli allarmi sotto questa priorità non vengono mai inviati.",
+    f_telegram_notify_activated: "Attivato", f_telegram_notify_cleared: "Rientrato", f_telegram_notify_acknowledged: "Riconosciuto",
+    f_telegram_notify_shelved: "Sospeso", f_telegram_notify_unshelved: "Riattivato", f_telegram_notify_disabled: "Disabilitato", f_telegram_notify_enabled: "Abilitato",
+    f_telegram_interactive_enabled: "Abilita azioni interattive", h_telegram_interactive_enabled: "Aggiunge pulsanti ai messaggi Telegram. Richiede le notifiche Telegram.",
+    f_telegram_callback_event_entities: "Event entity di callback", h_telegram_callback_event_entities: "Event entity che ricevono la pressione dei pulsanti Telegram.",
+    f_telegram_interactive_ack: "Riconosci", f_telegram_interactive_shelve: "Sospendi", f_telegram_interactive_disable: "Disabilita",
+    allowed_actions: "Azioni consentite",
+    f_panel_title: "Titolo nella barra laterale", h_panel_title: "Nome del pannello AlarmGrid nella barra laterale. Dopo il salvataggio aggiorna il browser per vederlo.",
+    f_create_rule_buttons: "Crea pulsanti per ogni regola", h_create_rule_buttons: "Pulsanti di riconoscimento, sospensione e disabilitazione per ogni regola. Disattivando l'opzione vengono rimossi quelli già creati; i pulsanti globali restano.",
+    sound_mode_none: "Disattivato", sound_mode_browser_only: "Solo browser", sound_mode_media_player_only: "Solo media player", sound_mode_browser_and_media_player: "Browser e media player",
+    priority_critical: "Critica", priority_high: "Alta", priority_medium: "Media", priority_low: "Bassa", priority_info: "Info", priority_status: "Stato",
+    unit_seconds: "s", unit_alarms: "allarmi", unit_changes: "cambi",
+    e_telegram_targets_required: "Seleziona almeno un destinatario.", e_telegram_required: "Abilita prima le notifiche Telegram.",
+    e_telegram_callback_entities_required: "Seleziona almeno una event entity di callback.", e_telegram_action_required: "Consenti almeno un'azione.",
+    e_invalid_number: "Inserisci un numero intero.", e_out_of_range: "Intervallo consentito: {min}–{max}.", e_invalid_entity: "Tipo di entità errato.", e_too_long: "Testo troppo lungo.",
+    e_invalid_choice: "Scelta non valida.", e_invalid_boolean: "Valore non valido.", e_invalid_entities: "Elenco entità non valido.",
+  },
+};
+
 class AlarmGrid extends HTMLElement {
   constructor() {
     super();
@@ -418,6 +504,12 @@ class AlarmGrid extends HTMLElement {
     this._rulePreviewLoading = false;
     this._builderRevision = 0;
     this._sound = {};
+    this._settingsData = undefined;
+    this._settingsDraft = undefined;
+    this._settingsErrors = {};
+    this._settingsStatus = undefined;
+    this._settingsLoading = false;
+    this._settingsSaving = false;
     this._tab = "active";
     this._themeMode = "auto";
     this._effectiveTheme = "light";
@@ -1359,20 +1451,269 @@ class AlarmGrid extends HTMLElement {
     return this._hass.areas?.[areaId]?.name || null;
   }
 
+  _st(key, params = {}) {
+    const table = SETTINGS_TEXT[this._language()] || SETTINGS_TEXT.en;
+    const text = table[key] ?? SETTINGS_TEXT.en[key] ?? key;
+    return text.replace(/\{(\w+)\}/g, (_, name) => params[name] ?? "");
+  }
+
+  async _loadSettings() {
+    if (this._settingsLoading || !this._hass) return;
+    this._settingsLoading = true;
+    try {
+      const result = await this._callWS({ type: "alarmgrid/get_settings" });
+      this._settingsData = result;
+      this._settingsDraft = JSON.parse(JSON.stringify(result.values));
+      this._settingsErrors = {};
+      this._settingsLoadError = undefined;
+    } catch (err) {
+      const message = err?.message || String(err);
+      if (/not loaded|not configured/i.test(message)) {
+        window.setTimeout(() => this._loadSettings(), 1500);
+      } else {
+        this._settingsLoadError = message;
+      }
+    } finally {
+      this._settingsLoading = false;
+      if (this._tab === "settings" && !this._isEditingRulesForm()) this._render();
+    }
+  }
+
+  _settingsDirty() {
+    if (!this._settingsData || !this._settingsDraft) return false;
+    return JSON.stringify(this._settingsDraft) !== JSON.stringify(this._settingsData.values);
+  }
+
+  _settingsField(key) {
+    return this._settingsData?.sections?.flatMap((section) => section.fields).find((field) => field.key === key) || { key, kind: "bool" };
+  }
+
   _settingsView() {
+    if (!this._settingsData) {
+      if (!this._settingsLoading && !this._settingsLoadError) queueMicrotask(() => this._loadSettings());
+      return `
+        <section class="view-head"><div><h2>${this._t("tab_settings")}</h2></div></section>
+        ${this._settingsLoadError
+          ? `<div class="error" role="alert">${this._escape(this._st("load_error", { error: this._settingsLoadError }))}</div>`
+          : `<p class="subtitle">${this._st("loading")}</p>`}`;
+    }
+    const draft = this._settingsDraft;
+    const canEdit = this._settingsData.can_edit;
+    const telegramOn = draft.telegram_enabled === true;
+    const interactiveOn = telegramOn && draft.telegram_interactive_enabled === true;
+    const audible = (this._sound.active_audible_alarms || []).length;
+    const status = this._settingsStatus;
+    const dirty = this._settingsDirty();
+    this._settingsReadOnly = !canEdit;
     return `
       ${this._audioNotice()}
-      <section class="view-head"><div><h2>${this._t("tab_settings")}</h2></div></section>
-      <section class="settings">
-        <dl>
-          <dt>${this._t("sound_mode")}</dt><dd>${this._escape(this._sound.sound_mode || "browser_only")}</dd>
-          <dt>${this._t("browser_sound")}</dt><dd>${this._sound.browser_enabled ? this._t("enabled") : this._t("disabled")}</dd>
-          <dt>${this._t("media_player_sound")}</dt><dd>${this._sound.media_player_enabled ? this._t("enabled") : this._t("disabled")}</dd>
-          <dt>${this._t("active_audible")}</dt><dd>${(this._sound.active_audible_alarms || []).length}</dd>
-        </dl>
-        <button data-action="test-sound">${this._t("test_sound")}</button>
-      </section>
+      <section class="view-head"><div><h2>${this._t("tab_settings")}</h2><p class="subtitle">${this._st("intro")}</p></div></section>
+      ${canEdit ? "" : `<div class="notice-bar" role="status"><span><ha-icon icon="mdi:lock-outline" aria-hidden="true"></ha-icon>${this._st("read_only")}</span></div>`}
+      <form class="settings-form ${canEdit ? "" : "read-only"}" novalidate>
+        ${this._settingsCard("sound", "mdi:volume-high", `
+          ${this._settingsRow("sound_mode")}
+          ${this._settingsRow("media_players", { disabled: !["media_player_only", "browser_and_media_player"].includes(draft.sound_mode) })}
+          ${this._settingsRow("repeat_interval_seconds", { unit: this._st("unit_seconds"), disabled: draft.sound_mode === "none" })}
+          <div class="settings-status">
+            <span class="status-label">${this._st("sound_status")}</span>
+            <span class="status-pill ${this._sound.horn_active ? "on" : ""}"><ha-icon icon="${this._sound.horn_active ? "mdi:bullhorn" : "mdi:bullhorn-outline"}" aria-hidden="true"></ha-icon>${this._st("horn")}: ${this._st(this._sound.horn_active ? "horn_on" : "horn_off")}</span>
+            <span class="status-pill">${this._st("audible_alarms")}: ${audible}</span>
+            <button type="button" data-action="test-sound"><ha-icon icon="mdi:play-circle-outline" aria-hidden="true"></ha-icon>${this._st("test_sound")}</button>
+          </div>`)}
+        ${this._settingsCard("alarm_handling", "mdi:shield-alert-outline", `
+          ${this._settingsRow("alarm_flood_threshold", { unit: this._st("unit_alarms") })}
+          ${this._settingsRow("alarm_flood_window_seconds", { unit: this._st("unit_seconds") })}
+          ${this._settingsRow("auto_shelve_flapping_alarms")}
+          ${this._settingsRow("flapping_detection_threshold", { unit: this._st("unit_changes") })}`)}
+        ${this._settingsCard("telegram", "mdi:send-outline", `
+          ${this._settingsRow("telegram_enabled")}
+          ${this._settingsRow("telegram_targets", { disabled: !telegramOn })}
+          ${this._settingsRow("telegram_min_priority", { disabled: !telegramOn })}
+          ${this._settingsChoiceGroup("events_title", ["telegram_notify_activated", "telegram_notify_cleared", "telegram_notify_acknowledged", "telegram_notify_shelved", "telegram_notify_unshelved", "telegram_notify_disabled", "telegram_notify_enabled"], !telegramOn)}
+          <div class="settings-subsection ${telegramOn ? "" : "is-disabled"}">
+            <div class="settings-subhead"><ha-icon icon="mdi:gesture-tap-button" aria-hidden="true"></ha-icon><div><strong>${this._st("s_telegram_interactive")}</strong><p>${this._st("s_telegram_interactive_desc")}</p></div></div>
+            ${this._settingsRow("telegram_interactive_enabled", { disabled: !telegramOn })}
+            ${this._settingsRow("telegram_callback_event_entities", { disabled: !interactiveOn })}
+            ${this._settingsChoiceGroup("allowed_actions", ["telegram_interactive_ack", "telegram_interactive_shelve", "telegram_interactive_disable"], !interactiveOn)}
+          </div>`)}
+        ${this._settingsCard("integration", "mdi:view-dashboard-outline", `
+          ${this._settingsRow("panel_title")}
+          ${this._settingsRow("create_rule_buttons")}
+          <p class="settings-footnote"><ha-icon icon="mdi:information-outline" aria-hidden="true"></ha-icon>${this._st("restart_hint")}</p>`)}
+      </form>
+      ${canEdit && (dirty || status) ? `
+        <div class="save-bar ${status?.type || ""}" role="status">
+          <span>${this._escape(status?.text || this._st("unsaved"))}</span>
+          <span class="actions">
+            ${dirty ? `<button type="button" data-action="discard-settings" ${this._settingsSaving ? "disabled" : ""}>${this._st("discard")}</button>
+            <button type="button" class="primary" data-action="save-settings" ${this._settingsSaving ? "disabled" : ""}>${this._st(this._settingsSaving ? "saving" : "save")}</button>` : ""}
+          </span>
+        </div>` : ""}
     `;
+  }
+
+  _settingsCard(key, icon, body) {
+    return `<section class="settings-card" aria-labelledby="settings-${key}">
+      <header class="settings-card-head"><span class="settings-icon"><ha-icon icon="${icon}" aria-hidden="true"></ha-icon></span><div><h3 id="settings-${key}">${this._st(`s_${key}`)}</h3><p>${this._st(`s_${key}_desc`)}</p></div></header>
+      <div class="settings-card-body">${body}</div>
+    </section>`;
+  }
+
+  _settingsError(key) {
+    const code = this._settingsErrors?.[key];
+    if (!code) return "";
+    const field = this._settingsField(key);
+    return `<p class="field-error" id="err-${key}">${this._escape(this._st(`e_${code}`, { min: field.min, max: field.max }))}</p>`;
+  }
+
+  _settingsRow(key, { disabled = false, unit = "" } = {}) {
+    disabled = disabled || this._settingsReadOnly;
+    const field = this._settingsField(key);
+    const value = this._settingsDraft[key];
+    const errorAttr = this._settingsErrors?.[key] ? `aria-invalid="true" aria-describedby="err-${key}"` : "";
+    const dis = disabled ? "disabled" : "";
+    let control = "";
+    if (field.kind === "bool") {
+      control = `<input class="switch" type="checkbox" role="switch" id="set-${key}" data-setting="${key}" ${value ? "checked" : ""} ${dis} ${errorAttr}>`;
+    } else if (field.kind === "int") {
+      control = `<span class="number-input"><input type="number" inputmode="numeric" id="set-${key}" data-setting="${key}" value="${this._escape(value)}" min="${field.min ?? ""}" max="${field.max ?? ""}" step="1" ${dis} ${errorAttr}>${unit ? `<span class="unit">${this._escape(unit)}</span>` : ""}</span>`;
+    } else if (field.kind === "select") {
+      const label = (choice) => this._st(key === "sound_mode" ? `sound_mode_${choice}` : `priority_${choice}`);
+      control = `<select id="set-${key}" data-setting="${key}" ${dis} ${errorAttr}>${(field.choices || []).map((choice) => `<option value="${choice}" ${choice === value ? "selected" : ""}>${this._escape(label(choice))}</option>`).join("")}</select>`;
+    } else if (field.kind === "text") {
+      control = `<input type="text" id="set-${key}" data-setting="${key}" value="${this._escape(value)}" maxlength="64" ${dis} ${errorAttr}>`;
+    } else if (field.kind === "entities") {
+      control = this._settingsEntityPicker(key, field.domain, value || [], disabled);
+    }
+    const wide = field.kind === "entities" ? "wide" : "";
+    const tag = field.kind === "entities" ? "div" : "label";
+    return `<${tag} class="settings-row ${wide} ${disabled ? "is-disabled" : ""} ${this._settingsErrors?.[key] ? "has-error" : ""}" ${tag === "label" ? `for="set-${key}"` : ""}>
+      <span class="settings-label"><span>${this._st(`f_${key}`)}</span>${SETTINGS_TEXT.en[`h_${key}`] ? `<small>${this._st(`h_${key}`)}</small>` : ""}${this._settingsError(key)}</span>
+      <span class="settings-control">${control}</span>
+    </${tag}>`;
+  }
+
+  _settingsChoiceGroup(titleKey, keys, disabled) {
+    disabled = disabled || this._settingsReadOnly;
+    const errorKey = keys.find((key) => this._settingsErrors?.[key]);
+    return `<fieldset class="settings-choices ${disabled ? "is-disabled" : ""}" ${disabled ? "disabled" : ""}>
+      <legend>${this._st(titleKey)}</legend>
+      <div class="choice-chips">${keys.map((key) => `<label class="choice-chip"><input type="checkbox" data-setting="${key}" ${this._settingsDraft[key] ? "checked" : ""}><ha-icon icon="mdi:check" aria-hidden="true"></ha-icon><span>${this._st(`f_${key}`)}</span></label>`).join("")}</div>
+      ${errorKey ? this._settingsError(errorKey) : ""}
+    </fieldset>`;
+  }
+
+  _settingsEntityPicker(key, domain, selected, disabled) {
+    const states = this._hass?.states || {};
+    const name = (entityId) => states[entityId]?.attributes?.friendly_name || entityId;
+    const chips = selected.length
+      ? selected.map((entityId) => `<span class="entity-chip ${states[entityId] ? "" : "missing"}" title="${this._escape(entityId)}"><span>${this._escape(name(entityId))}${states[entityId] ? "" : ` · ${this._st("entity_missing")}`}</span><button type="button" class="chip-remove" data-entity-remove="${key}" data-entity-id="${this._escape(entityId)}" aria-label="${this._st("remove")} ${this._escape(name(entityId))}" ${disabled ? "disabled" : ""}><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></span>`).join("")
+      : `<span class="entity-empty">${this._st("no_entities")}</span>`;
+    const candidates = Object.keys(states).filter((entityId) => entityId.startsWith(`${domain}.`) && !selected.includes(entityId)).sort((a, b) => name(a).localeCompare(name(b)));
+    const picker = candidates.length
+      ? `<select data-entity-add="${key}" aria-label="${this._st("add_entity")}" ${disabled ? "disabled" : ""}><option value="">${this._st("add_entity")}</option>${candidates.map((entityId) => `<option value="${this._escape(entityId)}">${this._escape(name(entityId))} (${this._escape(entityId)})</option>`).join("")}</select>`
+      : `<small class="entity-empty">${this._st("no_candidates", { domain })}</small>`;
+    return `<span class="entity-picker" id="set-${key}"><span class="entity-chips">${chips}</span>${picker}</span>`;
+  }
+
+  _setSettingValue(key, value, { rerender = true, focus } = {}) {
+    this._settingsDraft = { ...this._settingsDraft, [key]: value };
+    if (this._settingsErrors?.[key]) {
+      const { [key]: _removed, ...rest } = this._settingsErrors;
+      this._settingsErrors = rest;
+    }
+    if (this._settingsStatus?.type !== "error") this._settingsStatus = undefined;
+    if (!rerender) {
+      this._syncSaveBar();
+      return;
+    }
+    this._render();
+    if (focus) this.shadowRoot.querySelector(focus)?.focus();
+  }
+
+  _syncSaveBar() {
+    // Text inputs do not re-render while typing; show or hide the save bar in place.
+    const dirty = this._settingsDirty();
+    const bar = this.shadowRoot.querySelector(".save-bar");
+    if (Boolean(bar) !== dirty) {
+      const active = this.shadowRoot.activeElement;
+      const selector = active?.dataset?.setting ? `[data-setting="${active.dataset.setting}"]` : null;
+      const caret = active?.selectionStart;
+      this._render();
+      const restored = selector && this.shadowRoot.querySelector(selector);
+      if (restored) {
+        restored.focus();
+        try { if (caret != null) restored.setSelectionRange(caret, caret); } catch (_err) { /* number inputs */ }
+      }
+    }
+  }
+
+  async _saveSettings() {
+    if (this._settingsSaving || !this._settingsDirty()) return;
+    this._settingsSaving = true;
+    this._settingsStatus = undefined;
+    this._render();
+    try {
+      const result = await this._callWS({ type: "alarmgrid/update_settings", settings: this._settingsDraft });
+      if (!result?.saved) {
+        this._settingsErrors = result?.errors || {};
+        this._settingsStatus = { type: "error", text: this._st("fix_errors") };
+      } else {
+        this._settingsErrors = {};
+        this._settingsData = { ...this._settingsData, values: result.values };
+        this._settingsDraft = JSON.parse(JSON.stringify(result.values));
+        this._settingsStatus = { type: "success", text: this._st(result.reloading ? "saved" : "saved_no_change") };
+        window.setTimeout(() => {
+          this._settingsStatus = undefined;
+          this._settingsData = undefined;
+          this._loadSettings();
+          this._load();
+        }, result.reloading ? 3000 : 1500);
+      }
+    } catch (err) {
+      this._settingsStatus = { type: "error", text: this._st("save_error", { error: err?.message || String(err) }) };
+    } finally {
+      this._settingsSaving = false;
+      this._render();
+      this.shadowRoot.querySelector(".has-error [data-setting], .has-error select, .settings-choices .field-error")?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    }
+  }
+
+  _discardSettings() {
+    this._settingsDraft = JSON.parse(JSON.stringify(this._settingsData.values));
+    this._settingsErrors = {};
+    this._settingsStatus = undefined;
+    this._render();
+  }
+
+  _wireSettings() {
+    const form = this.shadowRoot.querySelector(".settings-form");
+    if (!form) return;
+    form.addEventListener("submit", (event) => event.preventDefault());
+    form.querySelectorAll("[data-setting]").forEach((control) => {
+      const key = control.dataset.setting;
+      const field = this._settingsField(key);
+      if (control.type === "checkbox") {
+        control.addEventListener("change", () => this._setSettingValue(key, control.checked, { focus: `[data-setting="${key}"]` }));
+      } else if (control.tagName === "SELECT") {
+        control.addEventListener("change", () => this._setSettingValue(key, control.value, { focus: `[data-setting="${key}"]` }));
+      } else if (field.kind === "int") {
+        control.addEventListener("input", () => this._setSettingValue(key, control.value === "" ? "" : Number(control.value), { rerender: false }));
+      } else {
+        control.addEventListener("input", () => this._setSettingValue(key, control.value, { rerender: false }));
+      }
+    });
+    form.querySelectorAll("[data-entity-add]").forEach((control) => control.addEventListener("change", () => {
+      if (!control.value) return;
+      const key = control.dataset.entityAdd;
+      this._setSettingValue(key, [...(this._settingsDraft[key] || []), control.value], { focus: `[data-entity-add="${key}"]` });
+    }));
+    form.querySelectorAll("[data-entity-remove]").forEach((button) => button.addEventListener("click", () => {
+      const key = button.dataset.entityRemove;
+      this._setSettingValue(key, (this._settingsDraft[key] || []).filter((entityId) => entityId !== button.dataset.entityId), { focus: `[data-entity-add="${key}"]` });
+    }));
+    this.shadowRoot.querySelector("[data-action='save-settings']")?.addEventListener("click", () => this._saveSettings());
+    this.shadowRoot.querySelector("[data-action='discard-settings']")?.addEventListener("click", () => this._discardSettings());
   }
 
   _wire() {
@@ -1382,6 +1723,7 @@ class AlarmGrid extends HTMLElement {
       button.addEventListener("click", () => {
         this._tab = button.dataset.tab;
         this._openRowMenu = null;
+        if (this._tab === "settings" && !this._settingsDirty()) this._settingsData = undefined;
         this._render();
       });
     });
@@ -1392,6 +1734,7 @@ class AlarmGrid extends HTMLElement {
     this.shadowRoot.querySelector("[data-action='toggle-menu']")?.addEventListener("click", () => this._toggleSidebar());
     this.shadowRoot.querySelector("[data-action='enable-audio']")?.addEventListener("click", async () => { await this._testSound(); this._render(); });
     this.shadowRoot.querySelector("[data-action='test-sound']")?.addEventListener("click", () => this._testSound());
+    this._wireSettings();
     this.shadowRoot.querySelector("[data-action='new-rule']")?.addEventListener("click", () => this._startNewRule());
     this.shadowRoot.querySelector("[data-action='create-rule']")?.addEventListener("click", () => this._createRule());
     this.shadowRoot.querySelector("[data-action='test-rule']")?.addEventListener("click", () => this._testRule());
@@ -1799,7 +2142,9 @@ class AlarmGrid extends HTMLElement {
 
   _isEditingRulesForm() {
     const active = this.shadowRoot?.activeElement;
-    if (this._tab !== "rules" || !active) return false;
+    if (!active) return false;
+    if (this._tab === "settings") return Boolean(active.closest(".settings-form") && active.matches("input:not([type=checkbox]), select, textarea"));
+    if (this._tab !== "rules") return false;
     // Include condition-builder inputs and selects, also inside nested groups.
     // Replacing the DOM while they have focus closes native datalist/select menus.
     // Buttons must still allow refreshes after actions such as saving a rule.
@@ -2052,7 +2397,70 @@ class AlarmGrid extends HTMLElement {
       .empty { text-align: center; white-space: normal; }
       .error { margin: 0; color: var(--ag-error-text); background: var(--ag-error-bg); border: 1px solid var(--ag-error-border); border-radius: 10px; }
       .rules { display: flex; flex-direction: column; gap: 14px; }
-      .settings { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+      .settings-form { display: grid; gap: 16px; max-width: 920px; margin: 0; }
+      .settings-form.read-only .is-disabled { opacity: .8; }
+      .settings-card { background: var(--ag-surface); border: 1px solid var(--ag-border); border-radius: 12px; overflow: hidden; }
+      .settings-card-head { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--ag-border-soft); }
+      .settings-card-head h3 { margin: 0; font-size: 16px; font-weight: 600; }
+      .settings-card-head p { margin: 2px 0 0; color: var(--ag-muted); font-size: 13px; }
+      .settings-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--ag-accent-soft); color: var(--ag-accent); --mdc-icon-size: 20px; }
+      .settings-card-body { display: grid; }
+      .settings-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 300px); align-items: center; gap: 8px 24px; padding: 12px 18px; border-top: 1px solid var(--ag-border-soft); }
+      .settings-card-body > .settings-row:first-child { border-top: 0; }
+      .settings-row.wide { grid-template-columns: 1fr; }
+      .settings-label { display: grid; gap: 3px; min-width: 0; }
+      .settings-label > span { font-weight: 500; }
+      .settings-label small, .settings-subhead p, .settings-footnote { color: var(--ag-muted); font-size: 13px; line-height: 1.4; }
+      .settings-control { display: flex; justify-content: flex-end; min-width: 0; }
+      .settings-row.wide .settings-control { justify-content: stretch; }
+      .settings-control select, .settings-control input[type=text] { width: 100%; }
+      .number-input { display: inline-flex; align-items: center; gap: 8px; width: 100%; }
+      .number-input input { width: 100%; text-align: right; }
+      .number-input .unit { color: var(--ag-muted); font-size: 13px; min-width: 52px; }
+      .is-disabled { opacity: .5; }
+      .has-error input, .has-error select, .has-error .entity-picker { border-color: var(--ag-miss); }
+      .field-error { margin: 2px 0 0; color: var(--ag-miss); font-size: 13px; font-weight: 500; }
+      .switch { appearance: none; -webkit-appearance: none; position: relative; width: 40px; min-height: 0; height: 22px; padding: 0; margin: 0; border-radius: 11px; border: 0; background: var(--ag-border); cursor: pointer; transition: background .2s; flex: none; }
+      .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .2s; }
+      .switch:checked { background: var(--ag-accent); }
+      .switch:checked::after { transform: translateX(18px); }
+      .switch:disabled { cursor: default; }
+      .settings-choices { margin: 0; padding: 12px 18px 14px; border: 0; border-top: 1px solid var(--ag-border-soft); min-width: 0; }
+      .settings-choices legend { float: left; width: 100%; padding: 0 0 10px; font-weight: 500; }
+      .choice-chips { clear: both; display: flex; flex-wrap: wrap; gap: 8px; }
+      .choice-chip { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--ag-border); border-radius: 999px; cursor: pointer; font-size: 14px; user-select: none; }
+      .choice-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; padding: 0; margin: 0; }
+      .choice-chip ha-icon { --mdc-icon-size: 16px; display: none; }
+      .choice-chip:has(input:checked) { background: var(--ag-selected-bg); border-color: var(--ag-accent); color: var(--ag-selected-text); }
+      .choice-chip:has(input:checked) ha-icon { display: inline-flex; }
+      .choice-chip:has(input:focus-visible) { outline: 2px solid var(--ag-accent); outline-offset: 2px; }
+      .settings-choices:disabled .choice-chip { cursor: default; }
+      .entity-picker { display: grid; gap: 8px; width: 100%; padding: 8px; border: 1px solid var(--ag-border); border-radius: 10px; background: var(--ag-input); box-sizing: border-box; }
+      .entity-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .entity-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 2px 2px 10px; border-radius: 999px; background: var(--ag-selected-bg); color: var(--ag-selected-text); font-size: 13px; }
+      .entity-chip.missing { background: var(--ag-warn-bg); color: var(--ag-warn-text); }
+      .chip-remove { min-height: 24px; width: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; --mdc-icon-size: 16px; }
+      .entity-empty { color: var(--ag-muted); font-size: 13px; padding: 4px 2px; }
+      .settings-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--ag-border-soft); background: var(--ag-surface-alt); }
+      .status-label { color: var(--ag-muted); font-size: 13px; margin-right: 4px; }
+      .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ag-border-soft); background: var(--ag-control); font-size: 13px; --mdc-icon-size: 16px; }
+      .status-pill.on { background: var(--ag-warn-bg); color: var(--ag-warn-text); border-color: transparent; }
+      .settings-status button { margin-left: auto; }
+      .settings-subsection { border-top: 1px solid var(--ag-border); background: var(--ag-surface-alt); }
+      .settings-subsection .settings-row, .settings-subsection .settings-choices { border-top-color: var(--ag-border-soft); }
+      .settings-subsection.is-disabled { opacity: 1; }
+      .settings-subhead { display: flex; gap: 10px; align-items: flex-start; padding: 12px 18px 4px; --mdc-icon-size: 20px; color: var(--ag-heading-muted); }
+      .settings-subhead p { margin: 2px 0 0; }
+      .settings-footnote { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px 18px; border-top: 1px solid var(--ag-border-soft); --mdc-icon-size: 16px; }
+      .save-bar { position: sticky; bottom: 12px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; max-width: 920px; box-sizing: border-box; padding: 10px 12px 10px 16px; border-radius: 12px; background: var(--ag-surface); border: 1px solid var(--ag-accent); box-shadow: 0 6px 24px rgba(0,0,0,.18); font-weight: 500; }
+      .save-bar.success { border-color: var(--ag-ok); color: var(--ag-ok); }
+      .save-bar.error { border-color: var(--ag-miss); color: var(--ag-miss); }
+      @media (max-width: 720px) {
+        .settings-row { grid-template-columns: 1fr; }
+        .settings-control { justify-content: flex-start; }
+        .settings-row:has(.switch) { grid-template-columns: 1fr auto; }
+        .settings-status button { margin-left: 0; }
+      }
       .history-export label { display: grid; gap: 4px; color: var(--ag-heading-muted); font-size: 12px; }
       .history-export input { min-width: 210px; }
       .file-input { display: none; }

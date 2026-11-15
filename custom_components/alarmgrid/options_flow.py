@@ -1,4 +1,9 @@
-"""Options flow for AlarmGrid."""
+"""Options flow for AlarmGrid.
+
+The same settings are editable, with live hints, from the AlarmGrid panel
+(Settings). This flow stays as a fallback for installs without the panel and
+is generated from :mod:`.settings` so both stay in sync.
+"""
 
 from __future__ import annotations
 
@@ -6,54 +11,41 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.data_entry_flow import FlowResult, section
 from homeassistant.helpers import selector
 
-from .const import (
-    CONF_ALARM_FLOOD_THRESHOLD,
-    CONF_ALARM_FLOOD_WINDOW_SECONDS,
-    CONF_AUTO_HIDE_CLEARED_ACK,
-    CONF_AUTO_SHELVE_FLAPPING,
-    CONF_COMPACT_MODE,
-    CONF_CREATE_RULE_BUTTONS,
-    CONF_DEFAULT_DEADBAND,
-    CONF_DEFAULT_DELAY_OFF,
-    CONF_DEFAULT_DELAY_ON,
-    CONF_DEFAULT_TAB,
-    CONF_ENABLE_FLASHING,
-    CONF_FLAPPING_DETECTION_THRESHOLD,
-    CONF_GROUP_BY,
-    CONF_HISTORY_RETENTION_DAYS,
-    CONF_MAX_ACTIVE_ALARMS,
-    CONF_MAX_HISTORY_ROWS,
-    CONF_MEDIA_PLAYERS,
-    CONF_PANEL_TITLE,
-    CONF_REPEAT_INTERVAL_SECONDS,
-    CONF_REPEAT_UNTIL_SILENCED,
-    CONF_REQUIRE_ACK_CLEARED,
-    CONF_SHOW_CLEARED_UNACK,
-    CONF_SOUND_MODE,
-    CONF_STORE_NORMAL_EVENTS,
-    CONF_STORE_STATUS_CHANGES,
-    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES,
-    CONF_TELEGRAM_ENABLED,
-    CONF_TELEGRAM_INTERACTIVE_ACK,
-    CONF_TELEGRAM_INTERACTIVE_DISABLE,
-    CONF_TELEGRAM_INTERACTIVE_ENABLED,
-    CONF_TELEGRAM_INTERACTIVE_SHELVE,
-    CONF_TELEGRAM_MIN_PRIORITY,
-    CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED,
-    CONF_TELEGRAM_NOTIFY_ACTIVATED,
-    CONF_TELEGRAM_NOTIFY_CLEARED,
-    CONF_TELEGRAM_NOTIFY_DISABLED,
-    CONF_TELEGRAM_NOTIFY_ENABLED,
-    CONF_TELEGRAM_NOTIFY_SHELVED,
-    CONF_TELEGRAM_NOTIFY_UNSHELVED,
-    CONF_TELEGRAM_TARGETS,
-    DEFAULT_OPTIONS,
-    PANEL_TITLE,
-    SOUND_MODES,
-)
+from .const import DEFAULT_OPTIONS
+from .settings import SETTINGS_SECTIONS, SettingField, current_settings, validate_settings
+
+
+def _selector(item: SettingField) -> Any:
+    if item.kind == "bool":
+        return bool
+    if item.kind == "int":
+        return vol.All(
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=item.minimum,
+                    max=item.maximum,
+                    step=1,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Coerce(int),
+        )
+    if item.kind == "select":
+        return selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=list(item.choices),
+                translation_key=item.key,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        )
+    if item.kind == "entities":
+        return selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=item.domain, multiple=True)
+        )
+    return selector.TextSelector()
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
@@ -62,243 +54,54 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._config_entry = config_entry
 
+    def _stored(self) -> dict[str, Any]:
+        return {**DEFAULT_OPTIONS, **self._config_entry.data, **self._config_entry.options}
+
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage integration options."""
 
-        if user_input is not None:
-            media_players = user_input.get(CONF_MEDIA_PLAYERS)
-            if isinstance(media_players, str):
-                user_input[CONF_MEDIA_PLAYERS] = [
-                    item.strip() for item in media_players.split(",") if item.strip()
-                ]
-            errors = {}
-            if user_input.get(CONF_TELEGRAM_ENABLED) and not user_input.get(
-                CONF_TELEGRAM_TARGETS
-            ):
-                errors[CONF_TELEGRAM_TARGETS] = "telegram_targets_required"
-            if user_input.get(CONF_TELEGRAM_INTERACTIVE_ENABLED):
-                if not user_input.get(CONF_TELEGRAM_ENABLED):
-                    errors[CONF_TELEGRAM_INTERACTIVE_ENABLED] = "telegram_required"
-                if not user_input.get(CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES):
-                    errors[CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES] = (
-                        "telegram_callback_entities_required"
-                    )
-                if not any(
-                    user_input.get(key, False)
-                    for key in (
-                        CONF_TELEGRAM_INTERACTIVE_ACK,
-                        CONF_TELEGRAM_INTERACTIVE_SHELVE,
-                        CONF_TELEGRAM_INTERACTIVE_DISABLE,
-                    )
-                ):
-                    errors[CONF_TELEGRAM_INTERACTIVE_ENABLED] = (
-                        "telegram_action_required"
-                    )
-            if errors:
-                return self.async_show_form(
-                    step_id="init",
-                    data_schema=self._options_schema(
-                        {
-                            **DEFAULT_OPTIONS,
-                            **self._config_entry.data,
-                            **self._config_entry.options,
-                            **user_input,
-                        }
-                    ),
-                    errors=errors,
-                )
-            return self.async_create_entry(title="", data=user_input)
+        stored = self._stored()
+        if user_input is None:
+            return self.async_show_form(
+                step_id="init", data_schema=self._options_schema(current_settings(stored))
+            )
 
-        options = {
-            **DEFAULT_OPTIONS,
-            **self._config_entry.data,
-            **self._config_entry.options,
-        }
-        return self.async_show_form(
-            step_id="init",
-            data_schema=self._options_schema(options),
+        flat = self._flatten(user_input)
+        values, errors = validate_settings(flat, stored)
+        if errors:
+            return self.async_show_form(
+                step_id="init",
+                data_schema=self._options_schema({**values, **flat}),
+                errors={"base": next(iter(errors.values()))},
+            )
+        # Keep legacy keys that are no longer editable so downgrades still work.
+        return self.async_create_entry(
+            title="", data={**self._config_entry.options, **values}
         )
+
+    @staticmethod
+    def _flatten(user_input: dict[str, Any]) -> dict[str, Any]:
+        flat: dict[str, Any] = {}
+        for key, value in user_input.items():
+            if isinstance(value, dict):
+                flat.update(value)
+            else:
+                flat[key] = value
+        return flat
 
     def _options_schema(self, options: dict[str, Any]) -> vol.Schema:
-        """Build the options form, including opt-in Telegram delivery."""
+        """Build the sectioned options form from the shared settings definition."""
 
-        return vol.Schema(
-            {
-                vol.Optional(
-                    CONF_CREATE_RULE_BUTTONS,
-                    default=options[CONF_CREATE_RULE_BUTTONS],
-                ): bool,
-                vol.Optional(
-                    CONF_MAX_ACTIVE_ALARMS,
-                    default=options[CONF_MAX_ACTIVE_ALARMS],
-                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=5000)),
-                vol.Optional(
-                    CONF_MAX_HISTORY_ROWS,
-                    default=options[CONF_MAX_HISTORY_ROWS],
-                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=50000)),
-                vol.Optional(
-                    CONF_HISTORY_RETENTION_DAYS,
-                    default=options[CONF_HISTORY_RETENTION_DAYS],
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3650)),
-                vol.Optional(
-                    CONF_STORE_STATUS_CHANGES,
-                    default=options[CONF_STORE_STATUS_CHANGES],
-                ): bool,
-                vol.Optional(
-                    CONF_STORE_NORMAL_EVENTS,
-                    default=options[CONF_STORE_NORMAL_EVENTS],
-                ): bool,
-                vol.Optional(
-                    CONF_AUTO_HIDE_CLEARED_ACK,
-                    default=options[CONF_AUTO_HIDE_CLEARED_ACK],
-                ): bool,
-                vol.Optional(
-                    CONF_SHOW_CLEARED_UNACK,
-                    default=options[CONF_SHOW_CLEARED_UNACK],
-                ): bool,
-                vol.Optional(
-                    CONF_REQUIRE_ACK_CLEARED,
-                    default=options[CONF_REQUIRE_ACK_CLEARED],
-                ): bool,
-                vol.Optional(
-                    CONF_SOUND_MODE,
-                    default=options[CONF_SOUND_MODE],
-                ): vol.In(SOUND_MODES),
-                vol.Optional(
-                    CONF_MEDIA_PLAYERS,
-                    default=",".join(options[CONF_MEDIA_PLAYERS]),
-                ): str,
-                vol.Optional(
-                    CONF_REPEAT_UNTIL_SILENCED,
-                    default=options[CONF_REPEAT_UNTIL_SILENCED],
-                ): bool,
-                vol.Optional(
-                    CONF_REPEAT_INTERVAL_SECONDS,
-                    default=options[CONF_REPEAT_INTERVAL_SECONDS],
-                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=3600)),
-                vol.Optional(
-                    CONF_DEFAULT_DELAY_ON,
-                    default=options[CONF_DEFAULT_DELAY_ON],
-                ): vol.All(vol.Coerce(int), vol.Range(min=0, max=86400)),
-                vol.Optional(
-                    CONF_DEFAULT_DELAY_OFF,
-                    default=options[CONF_DEFAULT_DELAY_OFF],
-                ): vol.All(vol.Coerce(int), vol.Range(min=0, max=86400)),
-                vol.Optional(
-                    CONF_DEFAULT_DEADBAND,
-                    default=options[CONF_DEFAULT_DEADBAND],
-                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
-                vol.Optional(
-                    CONF_ALARM_FLOOD_THRESHOLD,
-                    default=options[CONF_ALARM_FLOOD_THRESHOLD],
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000)),
-                vol.Optional(
-                    CONF_ALARM_FLOOD_WINDOW_SECONDS,
-                    default=options[CONF_ALARM_FLOOD_WINDOW_SECONDS],
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3600)),
-                vol.Optional(
-                    CONF_AUTO_SHELVE_FLAPPING,
-                    default=options[CONF_AUTO_SHELVE_FLAPPING],
-                ): bool,
-                vol.Optional(
-                    CONF_FLAPPING_DETECTION_THRESHOLD,
-                    default=options[CONF_FLAPPING_DETECTION_THRESHOLD],
-                ): vol.All(vol.Coerce(int), vol.Range(min=2, max=1000)),
-                vol.Optional(
-                    CONF_PANEL_TITLE,
-                    default=options.get(CONF_PANEL_TITLE, PANEL_TITLE),
-                ): str,
-                vol.Optional(
-                    CONF_DEFAULT_TAB,
-                    default=options[CONF_DEFAULT_TAB],
-                ): vol.In(
-                    [
-                        "active",
-                        "unacknowledged",
-                        "history",
-                        "shelved",
-                        "disabled",
-                        "rules",
-                        "settings",
-                    ]
-                ),
-                vol.Optional(
-                    CONF_ENABLE_FLASHING,
-                    default=options[CONF_ENABLE_FLASHING],
-                ): bool,
-                vol.Optional(
-                    CONF_COMPACT_MODE,
-                    default=options[CONF_COMPACT_MODE],
-                ): bool,
-                vol.Optional(
-                    CONF_GROUP_BY,
-                    default=options[CONF_GROUP_BY],
-                ): vol.In(["area", "system", "priority", "none"]),
-                vol.Optional(
-                    CONF_TELEGRAM_ENABLED,
-                    default=options[CONF_TELEGRAM_ENABLED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_TARGETS,
-                    default=options[CONF_TELEGRAM_TARGETS],
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="notify", multiple=True)
-                ),
-                vol.Optional(
-                    CONF_TELEGRAM_MIN_PRIORITY,
-                    default=options[CONF_TELEGRAM_MIN_PRIORITY],
-                ): vol.In(["critical", "high", "medium", "low", "info", "status"]),
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_ACTIVATED,
-                    default=options[CONF_TELEGRAM_NOTIFY_ACTIVATED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_CLEARED,
-                    default=options[CONF_TELEGRAM_NOTIFY_CLEARED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED,
-                    default=options[CONF_TELEGRAM_NOTIFY_ACKNOWLEDGED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_SHELVED,
-                    default=options[CONF_TELEGRAM_NOTIFY_SHELVED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_UNSHELVED,
-                    default=options[CONF_TELEGRAM_NOTIFY_UNSHELVED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_DISABLED,
-                    default=options[CONF_TELEGRAM_NOTIFY_DISABLED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_NOTIFY_ENABLED,
-                    default=options[CONF_TELEGRAM_NOTIFY_ENABLED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_INTERACTIVE_ENABLED,
-                    default=options[CONF_TELEGRAM_INTERACTIVE_ENABLED],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES,
-                    default=options[CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES],
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="event", multiple=True)
-                ),
-                vol.Optional(
-                    CONF_TELEGRAM_INTERACTIVE_ACK,
-                    default=options[CONF_TELEGRAM_INTERACTIVE_ACK],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_INTERACTIVE_SHELVE,
-                    default=options[CONF_TELEGRAM_INTERACTIVE_SHELVE],
-                ): bool,
-                vol.Optional(
-                    CONF_TELEGRAM_INTERACTIVE_DISABLE,
-                    default=options[CONF_TELEGRAM_INTERACTIVE_DISABLE],
-                ): bool,
+        values = {**current_settings(self._stored()), **options}
+        schema: dict[Any, Any] = {}
+        for index, group in enumerate(SETTINGS_SECTIONS):
+            fields = {
+                vol.Optional(item.key, default=values[item.key]): _selector(item)
+                for item in group.fields
             }
-        )
+            schema[vol.Required(group.key)] = section(
+                vol.Schema(fields), {"collapsed": index > 0}
+            )
+        return vol.Schema(schema)

@@ -20,6 +20,7 @@ from .rule_management import (
     remove_per_rule_entity_registry_entries,
 )
 from .rule_preview import async_preview_rule
+from .settings import current_settings, settings_schema, validate_settings
 
 
 def async_register_websocket_api(hass: HomeAssistant) -> None:
@@ -47,6 +48,8 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_enable)
     websocket_api.async_register_command(hass, websocket_test_sound)
     websocket_api.async_register_command(hass, websocket_export_history)
+    websocket_api.async_register_command(hass, websocket_get_settings)
+    websocket_api.async_register_command(hass, websocket_update_settings)
     domain_data["websocket_registered"] = True
 
 
@@ -532,3 +535,62 @@ def _parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     return datetime.fromisoformat(value)
+
+
+def _settings_entry(hass: HomeAssistant) -> Any:
+    entry = hass.config_entries.async_get_entry(_runtime(hass).entry_id)
+    if entry is None:
+        raise HomeAssistantError("AlarmGrid is not loaded")
+    return entry
+
+
+@websocket_api.websocket_command({vol.Required("type"): "alarmgrid/get_settings"})
+@websocket_api.async_response
+async def websocket_get_settings(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the editable settings, their layout and whether the user may edit them."""
+
+    entry = _settings_entry(hass)
+    connection.send_result(
+        msg["id"],
+        {
+            "sections": settings_schema(),
+            "values": current_settings({**entry.data, **entry.options}),
+            "can_edit": bool(connection.user and connection.user.is_admin),
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "alarmgrid/update_settings",
+        vol.Required("settings"): dict,
+    }
+)
+@websocket_api.async_response
+async def websocket_update_settings(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Validate and store settings; the entry update listener reloads AlarmGrid."""
+
+    if not (connection.user and connection.user.is_admin):
+        connection.send_error(msg["id"], "unauthorized", "Only administrators can change settings")
+        return
+    entry = _settings_entry(hass)
+    current = {**entry.data, **entry.options}
+    values, errors = validate_settings(msg["settings"], current)
+    if errors:
+        connection.send_result(msg["id"], {"saved": False, "errors": errors})
+        return
+    options = {**entry.options, **values}
+    changed = options != dict(entry.options)
+    connection.send_result(
+        msg["id"], {"saved": True, "reloading": changed, "values": values}
+    )
+    if changed:
+        hass.config_entries.async_update_entry(entry, options=options)

@@ -23,59 +23,100 @@
     "step": {
       "init": {
         "title": "AlarmGrid options",
-        "data": {
-          "create_rule_buttons": "Create buttons for each rule",
-          "max_active_alarms": "Max active alarms shown",
-          "max_history_rows": "Max history rows shown",
-          "history_retention_days": "History retention days",
-          "store_status_changes": "Store status changes",
-          "store_normal_events": "Store normal events",
-          "auto_hide_cleared_acknowledged": "Auto-hide cleared acknowledged alarms",
-          "show_cleared_unacknowledged": "Show cleared unacknowledged alarms",
-          "require_acknowledgement_for_cleared": "Require acknowledgement for cleared alarms",
-          "sound_mode": "Sound mode",
-          "media_players": "Selected media players",
-          "repeat_until_silenced": "Repeat until silenced",
-          "repeat_interval_seconds": "Repeat interval seconds",
-          "default_delay_on_seconds": "Default delay ON",
-          "default_delay_off_seconds": "Default delay OFF",
-          "default_deadband": "Default deadband",
-          "alarm_flood_threshold": "Alarm flood threshold",
-          "alarm_flood_window_seconds": "Alarm flood window seconds",
-          "auto_shelve_flapping_alarms": "Auto-shelve flapping alarms",
-          "flapping_detection_threshold": "Flapping detection threshold",
-          "panel_title": "Panel title",
-          "default_tab": "Default tab",
-          "enable_flashing": "Enable flashing",
-          "enable_compact_mode": "Enable compact mode",
-          "group_by": "Group by",
-          "telegram_enabled": "Enable Telegram notifications",
-          "telegram_targets": "Telegram notify entities",
-          "telegram_min_priority": "Telegram minimum priority",
-          "telegram_notify_activated": "Notify when activated",
-          "telegram_notify_cleared": "Notify when cleared",
-          "telegram_notify_acknowledged": "Notify when acknowledged",
-          "telegram_notify_shelved": "Notify when shelved",
-          "telegram_notify_unshelved": "Notify when unshelved",
-          "telegram_notify_disabled": "Notify when disabled",
-          "telegram_notify_enabled": "Notify when enabled",
-          "telegram_interactive_enabled": "Enable interactive Telegram actions",
-          "telegram_callback_event_entities": "Telegram callback event entities",
-          "telegram_interactive_ack": "Allow ACK",
-          "telegram_interactive_shelve": "Allow shelving",
-          "telegram_interactive_disable": "Allow disable"
-        },
-        "description": "Configure alarm behavior and the optional Telegram notification channel.",
-        "data_description": {
-          "create_rule_buttons": "Create acknowledge, shelve, and disable buttons for every rule. Turning this off removes existing per-rule buttons; global buttons remain available."
+        "description": "These settings are also available, with explanations, in the AlarmGrid panel under Settings. Saving reloads AlarmGrid.",
+        "sections": {
+          "sound": {
+            "name": "Sound",
+            "description": "How alarms are announced",
+            "data": {
+              "sound_mode": "Sound output",
+              "media_players": "Media players",
+              "repeat_interval_seconds": "Repeat every (seconds)"
+            },
+            "data_description": {
+              "sound_mode": "Where the alarm horn plays.",
+              "media_players": "Players that receive the alarm sound when media player output is enabled.",
+              "repeat_interval_seconds": "How often the horn repeats while alarms are unacknowledged."
+            }
+          },
+          "alarm_handling": {
+            "name": "Alarm handling",
+            "description": "Flood and flapping protection",
+            "data": {
+              "alarm_flood_threshold": "Flood threshold",
+              "alarm_flood_window_seconds": "Flood window (seconds)",
+              "auto_shelve_flapping_alarms": "Auto-shelve flapping alarms",
+              "flapping_detection_threshold": "Flapping threshold"
+            },
+            "data_description": {
+              "alarm_flood_threshold": "Number of new alarms that counts as an alarm flood.",
+              "alarm_flood_window_seconds": "Time window in which the flood threshold is counted.",
+              "auto_shelve_flapping_alarms": "Shelve an alarm automatically when it keeps toggling.",
+              "flapping_detection_threshold": "State changes within 5 minutes before an alarm is considered flapping."
+            }
+          },
+          "telegram": {
+            "name": "Telegram notifications",
+            "description": "Send alarm events to Telegram",
+            "data": {
+              "telegram_enabled": "Enable Telegram notifications",
+              "telegram_targets": "Notify entities",
+              "telegram_min_priority": "Minimum priority",
+              "telegram_notify_activated": "Alarm activated",
+              "telegram_notify_cleared": "Alarm cleared",
+              "telegram_notify_acknowledged": "Alarm acknowledged",
+              "telegram_notify_shelved": "Alarm shelved",
+              "telegram_notify_unshelved": "Alarm unshelved",
+              "telegram_notify_disabled": "Alarm disabled",
+              "telegram_notify_enabled": "Alarm enabled"
+            },
+            "data_description": {
+              "telegram_targets": "Telegram notify entities that receive the messages.",
+              "telegram_min_priority": "Alarms below this priority are not sent."
+            }
+          },
+          "telegram_interactive": {
+            "name": "Telegram interactive actions",
+            "description": "Inline buttons in Telegram messages",
+            "data": {
+              "telegram_interactive_enabled": "Enable interactive actions",
+              "telegram_callback_event_entities": "Callback event entities",
+              "telegram_interactive_ack": "Allow acknowledge",
+              "telegram_interactive_shelve": "Allow shelve",
+              "telegram_interactive_disable": "Allow disable"
+            },
+            "data_description": {
+              "telegram_interactive_enabled": "Requires Telegram notifications.",
+              "telegram_callback_event_entities": "Event entities that receive Telegram button presses."
+            }
+          },
+          "integration": {
+            "name": "Panel and entities",
+            "description": "Sidebar and generated entities",
+            "data": {
+              "panel_title": "Sidebar title",
+              "create_rule_buttons": "Create buttons for each rule"
+            },
+            "data_description": {
+              "panel_title": "Name of the panel in the sidebar.",
+              "create_rule_buttons": "Acknowledge, shelve and disable buttons for every rule. Turning this off removes existing per-rule buttons; global buttons remain."
+            }
+          }
         }
       }
     },
     "error": {
-      "telegram_targets_required": "Select at least one notification target.",
+      "telegram_targets_required": "Select at least one Telegram notify entity.",
       "telegram_required": "Enable Telegram notifications first.",
       "telegram_callback_entities_required": "Select at least one Telegram callback event entity.",
-      "telegram_action_required": "Allow at least one interactive action."
+      "telegram_action_required": "Allow at least one interactive action.",
+      "invalid_number": "Enter a whole number.",
+      "out_of_range": "Value is out of range.",
+      "invalid_entity": "An entity of the wrong type was selected.",
+      "too_long": "Text is too long.",
+      "invalid_choice": "Invalid choice.",
+      "invalid_boolean": "Invalid value.",
+      "invalid_entities": "Invalid entity list."
     }
   },
   "issues": {
@@ -86,6 +127,26 @@
     "missing_source_entity": {
       "title": "Alarm source entity is missing",
       "description": "Rule `{rule_id}` references `{entity_id}`, but that entity does not exist."
+    }
+  },
+  "selector": {
+    "sound_mode": {
+      "options": {
+        "none": "Off",
+        "browser_only": "Browser only",
+        "media_player_only": "Media players only",
+        "browser_and_media_player": "Browser and media players"
+      }
+    },
+    "telegram_min_priority": {
+      "options": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "info": "Info",
+        "status": "Status"
+      }
     }
   }
 }
