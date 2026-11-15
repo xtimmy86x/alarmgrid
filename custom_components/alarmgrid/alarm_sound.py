@@ -40,6 +40,36 @@ class AlarmSoundManager:
         self.last_sound_at: datetime | None = None
         self.test_sound_at: datetime | None = None
 
+    def storage_state(self) -> dict[str, Any]:
+        """Persist operator silence together with alarm runtime states."""
+        return {
+            "silenced": self.silenced,
+            "silenced_until": self.silenced_until.isoformat() if self.silenced_until else None,
+            "last_sound_at": self.last_sound_at.isoformat() if self.last_sound_at else None,
+        }
+
+    def restore_state(
+        self, data: dict[str, Any], audible_alarms: dict[str, AlarmPriority]
+    ) -> None:
+        """Seed known alarms without treating them as new audible activations."""
+        def timestamp(key: str) -> datetime | None:
+            value = data.get(key)
+            if not value:
+                return None
+            try:
+                parsed = datetime.fromisoformat(value)
+                return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+            except (TypeError, ValueError):
+                return None
+
+        self.silenced = bool(data.get("silenced", False))
+        self.silenced_until = timestamp("silenced_until") if self.silenced else None
+        self.last_sound_at = timestamp("last_sound_at")
+        self.active_audible_alarms = dict(audible_alarms)
+        self.horn_active = bool(audible_alarms) and not self.silenced and self.sound_mode != "none"
+        if self.horn_active and self.last_sound_at is None:
+            self.last_sound_at = self._now()
+
     @property
     def browser_enabled(self) -> bool:
         """Return whether browser panel sound should be active."""

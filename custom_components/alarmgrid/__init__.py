@@ -387,7 +387,7 @@ async def async_setup_entry(
         ready = True
         await _reconcile_current_states()
         outbox.start(hass.async_create_background_task)
-        await _cleanup_history()
+        _create_task(_cleanup_history())
 
     @callback
     def _started(_event: Event) -> None:

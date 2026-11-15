@@ -190,3 +190,99 @@ class SoundSchedulingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.engine.states["temp"].lifecycle_state, AlarmLifecycleState.SHELVED)
         self.assertFalse(self.sound.horn_active)
         self.assertIsNone(self.sound.next_due_at())
+
+
+class PersistedSilenceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_reload_preserves_indefinite_and_timed_silence(self):
+        from custom_components.alarmgrid.alarm_store import MemoryRuleStore, InMemoryHistoryStore
+
+        for seconds in (None, 60):
+            with self.subTest(seconds=seconds):
+                clock = Clock()
+                store = MemoryRuleStore([rule()])
+                media = AsyncMock()
+                sound = AlarmSoundManager(sound_mode="browser_and_media_player", now=clock.now, media_call=media)
+                engine = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=sound, now=clock.now)
+                await engine.process_state("sensor.temp", "20")
+                await engine.silence_horn(seconds)
+                deadline = sound.silenced_until
+                # No shutdown required: silence must already have been persisted.
+                restored_sound = AlarmSoundManager(sound_mode="browser_and_media_player", now=clock.now, media_call=media)
+                restored = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=restored_sound, now=clock.now)
+                media.reset_mock()
+                await restored.reconcile_states({"sensor.temp": "20"})
+                self.assertTrue(restored_sound.silenced)
+                self.assertFalse(restored_sound.horn_active)
+                self.assertEqual(restored_sound.silenced_until, deadline)
+                self.assertEqual(restored.next_due_transition_at(), deadline)
+                media.assert_not_awaited()
+                clock.advance(60)
+                await restored.process_due_transitions()
+                if seconds is None:
+                    self.assertTrue(restored_sound.silenced)
+                    media.assert_not_awaited()
+                else:
+                    self.assertFalse(restored_sound.silenced)
+                    media.assert_awaited_once()
+                    self.assertFalse((await store.async_load_sound())["silenced"])
+
+    async def test_silence_expired_during_downtime_resumes_once_after_restore(self):
+        from custom_components.alarmgrid.alarm_store import MemoryRuleStore, InMemoryHistoryStore
+
+        clock = Clock()
+        store = MemoryRuleStore([rule()])
+        sound = AlarmSoundManager(now=clock.now)
+        engine = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=sound, now=clock.now)
+        await engine.process_state("sensor.temp", "20")
+        await engine.silence_horn(30)
+        clock.advance(40)
+        media = AsyncMock()
+        restored_sound = AlarmSoundManager(sound_mode="media_player_only", now=clock.now, media_call=media)
+        restored = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=restored_sound, now=clock.now)
+        await restored.reconcile_states({"sensor.temp": "20"})
+        media.assert_not_awaited()
+        await restored.process_due_transitions()
+        await restored.process_due_transitions()
+        media.assert_awaited_once()
+        self.assertFalse(restored_sound.silenced)
+
+    async def test_new_alarm_rearms_and_explicit_unsilence_is_persisted(self):
+        from custom_components.alarmgrid.alarm_store import MemoryRuleStore, InMemoryHistoryStore
+
+        store = MemoryRuleStore([rule(), rule(id="second", entity_id="sensor.second")])
+        engine = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=AlarmSoundManager())
+        await engine.process_state("sensor.temp", "20")
+        await engine.silence_horn()
+        sound = AlarmSoundManager()
+        restored = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=sound)
+        await restored.reconcile_states({"sensor.temp": "20", "sensor.second": "0"})
+        self.assertTrue(sound.silenced)
+        await restored.process_state("sensor.second", "20")
+        self.assertFalse(sound.silenced)
+        self.assertFalse((await store.async_load_sound())["silenced"])
+        await restored.silence_horn()
+        await restored.unsilence_horn()
+        self.assertFalse((await store.async_load_sound())["silenced"])
+
+    async def test_old_state_snapshots_without_sound_still_load(self):
+        from custom_components.alarmgrid.alarm_store import MemoryRuleStore, InMemoryHistoryStore
+
+        original = AlarmEngine([rule()])
+        await original.process_state("sensor.temp", "20")
+        store = MemoryRuleStore([rule()], original.states.values())
+        self.assertIsNone(await store.async_load_sound())
+        sound = AlarmSoundManager()
+        restored = await AlarmEngine.from_store(store, InMemoryHistoryStore(), sound_manager=sound)
+        await restored.reconcile_states({"sensor.temp": "20"})
+        self.assertTrue(sound.horn_active)
+
+    async def test_raw_numeric_updates_do_not_fill_history_by_default(self):
+        engine = AlarmEngine([rule()])
+        self.assertFalse(engine.options["store_status_changes"])
+        await engine.process_state("sensor.temp", "20")
+        for value in range(21, 121):
+            await engine.process_state("sensor.temp", str(value))
+        await engine.process_state("sensor.temp", "0")
+        events = await engine.history_store.query_events()
+        self.assertEqual([event.event_type for event in events], ["cleared", "activated"])
+        self.assertTrue(current_settings({"store_status_changes": True})["store_status_changes"])

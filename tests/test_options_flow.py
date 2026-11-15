@@ -33,6 +33,18 @@ class OptionsFlowImportTests(unittest.TestCase):
             with self.assertRaises(vol.Invalid):
                 schema(form(**{CONF_CREATE_RULE_BUTTONS: "false"}))
 
+    def test_numeric_selectors_accept_unbounded_decimal_fields(self) -> None:
+        from custom_components.alarmgrid.options_flow import _selector
+        from custom_components.alarmgrid.settings import SETTING_FIELDS, SettingField
+
+        decimal = _selector(SETTING_FIELDS["default_deadband"])
+        self.assertEqual(decimal(0.25), 0.25)
+        self.assertEqual(decimal(100000), 100000)
+        unbounded = _selector(SettingField("test", "float"))
+        self.assertEqual(unbounded(-1.25), -1.25)
+        bounded = _selector(SettingField("test", "int", 1, 5))
+        self.assertEqual(bounded(3), 3)
+
     def test_options_form_is_split_into_sections_from_shared_settings(self) -> None:
         from types import SimpleNamespace
 

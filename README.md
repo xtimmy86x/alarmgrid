@@ -208,11 +208,12 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 The **Settings** page in the sidebar and the integration options flow use the same
 validated settings. Saving reloads AlarmGrid; existing rule definitions remain intact.
 
-- **History:** retention deletes expired rows at startup and every hour (including
+- **History:** retention deletes expired rows in a background task at startup and every hour (including
   rows already stored before this update). Export history first if you need a copy
   older than the configured retention period. The history row limit only limits
   panel queries, not stored events or exports.
-- **Source changes:** `store_status_changes` adds `status_changed` history rows when
+- **Source changes:** `store_status_changes` is disabled by default (existing
+  explicit choices are preserved). When enabled, it adds `status_changed` history rows when
   the evaluated source value changes without an alarm lifecycle transition.
   `store_normal_events` additionally includes those changes while normal or cleared
   and acknowledged; it requires source-change recording. Lifecycle transitions and
@@ -220,6 +221,9 @@ validated settings. Saving reloads AlarmGrid; existing rule definitions remain i
 - **Sound:** repeats use the configured interval even without sensor updates.
   Disabling repeat plays once per new audible alarm. Acknowledgement, shelving,
   disabling and deletion stop that alarm's sound; timed silence resumes when due.
+  Operator silence and its expiry are saved atomically with alarm states, so
+  settings reloads and HA restarts preserve silence for existing alarms. New
+  activations still rearm sound; timed silence resumes only when its deadline is due.
   Browser sound respects the selected output and still requires local browser audio
   permission. Test sound is one-shot and does not start a permanent horn.
 - **Rule defaults:** activation/clear delays and numeric deadband initialize new

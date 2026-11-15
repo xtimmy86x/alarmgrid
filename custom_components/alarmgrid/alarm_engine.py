@@ -123,12 +123,30 @@ class AlarmEngine:
 
         rules = await rule_store.async_load_rules()
         states = await rule_store.async_load_states()
+        if sound_manager is not None:
+            sound = await rule_store.async_load_sound()
+            if sound is not None:
+                audible = {
+                    rule.id: rule.priority for rule in rules
+                    if rule.enabled and rule.audible and rule.id in states
+                    and states[rule.id].lifecycle_state in {
+                        AlarmLifecycleState.ACTIVE_UNACK, AlarmLifecycleState.CLEARED_UNACK,
+                    }
+                }
+                sound_manager.restore_state(sound, audible)
+
+        async def persist_runtime(states: dict[str, AlarmRuntimeState]) -> None:
+            if sound_manager is None:
+                await rule_store.async_save_states(states)
+            else:
+                await rule_store.async_save_states(states, sound=sound_manager.storage_state())
+
         return cls(
             rules,
             history_store,
             sound_manager=sound_manager,
             now=now,
-            persist_states=rule_store.async_save_states,
+            persist_states=persist_runtime,
             persist_rules=rule_store.async_save_rules,
             initial_states=states,
             event_handler=event_handler,
@@ -291,6 +309,7 @@ class AlarmEngine:
                 await self.evaluate_rule(rule_id, runtime.last_state)
 
         if self.sound_manager and await self.sound_manager.process_due():
+            await self._persist()
             self._notify()
 
     def next_due_transition_at(self) -> datetime | None:
@@ -590,6 +609,7 @@ class AlarmEngine:
 
         if self.sound_manager:
             await self.sound_manager.silence(duration_seconds)
+        await self._persist()
         await self._record_system_event(AlarmEventType.SILENCED, operator=operator)
         self._notify()
 
@@ -599,6 +619,7 @@ class AlarmEngine:
 
         if self.sound_manager:
             await self.sound_manager.unsilence()
+        await self._persist()
         await self._record_system_event(AlarmEventType.UNSILENCED, operator=operator)
         self._notify()
 

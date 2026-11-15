@@ -21,15 +21,16 @@ def _selector(item: SettingField) -> Any:
     if item.kind == "bool":
         return bool
     if item.kind in {"int", "float"}:
+        config = {
+            "step": 1 if item.kind == "int" else 0.01,
+            "mode": selector.NumberSelectorMode.BOX,
+        }
+        if item.minimum is not None:
+            config["min"] = item.minimum
+        if item.maximum is not None:
+            config["max"] = item.maximum
         return vol.All(
-            selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=item.minimum,
-                    max=item.maximum,
-                    step=1 if item.kind == "int" else 0.01,
-                    mode=selector.NumberSelectorMode.BOX,
-                )
-            ),
+            selector.NumberSelector(selector.NumberSelectorConfig(**config)),
             vol.Coerce(int if item.kind == "int" else float),
         )
     if item.kind == "select":
