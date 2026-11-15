@@ -21,7 +21,7 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
 
 DOMAIN = "alarmgrid"
 NAME = "AlarmGrid"
-VERSION = "2.2.0"
+VERSION = "2.3.0"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [

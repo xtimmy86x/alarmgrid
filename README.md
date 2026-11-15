@@ -32,6 +32,30 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
 - Event-driven panel refresh with a polling fallback
 - HACS-ready repository layout with local Home Assistant brand images
 
+## What's New in v2.3.0
+
+- Manage integration settings from the sidebar panel, with admin-only editing
+  and shared validation in the Home Assistant Configure dialog.
+- Compare alarm sources against live entity setpoints in simple and advanced
+  rules; apply configured delay and deadband defaults to new rules.
+- Record Home Assistant operator names in history, exports, and Telegram;
+  deliver notifications through a persistent queue with automatic retries.
+- Repeat alarm sounds on schedule and preserve operator silence across settings
+  reloads and Home Assistant restarts.
+- Apply history retention, configurable query limits, and optional source-change
+  recording, disabled by default unless explicitly configured.
+- Configure panel grouping, compact rows, initial tab, cleared-state visibility,
+  and display limits; control flashing globally for panel and cards.
+- Redesigned card editor with neutral colors, flashing styles, and custom link
+  text; content-based frontend versioning refreshes resources after small fixes.
+- Apply the configured flapping detection threshold and fix automatic shelving,
+  sound tests, decimal selectors, and duplicate retention-setting reloads.
+
+**Upgrade note:** retention now deletes existing events older than the configured
+period (90 days by default). Export older history before updating if needed.
+Existing rules and explicit settings remain compatible. See
+[release notes](RELEASE_NOTES.md) for details and manual YAML resource updates.
+
 ## What's New in v2.2.0
 
 - Redesigned the panel and Lovelace card, including rule editing, alarm details,
@@ -43,12 +67,6 @@ It creates Home Assistant entities, exposes services and a websocket API, persis
   default. Turning it off removes per-rule action buttons while keeping alarm
   sensors, global buttons, and panel/card/Telegram actions available.
 - Updated frontend cache busting and entity-count estimates.
-- Moved the integration options to the panel **Settings** page, grouped into
-  Sound, Alarm handling, Telegram notifications, and Panel and entities, with
-  inline explanations and validation. Administrators save from the panel; other
-  users see the settings read-only. The options flow uses the same settings in
-  collapsible sections and no longer lists options that had no effect.
-- The flapping detection threshold option is now applied to the alarm engine.
 - Existing configuration, rules, and history remain compatible.
 
 ## What's New in v2.1.1
@@ -251,7 +269,7 @@ After updating AlarmGrid, restart Home Assistant and reload the browser page (or
 For manually managed YAML resources:
 
 ```yaml
-url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.2.0&build=1
+url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.3.0&build=1
 type: module
 ```
 
@@ -990,7 +1008,7 @@ with its own branding, architecture and feature set. The original project and
 contributors remain credited through the Git history and Apache-2.0 licensing
 information.
 
-## Advanced Condition Builder (future 2.2.0)
+## Advanced Condition Builder
 
 AlarmGrid supports both the existing single-entity rule format and an optional,
 structured `condition_expression`. The visual rule editor can combine multiple

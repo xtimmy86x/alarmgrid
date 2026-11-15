@@ -348,7 +348,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
             VERSION,
         )
 
-        self.assertEqual("2.2.0", VERSION)
+        self.assertEqual("2.3.0", VERSION)
         self.assertEqual(
             "/alarmgrid/frontend/dist/alarmgrid.js",
             FRONTEND_MODULE,
@@ -470,7 +470,7 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIsNotNone(const_version_match)
         self.assertNotIn("Current release:", readme_source)
         const_version = const_version_match.group(1)
-        expected_version = "2.2.0"
+        expected_version = "2.3.0"
         self.assertIn(f"## What's New in v{expected_version}", readme_source)
         self.assertIn(
             f"/alarmgrid/frontend/dist/alarmgrid.js?v={expected_version}",
@@ -683,8 +683,8 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", DOMAIN)
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
-        self.assertEqual("2.2.0", VERSION)
-        self.assertEqual("2.2.0", manifest["version"])
+        self.assertEqual("2.3.0", VERSION)
+        self.assertEqual("2.3.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
         self.assertIn(
             "alarmgrid.js", FRONTEND_MODULE
