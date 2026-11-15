@@ -2154,37 +2154,65 @@ class AlarmGrid extends HTMLElement {
 const EDITOR_TRANSLATIONS = {
   en: {
     editor_color_scheme: "Color scheme", scheme_default: "Default", scheme_neutral: "Neutral HMI",
-    editor_flash_style: "Alarm flashing", flash_panel: "Like the panel", flash_subtle: "Subtle", flash_none: "Off", editor_open_panel_text: "Open panel link text",
+    editor_flash_style: "Alarm flashing", flash_panel: "Like the panel", flash_subtle: "Subtle", flash_none: "Off", editor_open_panel_text: "Link text",
+    editor_open_panel_text_placeholder: "Open AlarmGrid",
 
     editor_general: "General", editor_header: "Header", editor_content: "Content", editor_actions: "Actions", editor_appearance: "Advanced appearance",
+    editor_general_desc: "Title, view and style", editor_header_desc: "Icon, status and quick actions", editor_content_desc: "Visible fields and priorities",
+    editor_actions_desc: "Operator commands on each alarm", editor_appearance_desc: "Sizes and fonts",
     editor_title: "Title", editor_view: "View", editor_max_alarms: "Maximum alarms", editor_theme: "Theme", editor_show_header: "Show header",
-    editor_header_icon: "Header icon", editor_show_header_icon: "Show header icon", editor_show_header_status: "Show header status", editor_show_header_actions: "Show header actions",
+    theme_auto: "Automatic", theme_light: "Light", theme_dark: "Dark",
+    editor_header_icon: "Header icon", editor_show_header_icon: "Show icon", editor_show_header_status: "Show status", editor_show_header_actions: "Show quick actions",
     editor_show_summary: "Show summary", editor_show_value: "Show value", editor_show_area: "Show area", editor_show_system: "Show system", editor_show_tag: "Show tag", editor_show_open_panel: "Show AlarmGrid link",
-    editor_show_actions: "Show actions", editor_show_shelve: "Show shelve action", editor_show_disable: "Show disable action", editor_show_restore: "Show restore actions",
-    editor_priorities: "Priorities", editor_min_height: "Minimum height", editor_supported_units: "Supported units: px, rem, em, %",
+    editor_show_summary_desc: "Counters for active and unacknowledged alarms", editor_fields: "Alarm details",
+    editor_show_actions: "Show actions", editor_show_actions_desc: "Acknowledge and operator menu", editor_show_shelve: "Shelve", editor_show_disable: "Disable", editor_show_restore: "Restore (unshelve / enable)",
+    editor_priorities: "Priorities shown", editor_priorities_desc: "At least one priority must stay selected",
+    editor_min_height: "Minimum height", editor_supported_units: "Leave empty for the default. Supported units: px, rem, em, %",
+    editor_size_layout: "Layout", editor_size_header: "Header", editor_size_alarms: "Alarms", editor_reset_sizes: "Reset sizes",
+    header_icon_size: "Icon size", title_font_size: "Title", subtitle_font_size: "Subtitle", summary_font_size: "Summary",
+    alarm_name_font_size: "Alarm name", alarm_meta_font_size: "Alarm details", priority_font_size: "Priority badge", action_font_size: "Action buttons",
+    priority_critical: "Critical", priority_high: "High", priority_medium: "Medium", priority_low: "Low", priority_info: "Info", priority_status: "Status",
     active: "Active alarms", unacknowledged: "Unacknowledged", shelved: "Shelved", disabled_view: "Disabled", inactive: "Shelved + disabled",
   },
   it: {
     editor_color_scheme: "Schema colori", scheme_default: "Predefinito", scheme_neutral: "HMI neutro",
-    editor_flash_style: "Lampeggio allarmi", flash_panel: "Come il pannello", flash_subtle: "Discreto", flash_none: "Disattivato", editor_open_panel_text: "Testo collegamento al pannello",
+    editor_flash_style: "Lampeggio allarmi", flash_panel: "Come il pannello", flash_subtle: "Discreto", flash_none: "Disattivato", editor_open_panel_text: "Testo del collegamento",
+    editor_open_panel_text_placeholder: "Apri AlarmGrid",
 
-    editor_general: "Generale", editor_header: "Header", editor_content: "Contenuto", editor_actions: "Azioni", editor_appearance: "Aspetto avanzato",
-    editor_title: "Titolo", editor_view: "Vista", editor_max_alarms: "Numero massimo di allarmi", editor_theme: "Tema", editor_show_header: "Mostra header",
-    editor_header_icon: "Icona header", editor_show_header_icon: "Mostra icona header", editor_show_header_status: "Mostra stato header", editor_show_header_actions: "Mostra azioni header",
+    editor_general: "Generale", editor_header: "Intestazione", editor_content: "Contenuto", editor_actions: "Azioni", editor_appearance: "Aspetto avanzato",
+    editor_general_desc: "Titolo, vista e stile", editor_header_desc: "Icona, stato e azioni rapide", editor_content_desc: "Campi visibili e priorità",
+    editor_actions_desc: "Comandi operatore su ogni allarme", editor_appearance_desc: "Dimensioni e caratteri",
+    editor_title: "Titolo", editor_view: "Vista", editor_max_alarms: "Numero massimo di allarmi", editor_theme: "Tema", editor_show_header: "Mostra intestazione",
+    theme_auto: "Automatico", theme_light: "Chiaro", theme_dark: "Scuro",
+    editor_header_icon: "Icona", editor_show_header_icon: "Mostra icona", editor_show_header_status: "Mostra stato", editor_show_header_actions: "Mostra azioni rapide",
     editor_show_summary: "Mostra riepilogo", editor_show_value: "Mostra valore", editor_show_area: "Mostra area", editor_show_system: "Mostra sistema", editor_show_tag: "Mostra tag", editor_show_open_panel: "Mostra link ad AlarmGrid",
-    editor_show_actions: "Mostra azioni", editor_show_shelve: "Mostra azione sospendi", editor_show_disable: "Mostra azione disabilita", editor_show_restore: "Mostra azioni ripristino",
-    editor_priorities: "Priorità", editor_min_height: "Altezza minima", editor_supported_units: "Unità supportate: px, rem, em, %",
+    editor_show_summary_desc: "Contatori di allarmi attivi e non riconosciuti", editor_fields: "Dettagli allarme",
+    editor_show_actions: "Mostra azioni", editor_show_actions_desc: "Riconoscimento e menu operatore", editor_show_shelve: "Sospendi", editor_show_disable: "Disabilita", editor_show_restore: "Ripristina (riattiva / abilita)",
+    editor_priorities: "Priorità mostrate", editor_priorities_desc: "Almeno una priorità deve restare selezionata",
+    editor_min_height: "Altezza minima", editor_supported_units: "Lascia vuoto per il valore predefinito. Unità supportate: px, rem, em, %",
+    editor_size_layout: "Layout", editor_size_header: "Intestazione", editor_size_alarms: "Allarmi", editor_reset_sizes: "Ripristina dimensioni",
+    header_icon_size: "Dimensione icona", title_font_size: "Titolo", subtitle_font_size: "Sottotitolo", summary_font_size: "Riepilogo",
+    alarm_name_font_size: "Nome allarme", alarm_meta_font_size: "Dettagli allarme", priority_font_size: "Etichetta priorità", action_font_size: "Pulsanti azione",
+    priority_critical: "Critica", priority_high: "Alta", priority_medium: "Media", priority_low: "Bassa", priority_info: "Info", priority_status: "Stato",
     active: "Allarmi attivi", unacknowledged: "Non riconosciuti", shelved: "Sospesi", disabled_view: "Disabilitati", inactive: "Sospesi + disabilitati",
   },
 };
 
+
 class AlarmGridCardEditor extends HTMLElement {
+  static SIZE_GROUPS = [
+    ["editor_size_layout", ["min_height"]],
+    ["editor_size_header", ["header_icon_size", "title_font_size", "subtitle_font_size", "summary_font_size"]],
+    ["editor_size_alarms", ["alarm_name_font_size", "alarm_meta_font_size", "priority_font_size", "action_font_size"]],
+  ];
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
     this._config = {};
     this._rendered = false;
     this._appearanceOpen = false;
+    this._openSections = { general: true };
   }
 
   setConfig(config = {}) {
@@ -2265,7 +2293,8 @@ class AlarmGridCardEditor extends HTMLElement {
   }
 
   _setNumberOption(name, value, defaultValue = 5) {
-    const number = Math.max(0, Math.floor(Number(value)));
+    if (String(value).trim() === "") return;
+    const number = Math.max(1, Math.floor(Number(value)));
     if (!Number.isFinite(number)) return;
     const newConfig = this._normalizedConfig();
     if (number === defaultValue) delete newConfig[name]; else newConfig[name] = number;
@@ -2273,14 +2302,23 @@ class AlarmGridCardEditor extends HTMLElement {
   }
 
   _setPriority(priority, checked) {
-    const current = Array.isArray(this._config.priorities) ? this._config.priorities : CARD_PRIORITIES;
+    const current = Array.isArray(this._config.priorities) && this._config.priorities.length ? this._config.priorities : CARD_PRIORITIES;
     const selected = new Set(current);
     checked ? selected.add(priority) : selected.delete(priority);
     const priorities = CARD_PRIORITIES.filter((item) => selected.has(item));
+    // An empty selection would silently mean "all": keep the last chip on instead.
+    if (priorities.length === 0) { this._syncControlsFromConfig(); return; }
     const newConfig = this._normalizedConfig();
-    if (priorities.length === 0 || priorities.length === CARD_PRIORITIES.length) delete newConfig.priorities;
+    if (priorities.length === CARD_PRIORITIES.length) delete newConfig.priorities;
     else newConfig.priorities = priorities;
     this._commit(newConfig);
+  }
+
+  _resetSizes() {
+    const newConfig = this._normalizedConfig();
+    AlarmGridCardEditor.SIZE_GROUPS.forEach(([, names]) => names.forEach((name) => delete newConfig[name]));
+    this._commit(newConfig);
+    this._syncControlsFromConfig();
   }
 
   _emitConfigChanged() {
@@ -2322,15 +2360,22 @@ class AlarmGridCardEditor extends HTMLElement {
       const control = this.shadowRoot.querySelector(`[data-string="${name}"], [data-boolean="${name}"]`);
       if (!control) return;
       control.disabled = disabled;
-      control.closest(".grid, .toggle-row")?.classList.toggle("disabled", disabled);
+      control.closest(".field, .toggle-row")?.classList.toggle("disabled", disabled);
     });
     syncGroup(["header_icon", "show_header_icon", "show_header_status", "show_header_actions"], this._config.hide_header === true);
     syncGroup(["show_shelve_action", "show_disable_action", "show_restore_actions"], this._value("show_actions") === false);
+    syncGroup(["open_panel_text"], this._value("show_open_panel") === false);
+    const icon = this.shadowRoot.querySelector(".icon-preview");
+    if (icon) icon.setAttribute("icon", this._value("header_icon") || CARD_DEFAULTS.header_icon);
+    const reset = this.shadowRoot.querySelector("[data-reset-sizes]");
+    if (reset) reset.disabled = !AlarmGridCardEditor.SIZE_GROUPS.some(([, names]) => names.some((name) => this._config[name] !== undefined));
   }
 
   _renderPreservingUiState() {
-    const appearance = this.shadowRoot?.querySelector("details.section");
-    if (appearance) this._appearanceOpen = appearance.open;
+    this.shadowRoot?.querySelectorAll("details[data-section]").forEach((section) => {
+      this._openSections[section.dataset.section] = section.open;
+    });
+    this._appearanceOpen = this._openSections.appearance === true;
     this._render();
   }
 
@@ -2338,39 +2383,116 @@ class AlarmGridCardEditor extends HTMLElement {
     if (!this.shadowRoot) return;
     const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
     const text = (name, label, type = "text", extra = "") => `<label class="field"><span>${this._t(label)}</span><input data-string="${name}" type="${type}" value="${esc(this._value(name))}" ${extra}></label>`;
-    const toggle = (name, label, disabled = false) => `<label class="toggle-row ${disabled ? "disabled" : ""}"><input data-boolean="${name}" type="checkbox" ${this._value(name) !== false ? "checked" : ""} ${disabled ? "disabled" : ""}><span>${this._t(label)}</span></label>`;
+    const select = (name, label, options) => `<label class="field"><span>${this._t(label)}</span><select data-string="${name}">${options.map(([value, optionLabel]) => `<option value="${value}" ${this._value(name) === value ? "selected" : ""}>${esc(this._t(optionLabel))}</option>`).join("")}</select></label>`;
+    const toggle = (name, label, { disabled = false, description = "", nested = false } = {}) => `<label class="toggle-row ${nested ? "nested" : ""} ${disabled ? "disabled" : ""}"><span class="toggle-text"><span>${this._t(label)}</span>${description ? `<small>${this._t(description)}</small>` : ""}</span><input class="switch" data-boolean="${name}" type="checkbox" role="switch" ${this._value(name) !== false ? "checked" : ""} ${disabled ? "disabled" : ""}></label>`;
+    const section = (key, icon, body) => `<details class="section" data-section="${key}" ${this._openSections[key] ? "open" : ""}><summary><ha-icon icon="${icon}"></ha-icon><span class="summary-text"><span>${this._t(`editor_${key}`)}</span><small>${this._t(`editor_${key}_desc`)}</small></span><span class="chevron" aria-hidden="true"></span></summary><div class="section-body">${body}</div></details>`;
     const headerShown = this._config.hide_header !== true;
     const actionsShown = this._value("show_actions") !== false;
+    const linkShown = this._value("show_open_panel") !== false;
     const priorities = Array.isArray(this._config.priorities) && this._config.priorities.length ? this._config.priorities : CARD_PRIORITIES;
-    const sizes = ["min_height", "header_icon_size", "title_font_size", "subtitle_font_size", "summary_font_size", "alarm_name_font_size", "alarm_meta_font_size", "priority_font_size", "action_font_size"];
-    const sizeLabel = (name) => name === "min_height" ? this._t("editor_min_height") : name.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
+    const sizeLabel = (name) => this._t(name === "min_height" ? "editor_min_height" : name);
+    const headerIcon = this._value("header_icon") || CARD_DEFAULTS.header_icon;
     this.shadowRoot.innerHTML = `<style>
-      :host{display:block;font-family:inherit;color:var(--primary-text-color)} .editor{display:grid;gap:16px;background:transparent}.section{padding:14px;border:1px solid var(--divider-color);border-radius:10px}.section-title,summary{font-size:1rem;font-weight:600;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}.field{display:grid;gap:6px;color:var(--secondary-text-color);font-size:.9rem}.field input,.field select{box-sizing:border-box;width:100%;min-height:42px;padding:8px 10px;font:inherit;color:var(--primary-text-color);background:transparent;border:1px solid var(--divider-color);border-radius:8px}.field input:focus,.field select:focus{outline:2px solid var(--primary-color);outline-offset:1px}.toggle-row{display:flex;align-items:center;gap:9px;min-height:34px}.toggle-row input{width:18px;height:18px;accent-color:var(--primary-color)}.disabled{opacity:.5}.priorities{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:12px}.helper{color:var(--secondary-text-color);font-size:.8rem;margin:10px 0 0}details.section summary{cursor:pointer} @media(max-width:600px){.grid{grid-template-columns:1fr}}
+      :host{display:block;font-family:inherit;color:var(--primary-text-color);--ag-critical:#d64545;--ag-high:#e17825;--ag-medium:#c79618;--ag-low:#4285b4;--ag-info:#477fc1;--ag-status:#718096}
+      .editor{display:grid;gap:12px}
+      .section{border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color,transparent);overflow:hidden}
+      summary{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;list-style:none;user-select:none}
+      summary::-webkit-details-marker{display:none}
+      summary:hover{background:var(--secondary-background-color,rgba(127,127,127,.06))}
+      summary:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
+      summary>ha-icon{color:var(--primary-color);--mdc-icon-size:22px;flex:none}
+      .summary-text{display:grid;gap:1px;flex:1;min-width:0}.summary-text>span{font-weight:500;font-size:1rem}
+      small{color:var(--secondary-text-color);font-size:.8rem;line-height:1.3}
+      .chevron{width:8px;height:8px;border-right:2px solid var(--secondary-text-color);border-bottom:2px solid var(--secondary-text-color);transform:rotate(45deg);transition:transform .2s;margin:0 4px 4px}
+      details[open]>summary .chevron{transform:rotate(-135deg);margin-bottom:-4px}
+      details[open]>summary{border-bottom:1px solid var(--divider-color)}
+      .section-body{display:grid;gap:14px;padding:14px}
+      .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+      .field{display:grid;gap:6px;color:var(--secondary-text-color);font-size:.85rem;min-width:0}
+      .field input,.field select{box-sizing:border-box;width:100%;min-height:40px;padding:8px 10px;font:inherit;font-size:.95rem;color:var(--primary-text-color);background:var(--secondary-background-color,transparent);border:1px solid var(--divider-color);border-radius:8px}
+      .field input:focus,.field select:focus{outline:2px solid var(--primary-color);outline-offset:-1px;border-color:transparent}
+      .field input::placeholder{color:var(--secondary-text-color);opacity:.7}
+      .icon-input{position:relative}.icon-input input{padding-left:40px}.icon-input ha-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);--mdc-icon-size:20px;color:var(--secondary-text-color);pointer-events:none}
+      .list{display:grid;border:1px solid var(--divider-color);border-radius:10px;overflow:hidden}
+      .list-title{font-size:.8rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--secondary-text-color);margin:2px 0 -6px}
+      .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:6px 12px;cursor:pointer;box-sizing:border-box}
+      .list>.toggle-row+.toggle-row,.list>.toggle-row+.field,.list>.field+.toggle-row{border-top:1px solid var(--divider-color)}
+      .list>.field{padding:8px 12px 12px 28px}
+      .toggle-row.nested{padding-left:28px}
+      .toggle-text{display:grid;gap:2px;min-width:0}
+      .switch{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:36px;height:20px;margin:0;border-radius:10px;background:var(--switch-unchecked-track-color,rgba(127,127,127,.45));cursor:pointer;transition:background .2s}
+      .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.35);transition:transform .2s}
+      .switch:checked{background:var(--switch-checked-track-color,var(--primary-color))}
+      .switch:checked::after{transform:translateX(16px)}
+      .switch:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
+      .disabled{opacity:.45}.disabled,.disabled *{cursor:not-allowed}
+      .chips{display:flex;flex-wrap:wrap;gap:8px}
+      .chip{position:relative;display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 10px;border:1px solid var(--divider-color);border-radius:999px;cursor:pointer;font-size:.9rem;user-select:none;transition:background .15s,border-color .15s}
+      .chip input{position:absolute;opacity:0;pointer-events:none}
+      .chip .dot{width:10px;height:10px;border-radius:50%;background:var(--chip-color);opacity:.35}
+      .chip:has(input:checked){border-color:var(--chip-color);background:color-mix(in srgb,var(--chip-color) 14%,transparent)}
+      .chip:has(input:checked) .dot{opacity:1}
+      .chip:has(input:focus-visible){outline:2px solid var(--primary-color);outline-offset:2px}
+      .chip.critical{--chip-color:var(--ag-critical)}.chip.high{--chip-color:var(--ag-high)}.chip.medium{--chip-color:var(--ag-medium)}.chip.low{--chip-color:var(--ag-low)}.chip.info{--chip-color:var(--ag-info)}.chip.status{--chip-color:var(--ag-status)}
+      .group-title{font-size:.8rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--secondary-text-color);margin:0}
+      .group-header{display:grid;gap:2px}
+      .footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+      .footer small{flex:1;min-width:180px}
+      button{font:inherit;font-size:.85rem;font-weight:500;color:var(--primary-color);background:transparent;border:1px solid var(--divider-color);border-radius:8px;padding:6px 12px;cursor:pointer}
+      button:hover:not(:disabled){background:color-mix(in srgb,var(--primary-color) 10%,transparent)}
+      button:disabled{opacity:.45;cursor:not-allowed}
+      @media(max-width:450px){.grid{grid-template-columns:1fr}}
     </style><div class="editor">
-      <section class="section"><h3 class="section-title">${this._t("editor_general")}</h3><div class="grid">
-        ${text("title", "editor_title")}
-        ${text("open_panel_text", "editor_open_panel_text")}
-        <label class="field"><span>${this._t("editor_color_scheme")}</span><select data-string="color_scheme">${["default","neutral"].map((value) => `<option value="${value}" ${this._value("color_scheme") === value ? "selected" : ""}>${this._t(`scheme_${value}`)}</option>`).join("")}</select></label>
-        <label class="field"><span>${this._t("editor_flash_style")}</span><select data-string="flash_style">${["panel","subtle","none"].map((value) => `<option value="${value}" ${this._value("flash_style") === value ? "selected" : ""}>${this._t(`flash_${value}`)}</option>`).join("")}</select></label>
-        <label class="field"><span>${this._t("editor_view")}</span><select data-string="view">${["active","unacknowledged","shelved","disabled","inactive"].map((view) => `<option value="${view}" ${this._value("view") === view ? "selected" : ""}>${this._t(view === "disabled" ? "disabled_view" : view)}</option>`).join("")}</select></label>
-        ${text("max_alarms", "editor_max_alarms", "number", 'min="0" step="1" data-number="max_alarms"')}
-        <label class="field"><span>${this._t("editor_theme")}</span><select data-string="theme">${["auto","light","dark"].map((theme) => `<option ${this._value("theme") === theme ? "selected" : ""}>${theme}</option>`).join("")}</select></label>
-      </div></section>
-      <section class="section"><h3 class="section-title">${this._t("editor_header")}</h3>${toggle("show_header", "editor_show_header")}<div class="grid ${headerShown ? "" : "disabled"}">
-        ${text("header_icon", "editor_header_icon", "text", headerShown ? "" : "disabled")}${toggle("show_header_icon", "editor_show_header_icon", !headerShown)}${toggle("show_header_status", "editor_show_header_status", !headerShown)}${toggle("show_header_actions", "editor_show_header_actions", !headerShown)}
-      </div></section>
-      <section class="section"><h3 class="section-title">${this._t("editor_content")}</h3><div class="grid">${toggle("show_summary","editor_show_summary")}${toggle("show_value","editor_show_value")}${toggle("show_area","editor_show_area")}${toggle("show_system","editor_show_system")}${toggle("show_tag","editor_show_tag")}${toggle("show_open_panel","editor_show_open_panel")}</div><div class="priorities"><strong>${this._t("editor_priorities")}</strong>${CARD_PRIORITIES.map((priority) => `<label class="toggle-row"><input data-priority="${priority}" type="checkbox" ${priorities.includes(priority) ? "checked" : ""}><span>${priority[0].toUpperCase()+priority.slice(1)}</span></label>`).join("")}</div></section>
-      <section class="section"><h3 class="section-title">${this._t("editor_actions")}</h3><div class="grid">${toggle("show_actions","editor_show_actions")}${toggle("show_shelve_action","editor_show_shelve",!actionsShown)}${toggle("show_disable_action","editor_show_disable",!actionsShown)}${toggle("show_restore_actions","editor_show_restore",!actionsShown)}</div></section>
-      <details class="section" ${this._appearanceOpen ? "open" : ""}><summary>${this._t("editor_appearance")}</summary><div class="grid">${sizes.map((name) => `<label class="field"><span>${sizeLabel(name)}</span><input data-size="${name}" value="${esc(this._config[name] ?? "")}" placeholder="${CARD_DEFAULTS[name]}"></label>`).join("")}</div><p class="helper">${this._t("editor_supported_units")}</p></details>
+      ${section("general", "mdi:cog-outline", `
+        ${text("title", "editor_title", "text", `placeholder="${esc(CARD_DEFAULTS.title)}"`)}
+        <div class="grid">
+          ${select("view", "editor_view", ["active","unacknowledged","shelved","disabled","inactive"].map((view) => [view, view === "disabled" ? "disabled_view" : view]))}
+          ${text("max_alarms", "editor_max_alarms", "number", 'min="1" step="1" inputmode="numeric" data-number="max_alarms"')}
+          ${select("theme", "editor_theme", ["auto","light","dark"].map((theme) => [theme, `theme_${theme}`]))}
+          ${select("color_scheme", "editor_color_scheme", ["default","neutral"].map((value) => [value, `scheme_${value}`]))}
+          ${select("flash_style", "editor_flash_style", ["panel","subtle","none"].map((value) => [value, `flash_${value}`]))}
+        </div>`)}
+      ${section("header", "mdi:page-layout-header", `
+        <div class="list">
+          ${toggle("show_header", "editor_show_header")}
+          <label class="field ${headerShown ? "" : "disabled"}"><span>${this._t("editor_header_icon")}</span><span class="icon-input"><ha-icon class="icon-preview" icon="${esc(headerIcon)}"></ha-icon><input data-string="header_icon" type="text" value="${esc(this._value("header_icon"))}" placeholder="${CARD_DEFAULTS.header_icon}" spellcheck="false" ${headerShown ? "" : "disabled"}></span></label>
+          ${toggle("show_header_icon", "editor_show_header_icon", { disabled: !headerShown, nested: true })}
+          ${toggle("show_header_status", "editor_show_header_status", { disabled: !headerShown, nested: true })}
+          ${toggle("show_header_actions", "editor_show_header_actions", { disabled: !headerShown, nested: true })}
+        </div>`)}
+      ${section("content", "mdi:format-list-bulleted", `
+        <div class="list">${toggle("show_summary", "editor_show_summary", { description: "editor_show_summary_desc" })}</div>
+        <p class="list-title">${this._t("editor_fields")}</p>
+        <div class="list">${toggle("show_value","editor_show_value")}${toggle("show_area","editor_show_area")}${toggle("show_system","editor_show_system")}${toggle("show_tag","editor_show_tag")}</div>
+        <div class="list">
+          ${toggle("show_open_panel","editor_show_open_panel")}
+          <label class="field ${linkShown ? "" : "disabled"}"><span>${this._t("editor_open_panel_text")}</span><input data-string="open_panel_text" type="text" value="${esc(this._value("open_panel_text"))}" placeholder="${esc(this._t("editor_open_panel_text_placeholder"))}" ${linkShown ? "" : "disabled"}></label>
+        </div>
+        <div class="group-header"><p class="group-title">${this._t("editor_priorities")}</p><small>${this._t("editor_priorities_desc")}</small></div>
+        <div class="chips">${CARD_PRIORITIES.map((priority) => `<label class="chip ${priority}"><input data-priority="${priority}" type="checkbox" ${priorities.includes(priority) ? "checked" : ""}><span class="dot"></span><span>${this._t(`priority_${priority}`)}</span></label>`).join("")}</div>`)}
+      ${section("actions", "mdi:gesture-tap-button", `
+        <div class="list">
+          ${toggle("show_actions","editor_show_actions", { description: "editor_show_actions_desc" })}
+          ${toggle("show_shelve_action","editor_show_shelve", { disabled: !actionsShown, nested: true })}
+          ${toggle("show_disable_action","editor_show_disable", { disabled: !actionsShown, nested: true })}
+          ${toggle("show_restore_actions","editor_show_restore", { disabled: !actionsShown, nested: true })}
+        </div>`)}
+      ${section("appearance", "mdi:format-size", `
+        ${AlarmGridCardEditor.SIZE_GROUPS.map(([group, names]) => `<p class="group-title">${this._t(group)}</p><div class="grid">${names.map((name) => `<label class="field"><span>${sizeLabel(name)}</span><input data-size="${name}" value="${esc(this._config[name] ?? "")}" placeholder="${CARD_DEFAULTS[name]}" spellcheck="false"></label>`).join("")}</div>`).join("")}
+        <div class="footer"><small>${this._t("editor_supported_units")}</small><button type="button" data-reset-sizes>${this._t("editor_reset_sizes")}</button></div>`)}
     </div>`;
     this.shadowRoot.querySelector('[data-boolean="show_header"]')?.addEventListener("change", (event) => this._setBooleanOption("hide_header", !event.target.checked, false));
     this.shadowRoot.querySelectorAll("[data-boolean]:not([data-boolean=show_header])").forEach((control) => control.addEventListener("change", (event) => this._setBooleanOption(control.dataset.boolean, event.target.checked)));
     this.shadowRoot.querySelectorAll("select[data-string]").forEach((control) => control.addEventListener("change", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string])));
     this.shadowRoot.querySelectorAll("input[data-string]:not([data-number])").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.string, event.target.value, CARD_DEFAULTS[control.dataset.string])));
-    this.shadowRoot.querySelector("[data-number]")?.addEventListener("input", (event) => this._setNumberOption("max_alarms", event.target.value, CARD_DEFAULTS.max_alarms));
+    this.shadowRoot.querySelector("[data-number]")?.addEventListener("change", (event) => this._setNumberOption("max_alarms", event.target.value, CARD_DEFAULTS.max_alarms));
     this.shadowRoot.querySelectorAll("[data-priority]").forEach((control) => control.addEventListener("change", (event) => this._setPriority(control.dataset.priority, event.target.checked)));
     this.shadowRoot.querySelectorAll("[data-size]").forEach((control) => control.addEventListener("input", (event) => this._setStringOption(control.dataset.size, event.target.value, CARD_DEFAULTS[control.dataset.size])));
-    this.shadowRoot.querySelector("details.section")?.addEventListener("toggle", (event) => { this._appearanceOpen = event.target.open; });
+    this.shadowRoot.querySelector("[data-reset-sizes]")?.addEventListener("click", () => this._resetSizes());
+    this.shadowRoot.querySelectorAll("details[data-section]").forEach((details) => details.addEventListener("toggle", () => {
+      this._openSections[details.dataset.section] = details.open;
+      this._appearanceOpen = this._openSections.appearance === true;
+    }));
     this._rendered = true;
     this._syncDependentControls();
   }
