@@ -201,14 +201,20 @@ Home Assistant 2026.3 and newer can serve local brand assets for custom integrat
 
 AlarmGrid supports the native Home Assistant visual card editor. Go to **Dashboard → Edit dashboard → Add card** (or edit an existing card), choose **AlarmGrid**, and configure the card graphically with a live preview. YAML configuration remains fully supported, including existing dashboards.
 
-The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned:
+The two frontend surfaces now have deliberately different roles: the sidebar panel is the complete DCS alarm console (tables, history, rules, shelving, sound, and settings), while the Lovelace card is a compact, dashboard-first alarm summary. In normal Home Assistant storage-mode dashboards, the integration automatically registers this JavaScript module resource and keeps it versioned. The card and sidebar panel share one bundle and the same URL, with a `build` fingerprint calculated from the installed JavaScript. Even a small frontend fix changes this fingerprint without requiring an integration release bump. Existing registered resources are updated in place.
+
+After updating AlarmGrid, restart Home Assistant and reload the browser page (or reopen the companion app frontend). Already open pages keep their loaded JavaScript until refreshed; clearing the entire browser cache should not be necessary.
+
+For manually managed YAML resources:
 
 ```yaml
-url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.2.0
+url: /alarmgrid/frontend/dist/alarmgrid.js?v=2.2.0&build=1
 type: module
 ```
 
-If you use Lovelace YAML mode, add the resource above to `ui-lovelace.yaml` manually. Then add the card to a dashboard:
+If you manage resources in YAML, add the resource under `lovelace.resources` in `configuration.yaml`. AlarmGrid does not rewrite your YAML: increase the manual `build` value after each frontend update, including fixes with the same release version, reload the resource configuration and refresh the page. Automatic fingerprint updates apply to storage-managed resources; the sidebar panel is versioned automatically in either mode.
+
+Then add the card to a dashboard:
 
 ```yaml
 type: custom:alarmgrid-card

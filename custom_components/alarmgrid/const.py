@@ -22,7 +22,6 @@ except ModuleNotFoundError:  # Allows pure unit tests without Home Assistant ins
 DOMAIN = "alarmgrid"
 NAME = "AlarmGrid"
 VERSION = "2.2.0"
-FRONTEND_BUILD = "20261028.3"
 EVENT_ALARMS_UPDATED = f"{DOMAIN}_alarms_updated"
 
 PLATFORMS: list[Platform] = [
@@ -47,10 +46,7 @@ STATE_STORAGE_VERSION = 1
 PANEL_URL = "alarmgrid"
 PANEL_TITLE = "AlarmGrid"
 PANEL_ICON = "mdi:alarm-light"
-FRONTEND_MODULE = (
-    f"/{DOMAIN}/frontend/dist/alarmgrid.js"
-    f"?v={VERSION}&build={FRONTEND_BUILD}"
-)
+FRONTEND_MODULE = f"/{DOMAIN}/frontend/dist/alarmgrid.js"
 
 SERVICE_ACKNOWLEDGE_ALARM = "acknowledge_alarm"
 SERVICE_ACKNOWLEDGE_ALL = "acknowledge_all"

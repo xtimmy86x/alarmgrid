@@ -342,18 +342,15 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
         self.assertIn("trust_external=False", source)
         self.assertNotIn('"trust_external_script"', source)
 
-    def test_frontend_module_url_has_release_and_build_cache_busting(self) -> None:
+    def test_frontend_module_path_is_stable(self) -> None:
         from custom_components.alarmgrid.const import (
-            FRONTEND_BUILD,
             FRONTEND_MODULE,
             VERSION,
         )
 
         self.assertEqual("2.2.0", VERSION)
-        self.assertEqual("20261028.3", FRONTEND_BUILD)
         self.assertEqual(
-            "/alarmgrid/frontend/dist/alarmgrid.js"
-            "?v=2.2.0&build=20261028.3",
+            "/alarmgrid/frontend/dist/alarmgrid.js",
             FRONTEND_MODULE,
         )
 
@@ -672,7 +669,6 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
     def test_alarmgrid_identity_is_consistent(self) -> None:
         from custom_components.alarmgrid.const import (
             DOMAIN,
-            FRONTEND_BUILD,
             FRONTEND_MODULE,
             VERSION,
         )
@@ -687,11 +683,10 @@ class AlarmGridRebrandStaticTests(unittest.TestCase):
         self.assertEqual("alarmgrid", manifest["domain"])
         self.assertEqual("AlarmGrid", manifest["name"])
         self.assertEqual("2.2.0", VERSION)
-        self.assertEqual("20261028.3", FRONTEND_BUILD)
         self.assertEqual("2.2.0", manifest["version"])
         self.assertIn("xtimmy86x/alarmgrid", manifest["documentation"])
         self.assertIn(
-            "alarmgrid.js?v=2.2.0&build=20261028.3", FRONTEND_MODULE
+            "alarmgrid.js", FRONTEND_MODULE
         )
         self.assertIn("custom:alarmgrid-card", readme)
         self.assertIn("alarmgrid.create_rule", readme)
