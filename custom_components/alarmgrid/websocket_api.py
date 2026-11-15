@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
 from .alarm_models import AlarmPriority
-from .const import DOMAIN
+from .const import DEFAULT_OPTIONS, DOMAIN
 from .operator_identity import user_operator
 from .rule_management import (
     delete_rules,
@@ -20,7 +20,7 @@ from .rule_management import (
     remove_per_rule_entity_registry_entries,
 )
 from .rule_preview import async_preview_rule
-from .settings import current_settings, settings_schema, validate_settings
+from .settings import current_settings, frontend_settings, settings_schema, validate_settings
 
 
 def async_register_websocket_api(hass: HomeAssistant) -> None:
@@ -77,6 +77,7 @@ async def websocket_list_alarms(
         {
             "alarms": runtime.engine.list_alarms(include_normal=True),
             "sound": runtime.sound_manager.as_dict(),
+            "settings": frontend_settings(getattr(runtime.engine, "options", {})),
         },
     )
 
@@ -84,8 +85,8 @@ async def websocket_list_alarms(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "alarmgrid/list_history",
-        vol.Optional("limit", default=250): vol.All(
-            vol.Coerce(int), vol.Range(min=1, max=5000)
+        vol.Optional("limit"): vol.All(
+            vol.Coerce(int), vol.Range(min=1, max=50000)
         ),
         vol.Optional("start_time"): str,
         vol.Optional("end_time"): str,
@@ -105,7 +106,7 @@ async def websocket_list_history(
 
     runtime = _runtime(hass)
     events = await runtime.history_store.query_events(
-        limit=msg["limit"],
+        limit=min(msg.get("limit", 50000), getattr(runtime.engine, "options", DEFAULT_OPTIONS)["max_history_rows"]),
         start_time=_parse_datetime(msg.get("start_time")),
         end_time=_parse_datetime(msg.get("end_time")),
         priority=msg.get("priority"),
@@ -501,7 +502,7 @@ async def websocket_test_sound(
     """Test sound."""
 
     await _runtime(hass).sound_manager.test_sound(AlarmPriority(msg["priority"]))
-    connection.send_result(msg["id"], {"played": True})
+    connection.send_result(msg["id"], {"played": True, "sound": _runtime(hass).sound_manager.as_dict()})
 
 
 @websocket_api.websocket_command(

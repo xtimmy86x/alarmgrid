@@ -203,6 +203,39 @@ This repository includes local Home Assistant brand assets in `custom_components
 
 Home Assistant 2026.3 and newer can serve local brand assets for custom integrations. Older Home Assistant versions still run the integration, but may not show the local icon/logo in all UI surfaces.
 
+## Settings behaviour
+
+The **Settings** page in the sidebar and the integration options flow use the same
+validated settings. Saving reloads AlarmGrid; existing rule definitions remain intact.
+
+- **History:** retention deletes expired rows at startup and every hour (including
+  rows already stored before this update). Export history first if you need a copy
+  older than the configured retention period. The history row limit only limits
+  panel queries, not stored events or exports.
+- **Source changes:** `store_status_changes` adds `status_changed` history rows when
+  the evaluated source value changes without an alarm lifecycle transition.
+  `store_normal_events` additionally includes those changes while normal or cleared
+  and acknowledged; it requires source-change recording. Lifecycle transitions and
+  operator actions are always recorded and notification delivery remains independent.
+- **Sound:** repeats use the configured interval even without sensor updates.
+  Disabling repeat plays once per new audible alarm. Acknowledgement, shelving,
+  disabling and deletion stop that alarm's sound; timed silence resumes when due.
+  Browser sound respects the selected output and still requires local browser audio
+  permission. Test sound is one-shot and does not start a permanent horn.
+- **Rule defaults:** activation/clear delays and numeric deadband initialize new
+  rules and new numeric expression conditions. Explicit values, including zero,
+  imported values and existing rules are preserved. Disabling acknowledgement after
+  clearing auto-acknowledges future clears; existing cleared events are not rewritten.
+  Per-rule auto-acknowledgement still wins when the global requirement is enabled.
+- **Display:** alarm row limits, cleared-state visibility, grouping and compact rows
+  apply to the sidebar panel only. All rules continue being monitored. Counts are
+  computed before truncating displayed rows. The initial tab applies on opening a
+  new panel session; the title applies to both sidebar and panel header.
+  The flashing toggle is global to panel and cards, with individual card flashing
+  preferences still respected. Other card-specific presentation settings stay local.
+- **Flapping:** the configurable threshold counts alarm activations within five
+  minutes, with optional automatic shelving. The UI now describes this explicitly.
+
 ## Lovelace Card
 
 AlarmGrid supports the native Home Assistant visual card editor. Go to **Dashboard → Edit dashboard → Add card** (or edit an existing card), choose **AlarmGrid**, and configure the card graphically with a live preview. YAML configuration remains fully supported, including existing dashboards.

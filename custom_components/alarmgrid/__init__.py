@@ -37,6 +37,7 @@ from .const import (
     STATE_STORAGE_KEY,
 )
 from .notification_queue import TelegramOutbox
+from .settings import current_settings
 from .telegram_interactive import TelegramInteractiveManager
 
 if TYPE_CHECKING:
@@ -63,6 +64,7 @@ class AlarmGridRuntime:
     stopping: bool = False
     remove_state_listener: Any | None = None
     remove_delay_timer: Any | None = None
+    remove_retention_timer: Any | None = None
     remove_frontend_update_listener: Any | None = None
     telegram_interactive_manager: TelegramInteractiveManager | None = None
     remove_telegram_callback_listener: Any | None = None
@@ -117,6 +119,7 @@ async def async_setup_entry(
     from .websocket_api import async_register_websocket_api
 
     options = {**DEFAULT_OPTIONS, **entry.data, **entry.options}
+    options.update(current_settings({**entry.data, **entry.options}))
     rule_store = HomeAssistantRuleStore(hass, RULES_STORAGE_KEY, STATE_STORAGE_KEY)
     history_path = Path(hass.config.path("alarmgrid_history.db"))
     history_store = SQLiteHistoryStore(history_path)
@@ -152,6 +155,7 @@ async def async_setup_entry(
                 DEFAULT_OPTIONS[CONF_REPEAT_INTERVAL_SECONDS],
             )
         ),
+        repeat_until_silenced=bool(options["repeat_until_silenced"]),
         media_players=list(options.get(CONF_MEDIA_PLAYERS, [])),
         media_call=_media_call,
     )
@@ -166,6 +170,7 @@ async def async_setup_entry(
         sound_manager=sound_manager,
         event_handler=notification_manager.notify,
     )
+    engine.options = options
     engine.alarm_flood_threshold = int(
         options.get(
             CONF_ALARM_FLOOD_THRESHOLD, DEFAULT_OPTIONS[CONF_ALARM_FLOOD_THRESHOLD]
@@ -234,6 +239,21 @@ async def async_setup_entry(
         task = hass.async_create_task(coro)
         runtime.tasks.add(task)
         task.add_done_callback(runtime.tasks.discard)
+
+    async def _cleanup_history() -> None:
+        try:
+            await history_store.cleanup_retention(int(options["history_retention_days"]))
+        except Exception as err:
+            _LOGGER.error("History retention cleanup failed: %s", type(err).__name__)
+        finally:
+            if not runtime.stopping:
+                runtime.remove_retention_timer = async_call_later(hass, 3600, _retention_due)
+
+    @callback
+    def _retention_due(_now: datetime) -> None:
+        runtime.remove_retention_timer = None
+        if not runtime.stopping:
+            _create_task(_cleanup_history())
 
     callback_entities = list(options.get(CONF_TELEGRAM_CALLBACK_EVENT_ENTITIES) or [])
     if interactive_manager is not None and callback_entities:
@@ -367,6 +387,7 @@ async def async_setup_entry(
         ready = True
         await _reconcile_current_states()
         outbox.start(hass.async_create_background_task)
+        await _cleanup_history()
 
     @callback
     def _started(_event: Event) -> None:
@@ -399,6 +420,8 @@ async def async_unload_entry(
             runtime.remove_state_listener()
         if runtime.remove_delay_timer:
             runtime.remove_delay_timer()
+        if runtime.remove_retention_timer:
+            runtime.remove_retention_timer()
         if runtime.remove_frontend_update_listener:
             runtime.remove_frontend_update_listener()
         if runtime.remove_telegram_callback_listener:

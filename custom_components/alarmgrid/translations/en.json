@@ -31,12 +31,14 @@
             "data": {
               "sound_mode": "Sound output",
               "media_players": "Media players",
-              "repeat_interval_seconds": "Repeat every (seconds)"
+              "repeat_interval_seconds": "Repeat every (seconds)",
+              "repeat_until_silenced": "Repeat until silenced"
             },
             "data_description": {
               "sound_mode": "Where the alarm horn plays.",
               "media_players": "Players that receive the alarm sound when media player output is enabled.",
-              "repeat_interval_seconds": "How often the horn repeats while alarms are unacknowledged."
+              "repeat_interval_seconds": "How often the horn repeats while alarms are unacknowledged.",
+              "repeat_until_silenced": "Repeat at the interval below. When off, play once per new alarm."
             }
           },
           "alarm_handling": {
@@ -52,7 +54,7 @@
               "alarm_flood_threshold": "Number of new alarms that counts as an alarm flood.",
               "alarm_flood_window_seconds": "Time window in which the flood threshold is counted.",
               "auto_shelve_flapping_alarms": "Shelve an alarm automatically when it keeps toggling.",
-              "flapping_detection_threshold": "State changes within 5 minutes before an alarm is considered flapping."
+              "flapping_detection_threshold": "Activations within 5 minutes before an alarm is considered flapping."
             }
           },
           "telegram": {
@@ -94,12 +96,66 @@
             "name": "Panel and entities",
             "description": "Sidebar and generated entities",
             "data": {
-              "panel_title": "Sidebar title",
+              "panel_title": "Panel title",
               "create_rule_buttons": "Create buttons for each rule"
             },
             "data_description": {
-              "panel_title": "Name of the panel in the sidebar.",
+              "panel_title": "Title in the sidebar and inside the panel. Refresh the page after saving.",
               "create_rule_buttons": "Acknowledge, shelve and disable buttons for every rule. Turning this off removes existing per-rule buttons; global buttons remain."
+            }
+          },
+          "history": {
+            "name": "History",
+            "description": "Storage and retention",
+            "data": {
+              "history_retention_days": "History retention (days)",
+              "max_history_rows": "History rows shown",
+              "store_status_changes": "Record source value changes",
+              "store_normal_events": "Include changes while normal"
+            },
+            "data_description": {
+              "history_retention_days": "Deletes older events at startup and every hour. Existing history older than this limit is deleted too.",
+              "max_history_rows": "Limits the panel history query; does not delete events or limit exports.",
+              "store_status_changes": "Record source changes without an alarm lifecycle transition. Alarm transitions and operator actions are always recorded.",
+              "store_normal_events": "Also record source changes while the alarm remains normal. Requires source change recording."
+            }
+          },
+          "rule_defaults": {
+            "name": "Rule defaults and clearing",
+            "description": "Defaults for new rules and clear behaviour",
+            "data": {
+              "default_delay_on_seconds": "Default activation delay (s)",
+              "default_delay_off_seconds": "Default clear delay (s)",
+              "default_deadband": "Default deadband",
+              "require_acknowledgement_for_cleared": "Require acknowledgement after clearing"
+            },
+            "data_description": {
+              "default_delay_on_seconds": "Initial value for new rules only. Existing rules and explicit values are preserved.",
+              "default_delay_off_seconds": "Initial value for new rules only.",
+              "default_deadband": "Initial value for new numeric rules; in the source measurement unit.",
+              "require_acknowledgement_for_cleared": "When off, future clears are acknowledged automatically. Per-rule auto-ack still takes precedence when enabled."
+            }
+          },
+          "display": {
+            "name": "Panel display",
+            "description": "Rows, grouping and appearance",
+            "data": {
+              "max_active_alarms": "Maximum alarm rows shown",
+              "auto_hide_cleared_acknowledged": "Hide cleared acknowledged alarms",
+              "show_cleared_unacknowledged": "Show cleared unacknowledged alarms",
+              "default_tab": "Initial panel tab",
+              "enable_flashing": "Enable alarm flashing",
+              "enable_compact_mode": "Compact panel rows",
+              "group_by": "Group panel alarms by"
+            },
+            "data_description": {
+              "max_active_alarms": "Panel display limit only: every alarm is still monitored and counted.",
+              "auto_hide_cleared_acknowledged": "Hide these rows from the panel active view; history is retained.",
+              "show_cleared_unacknowledged": "Include these rows in the panel active and unacknowledged views.",
+              "default_tab": "Used when opening a new panel session.",
+              "enable_flashing": "Applies to the panel and cards. Individual card flashing preferences still apply.",
+              "enable_compact_mode": "Reduce vertical spacing in the alarm table.",
+              "group_by": "Group the displayed rows by area, system or priority."
             }
           }
         }
@@ -110,7 +166,7 @@
       "telegram_required": "Enable Telegram notifications first.",
       "telegram_callback_entities_required": "Select at least one Telegram callback event entity.",
       "telegram_action_required": "Allow at least one interactive action.",
-      "invalid_number": "Enter a whole number.",
+      "invalid_number": "Enter a valid number (whole numbers where required).",
       "out_of_range": "Value is out of range.",
       "invalid_entity": "An entity of the wrong type was selected.",
       "too_long": "Text is too long.",
@@ -136,6 +192,25 @@
         "low": "Low",
         "info": "Info",
         "status": "Status"
+      }
+    },
+    "group_by": {
+      "options": {
+        "area": "Area",
+        "system": "System",
+        "priority": "Priority",
+        "none": "None"
+      }
+    },
+    "default_tab": {
+      "options": {
+        "active": "Active",
+        "unacknowledged": "Unacknowledged",
+        "history": "History",
+        "shelved": "Shelved",
+        "disabled": "Disabled",
+        "rules": "Rules",
+        "settings": "Settings"
       }
     }
   }

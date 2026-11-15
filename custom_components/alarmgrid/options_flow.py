@@ -14,24 +14,23 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult, section
 from homeassistant.helpers import selector
 
-from .const import DEFAULT_OPTIONS
 from .settings import SETTINGS_SECTIONS, SettingField, current_settings, validate_settings
 
 
 def _selector(item: SettingField) -> Any:
     if item.kind == "bool":
         return bool
-    if item.kind == "int":
+    if item.kind in {"int", "float"}:
         return vol.All(
             selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=item.minimum,
                     max=item.maximum,
-                    step=1,
+                    step=1 if item.kind == "int" else 0.01,
                     mode=selector.NumberSelectorMode.BOX,
                 )
             ),
-            vol.Coerce(int),
+            vol.Coerce(int if item.kind == "int" else float),
         )
     if item.kind == "select":
         return selector.SelectSelector(
@@ -55,7 +54,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
 
     def _stored(self) -> dict[str, Any]:
-        return {**DEFAULT_OPTIONS, **self._config_entry.data, **self._config_entry.options}
+        return {**self._config_entry.data, **self._config_entry.options}
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

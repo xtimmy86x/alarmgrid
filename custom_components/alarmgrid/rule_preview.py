@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 from .alarm_models import AlarmRule
+from .settings import apply_rule_defaults
 from .alarm_rules import evaluate_rule
 from .condition_expression import evaluate_condition_expression
 
@@ -37,7 +38,7 @@ async def async_preview_rule(
     rule_id: str | None = None,
 ) -> dict[str, Any]:
     """Validate and evaluate a draft without touching live engine state."""
-    normalized = dict(rule_data)
+    normalized = dict(rule_data) if rule_id else apply_rule_defaults(rule_data, getattr(engine, "options", {}))
     if not normalized.get("id"):
         normalized["id"] = "__preview__"
     if not normalized.get("name"):

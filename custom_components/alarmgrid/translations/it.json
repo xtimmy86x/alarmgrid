@@ -31,12 +31,14 @@
             "data": {
               "sound_mode": "Uscita audio",
               "media_players": "Media player",
-              "repeat_interval_seconds": "Ripeti ogni (secondi)"
+              "repeat_interval_seconds": "Ripeti ogni (secondi)",
+              "repeat_until_silenced": "Ripeti fino al silenziamento"
             },
             "data_description": {
               "sound_mode": "Dove suona la sirena degli allarmi.",
               "media_players": "Player che riproducono il suono quando l'uscita media player è attiva.",
-              "repeat_interval_seconds": "Ogni quanto si ripete la sirena finché ci sono allarmi non riconosciuti."
+              "repeat_interval_seconds": "Ogni quanto si ripete la sirena finché ci sono allarmi non riconosciuti.",
+              "repeat_until_silenced": "Ripete al seguente intervallo. Se disattivato, suona una volta per ogni nuovo allarme."
             }
           },
           "alarm_handling": {
@@ -52,7 +54,7 @@
               "alarm_flood_threshold": "Numero di nuovi allarmi oltre il quale si parla di alarm flood.",
               "alarm_flood_window_seconds": "Intervallo di tempo in cui viene contata la soglia flood.",
               "auto_shelve_flapping_alarms": "Sospende un allarme che continua a cambiare stato.",
-              "flapping_detection_threshold": "Cambi di stato in 5 minuti oltre i quali un allarme è considerato instabile."
+              "flapping_detection_threshold": "Attivazioni in 5 minuti oltre le quali un allarme è considerato instabile."
             }
           },
           "telegram": {
@@ -94,12 +96,66 @@
             "name": "Pannello ed entità",
             "description": "Barra laterale ed entità generate",
             "data": {
-              "panel_title": "Titolo nella barra laterale",
+              "panel_title": "Titolo del pannello",
               "create_rule_buttons": "Crea pulsanti per ogni regola"
             },
             "data_description": {
-              "panel_title": "Nome del pannello nella barra laterale.",
+              "panel_title": "Titolo nella barra laterale e nel pannello. Aggiorna la pagina dopo il salvataggio.",
               "create_rule_buttons": "Pulsanti di riconoscimento, sospensione e disabilitazione per ogni regola. Disattivando l'opzione vengono rimossi quelli già creati; i pulsanti globali restano."
+            }
+          },
+          "history": {
+            "name": "Storico",
+            "description": "Registrazione e conservazione",
+            "data": {
+              "history_retention_days": "Conservazione storico (giorni)",
+              "max_history_rows": "Righe di storico mostrate",
+              "store_status_changes": "Registra variazioni della sorgente",
+              "store_normal_events": "Includi variazioni nello stato normale"
+            },
+            "data_description": {
+              "history_retention_days": "Elimina gli eventi più vecchi all’avvio e ogni ora, compresi quelli già presenti nello storico.",
+              "max_history_rows": "Limita le righe caricate dal pannello; non elimina eventi e non limita le esportazioni.",
+              "store_status_changes": "Registra variazioni della sorgente senza cambio di stato dell’allarme. Transizioni e azioni operatore vengono sempre registrate.",
+              "store_normal_events": "Registra anche variazioni con allarme nello stato normale. Richiede la registrazione delle variazioni della sorgente."
+            }
+          },
+          "rule_defaults": {
+            "name": "Regole e rientro",
+            "description": "Valori iniziali e comportamento al rientro",
+            "data": {
+              "default_delay_on_seconds": "Ritardo di attivazione predefinito (s)",
+              "default_delay_off_seconds": "Ritardo di rientro predefinito (s)",
+              "default_deadband": "Isteresi predefinita",
+              "require_acknowledgement_for_cleared": "Richiedi riconoscimento dopo il rientro"
+            },
+            "data_description": {
+              "default_delay_on_seconds": "Valore iniziale solo per nuove regole. Regole esistenti e valori espliciti restano invariati.",
+              "default_delay_off_seconds": "Valore iniziale solo per nuove regole.",
+              "default_deadband": "Valore iniziale per nuove regole numeriche, nell’unità della sorgente.",
+              "require_acknowledgement_for_cleared": "Se disattivato, i futuri rientri vengono riconosciuti automaticamente. L’auto-riconoscimento della singola regola resta prioritario."
+            }
+          },
+          "display": {
+            "name": "Visualizzazione pannello",
+            "description": "Righe, raggruppamento e aspetto",
+            "data": {
+              "max_active_alarms": "Numero massimo di righe allarme",
+              "auto_hide_cleared_acknowledged": "Nascondi rientrati riconosciuti",
+              "show_cleared_unacknowledged": "Mostra rientrati non riconosciuti",
+              "default_tab": "Scheda iniziale del pannello",
+              "enable_flashing": "Abilita lampeggio allarmi",
+              "enable_compact_mode": "Righe compatte nel pannello",
+              "group_by": "Raggruppa allarmi nel pannello per"
+            },
+            "data_description": {
+              "max_active_alarms": "Limita solo le righe del pannello: tutti gli allarmi restano monitorati e conteggiati.",
+              "auto_hide_cleared_acknowledged": "Nasconde queste righe dalla vista attivi del pannello; lo storico rimane.",
+              "show_cleared_unacknowledged": "Include queste righe nelle viste attivi e da riconoscere del pannello.",
+              "default_tab": "Usata all’apertura di una nuova sessione del pannello.",
+              "enable_flashing": "Si applica a pannello e card. Restano valide le preferenze di lampeggio di ogni card.",
+              "enable_compact_mode": "Riduce la spaziatura verticale della tabella allarmi.",
+              "group_by": "Raggruppa le righe mostrate per area, sistema o priorità."
             }
           }
         }
@@ -110,7 +166,7 @@
       "telegram_required": "Abilita prima le notifiche Telegram.",
       "telegram_callback_entities_required": "Seleziona almeno una event entity di callback Telegram.",
       "telegram_action_required": "Consenti almeno un'azione interattiva.",
-      "invalid_number": "Inserisci un numero intero.",
+      "invalid_number": "Inserisci un numero valido (intero dove richiesto).",
       "out_of_range": "Valore fuori intervallo.",
       "invalid_entity": "È stata selezionata un'entità del tipo sbagliato.",
       "too_long": "Testo troppo lungo.",
@@ -136,6 +192,25 @@
         "low": "Bassa",
         "info": "Info",
         "status": "Stato"
+      }
+    },
+    "group_by": {
+      "options": {
+        "area": "Area",
+        "system": "Sistema",
+        "priority": "Priorità",
+        "none": "Nessuno"
+      }
+    },
+    "default_tab": {
+      "options": {
+        "active": "Attivi",
+        "unacknowledged": "Da riconoscere",
+        "history": "Storico",
+        "shelved": "Sospesi",
+        "disabled": "Disabilitati",
+        "rules": "Regole",
+        "settings": "Impostazioni"
       }
     }
   }

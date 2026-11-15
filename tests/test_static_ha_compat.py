@@ -453,7 +453,8 @@ class StaticHomeAssistantCompatibilityTests(unittest.TestCase):
 
         self.assertIn("_alarmVisualDelayMs = 2000", source)
         self.assertIn("state-pending-color", source)
-        self.assertIn("_browserHornCooldownMs = 2000", source)
+        self.assertIn("this._sound.last_sound_at", source)
+        self.assertNotIn("_browserHornCooldownMs = 2000", source)
         self.assertIn("_maybePlayBrowserHorn", source)
 
     def test_release_version_metadata_is_bumped(self) -> None:

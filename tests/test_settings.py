@@ -28,7 +28,7 @@ class SettingsValidationTests(unittest.TestCase):
     def test_schema_lists_sections_in_order(self):
         self.assertEqual(
             [section["key"] for section in settings_schema()],
-            ["sound", "alarm_handling", "telegram", "telegram_interactive", "integration"],
+            ["sound", "alarm_handling", "history", "rule_defaults", "display", "telegram", "telegram_interactive", "integration"],
         )
 
     def test_numbers_are_coerced_and_bounded(self):
@@ -50,7 +50,8 @@ class SettingsValidationTests(unittest.TestCase):
     def test_unknown_and_legacy_keys_are_ignored(self):
         values, errors = validate_settings({"group_by": "area", "nope": 1}, {})
         self.assertEqual(errors, {})
-        self.assertNotIn("group_by", values)
+        self.assertEqual(values["group_by"], "area")
+        self.assertNotIn("nope", values)
 
     def test_blank_panel_title_falls_back_to_default(self):
         values, _ = validate_settings({"panel_title": "   "}, {})
@@ -113,7 +114,7 @@ class SettingsWebsocketTests(unittest.IsolatedAsyncioTestCase):
                 result = connection.send_result.call_args.args[1]
                 self.assertIs(result["can_edit"], admin)
                 self.assertEqual(result["values"]["sound_mode"], "browser_only")
-                self.assertNotIn("group_by", result["values"])
+                self.assertEqual(result["values"]["group_by"], "area")
                 self.assertEqual(result["sections"][0]["key"], "sound")
 
     async def test_update_settings_requires_admin(self):

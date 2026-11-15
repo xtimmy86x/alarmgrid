@@ -8,10 +8,10 @@ import unittest
 from pathlib import Path
 from datetime import UTC, datetime, timedelta
 from types import ModuleType, SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from custom_components.alarmgrid import async_setup_entry, async_unload_entry
-from custom_components.alarmgrid.alarm_models import AlarmLifecycleState
+from custom_components.alarmgrid.alarm_models import AlarmLifecycleState, AlarmEvent
 from custom_components.alarmgrid.alarm_store import SQLiteHistoryStore
 from tests.test_alarm_delivery_reliability import make_rule
 from tests.test_notifications import options
@@ -176,8 +176,9 @@ class SetupTests(unittest.IsolatedAsyncioTestCase):
     async def test_shelving_action_reschedules_timer_without_source_update(self):
         await async_setup_entry(self.hass, self.entry)
         await self.entry.runtime_data.engine.shelve_alarm("fault", duration_minutes=1)
-        self.assertEqual(len(self.timers), 1)
-        self.assertGreater(self.timers[0][0], 59)
+        alarm_timers = [timer for timer in self.timers if timer[0] < 3600]
+        self.assertEqual(len(alarm_timers), 1)
+        self.assertGreater(alarm_timers[0][0], 59)
 
     async def test_rule_refresh_evaluates_new_rule_against_current_ha_state(self):
         await async_setup_entry(self.hass, self.entry)
@@ -205,9 +206,50 @@ class SetupTests(unittest.IsolatedAsyncioTestCase):
             with self.assertLogs("custom_components.alarmgrid", level="ERROR") as logs:
                 self.timers.pop()[1](datetime.now(UTC))
                 await asyncio.gather(*list(runtime.tasks))
-        self.assertEqual(len(self.timers), 1)
-        self.assertGreater(self.timers[0][0], 4)
+        alarm_timers = [timer for timer in self.timers if timer[0] < 3600]
+        self.assertEqual(len(alarm_timers), 1)
+        self.assertGreater(alarm_timers[0][0], 4)
         self.assertIn("retry_in=5s", str(logs.output))
+
+    async def test_retention_runs_at_start_and_hourly_and_stops_on_unload(self):
+        self.entry.options["history_retention_days"] = 7
+        store = SQLiteHistoryStore(Path(self.temp.name) / "alarmgrid_history.db")
+        await store.async_setup()
+        for days, label in ((8, "old"), (6, "recent")):
+            await store.add_event(AlarmEvent(rule_id=label, entity_id=None, event_type="activated", timestamp=datetime.now(UTC) - timedelta(days=days)))
+        await async_setup_entry(self.hass, self.entry)
+        runtime = self.entry.runtime_data
+        events = await store.query_events()
+        self.assertNotIn("old", [event.rule_id for event in events])
+        self.assertIn("recent", [event.rule_id for event in events])
+        with patch.object(runtime.history_store, "cleanup_retention", AsyncMock()) as cleanup:
+            timer = next(timer for timer in self.timers if timer[0] == 3600)
+            self.timers.remove(timer)
+            timer[1](datetime.now(UTC))
+            await asyncio.gather(*list(runtime.tasks))
+            cleanup.assert_awaited_once_with(7)
+        self.assertEqual(sum(timer[0] == 3600 for timer in self.timers), 1)
+        runtime.remove_panel = None
+        await async_unload_entry(self.hass, self.entry)
+        self.entry.runtime_data = None
+        self.assertEqual(self.timers, [])
+
+    async def test_retention_failure_is_logged_and_retried_hourly(self):
+        with patch.object(SQLiteHistoryStore, "cleanup_retention", AsyncMock(side_effect=OSError("locked"))):
+            with self.assertLogs("custom_components.alarmgrid", level="ERROR"):
+                await async_setup_entry(self.hass, self.entry)
+        self.assertTrue(self.entry.runtime_data.engine.states["fault"].is_active)
+        self.assertEqual(sum(timer[0] == 3600 for timer in self.timers), 1)
+
+    async def test_options_reach_sound_engine_and_flapping(self):
+        self.entry.options.update(repeat_until_silenced=False, repeat_interval_seconds=45,
+                                  flapping_detection_threshold=3, default_deadband=1.5)
+        await async_setup_entry(self.hass, self.entry)
+        runtime = self.entry.runtime_data
+        self.assertFalse(runtime.sound_manager.repeat_until_silenced)
+        self.assertEqual(runtime.sound_manager.repeat_interval_seconds, 45)
+        self.assertEqual(runtime.engine.flapping_threshold, 3)
+        self.assertEqual(runtime.engine.options["default_deadband"], 1.5)
 
     async def test_unload_removes_start_listener_and_all_timers(self):
         self.hass.is_running = False
