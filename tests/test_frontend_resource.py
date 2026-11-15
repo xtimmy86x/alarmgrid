@@ -40,6 +40,7 @@ class FrontendResourceRegistrationTests(IsolatedAsyncioTestCase):
             async_create_item=AsyncMock(),
         )
         hass = SimpleNamespace(
+            async_add_executor_job=AsyncMock(side_effect=lambda fn: fn()),
             data={"lovelace": SimpleNamespace(mode="storage", resources=resources)}
         )
 
@@ -49,10 +50,7 @@ class FrontendResourceRegistrationTests(IsolatedAsyncioTestCase):
             "alarmgrid-resource",
             {
                 "res_type": "module",
-                "url": (
-                    "/alarmgrid/frontend/dist/alarmgrid.js"
-                    "?v=2.2.0&build=20261028.3"
-                ),
+                "url": await frontend_resource.async_get_frontend_module_url(hass),
             },
         )
         resources.async_create_item.assert_not_awaited()

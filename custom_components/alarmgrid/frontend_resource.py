@@ -9,11 +9,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_call_later
 
 from .const import DOMAIN, FRONTEND_MODULE
+from .frontend_version import async_get_frontend_module_url
 
 _LOGGER = logging.getLogger(__name__)
 _LOVELACE_RESOURCE_REGISTERED = f"{DOMAIN}_lovelace_resource_registered"
-_LOVELACE_RESOURCE_URL = FRONTEND_MODULE
-_LOVELACE_RESOURCE_PATH = FRONTEND_MODULE.split("?", 1)[0]
+_LOVELACE_RESOURCE_PATH = FRONTEND_MODULE
 
 
 def _lovelace_mode(lovelace: Any) -> str:
@@ -40,7 +40,8 @@ async def async_register_lovelace_resource(hass: HomeAssistant) -> None:
     during the current session, but dashboard refreshes need a persisted resource.
     """
 
-    if hass.data.get(_LOVELACE_RESOURCE_REGISTERED):
+    module_url = await async_get_frontend_module_url(hass)
+    if hass.data.get(_LOVELACE_RESOURCE_REGISTERED) == module_url:
         return
 
     lovelace = hass.data.get("lovelace")
@@ -53,7 +54,7 @@ async def async_register_lovelace_resource(hass: HomeAssistant) -> None:
         _LOGGER.debug(
             "Lovelace resource auto-registration skipped because mode is not storage"
         )
-        hass.data[_LOVELACE_RESOURCE_REGISTERED] = True
+        hass.data[_LOVELACE_RESOURCE_REGISTERED] = module_url
         return
 
     resources = getattr(lovelace, "resources", None)
@@ -74,15 +75,15 @@ async def async_register_lovelace_resource(hass: HomeAssistant) -> None:
     ]
     if existing:
         resource = existing[0]
-        if resource.get("url") != _LOVELACE_RESOURCE_URL:
+        if resource.get("url") != module_url or resource.get("type") != "module":
             await resources.async_update_item(
                 resource["id"],
-                {"res_type": "module", "url": _LOVELACE_RESOURCE_URL},
+                {"res_type": "module", "url": module_url},
             )
-        hass.data[_LOVELACE_RESOURCE_REGISTERED] = True
+        hass.data[_LOVELACE_RESOURCE_REGISTERED] = module_url
         return
 
     await resources.async_create_item(
-        {"res_type": "module", "url": _LOVELACE_RESOURCE_URL}
+        {"res_type": "module", "url": module_url}
     )
-    hass.data[_LOVELACE_RESOURCE_REGISTERED] = True
+    hass.data[_LOVELACE_RESOURCE_REGISTERED] = module_url
