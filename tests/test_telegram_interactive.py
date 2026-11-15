@@ -88,7 +88,7 @@ class TelegramSessionTests(unittest.TestCase):
             [
                 [
                     ["✅ Acknowledge", "ag:TOKEN:ack"],
-                    ["💤 Suspend", "ag:TOKEN:shelve"],
+                    ["💤 Shelve", "ag:TOKEN:shelve"],
                 ],
                 [["🚫 Disable", "ag:TOKEN:disable"]],
             ],

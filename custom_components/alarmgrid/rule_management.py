@@ -24,6 +24,7 @@ RULE_CSV_FIELDS = (
     "condition",
     "condition_expression",
     "threshold",
+    "threshold_entity",
     "deadband",
     "priority",
     "telegram_notification_policy",

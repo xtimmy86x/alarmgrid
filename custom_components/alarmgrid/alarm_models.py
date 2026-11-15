@@ -247,6 +247,7 @@ class AlarmRule:
     created_at: datetime | None = None
     updated_at: datetime | None = None
     condition_expression: dict[str, Any] | None = None
+    threshold_entity: str | None = None
 
     @property
     def slug(self) -> str:
@@ -267,7 +268,7 @@ class AlarmRule:
             from .condition_expression import expression_entity_ids
 
             return expression_entity_ids(self.condition_expression)
-        return {self.entity_id} if self.entity_id else set()
+        return {entity for entity in (self.entity_id, self.threshold_entity) if entity}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AlarmRule:
@@ -291,7 +292,17 @@ class AlarmRule:
         telegram_notification_policy = _coerce_telegram_notification_policy(
             data.get("telegram_notification_policy")
         )
-        threshold = data.get("threshold")
+        threshold_entity = str(data.get("threshold_entity") or "").strip() or None
+        if data.get("threshold_source") == "entity" and not threshold_entity and condition_expression is None:
+            raise AlarmValidationError("threshold_entity is required")
+        if threshold_entity:
+            if condition_expression is not None:
+                threshold_entity = None  # Advanced leaves own their references.
+            elif condition not in {AlarmCondition.ABOVE, AlarmCondition.BELOW, AlarmCondition.EQUAL, AlarmCondition.NOT_EQUAL, AlarmCondition.CONTAINS}:
+                raise AlarmValidationError("threshold_entity is not supported for this condition")
+            elif not re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", threshold_entity):
+                raise AlarmValidationError("threshold_entity must be an entity ID")
+        threshold = None if threshold_entity else data.get("threshold")
 
         if not rule_id:
             raise AlarmValidationError("id is required")
@@ -299,7 +310,7 @@ class AlarmRule:
             raise AlarmValidationError("entity_id is required")
         if not name:
             raise AlarmValidationError("name is required")
-        if condition_expression is None and condition in NUMERIC_CONDITIONS and threshold is None:
+        if condition_expression is None and condition in NUMERIC_CONDITIONS and threshold is None and not threshold_entity:
             raise AlarmValidationError("threshold is required for numeric conditions")
 
         numeric_threshold = _coerce_float(threshold, "threshold")
@@ -319,6 +330,7 @@ class AlarmRule:
             system=data.get("system"),
             description=data.get("description"),
             threshold=numeric_threshold if numeric_threshold is not None else threshold,
+            threshold_entity=threshold_entity,
             deadband=deadband,
             priority=priority,
             telegram_notification_policy=telegram_notification_policy,
@@ -361,6 +373,7 @@ class AlarmRule:
             "condition": self.condition.value if self.condition else None,
             "condition_expression": self.condition_expression,
             "threshold": self.threshold,
+            "threshold_entity": self.threshold_entity,
             "deadband": self.deadband,
             "priority": self.priority.value,
             "telegram_notification_policy": self.telegram_notification_policy.value,
