@@ -24,6 +24,8 @@ from .alarm_models import (
 from .alarm_rules import evaluate_rule
 from .alarm_sound import AlarmSoundManager
 from .alarm_store import InMemoryHistoryStore, MemoryRuleStore
+from .const import DEFAULT_OPTIONS
+from .settings import apply_rule_defaults
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,6 +73,7 @@ class AlarmEngine:
         auto_shelve_minutes: int = 10,
         event_handler: AsyncEventHandler | None = None,
     ) -> None:
+        self.options = dict(DEFAULT_OPTIONS)
         self.rules: dict[str, AlarmRule] = {rule.id: rule for rule in rules or []}
         self.states: dict[str, AlarmRuntimeState] = {
             rule_id: replace(state) for rule_id, state in (initial_states or {}).items()
@@ -120,12 +123,30 @@ class AlarmEngine:
 
         rules = await rule_store.async_load_rules()
         states = await rule_store.async_load_states()
+        if sound_manager is not None:
+            sound = await rule_store.async_load_sound()
+            if sound is not None:
+                audible = {
+                    rule.id: rule.priority for rule in rules
+                    if rule.enabled and rule.audible and rule.id in states
+                    and states[rule.id].lifecycle_state in {
+                        AlarmLifecycleState.ACTIVE_UNACK, AlarmLifecycleState.CLEARED_UNACK,
+                    }
+                }
+                sound_manager.restore_state(sound, audible)
+
+        async def persist_runtime(states: dict[str, AlarmRuntimeState]) -> None:
+            if sound_manager is None:
+                await rule_store.async_save_states(states)
+            else:
+                await rule_store.async_save_states(states, sound=sound_manager.storage_state())
+
         return cls(
             rules,
             history_store,
             sound_manager=sound_manager,
             now=now,
-            persist_states=rule_store.async_save_states,
+            persist_states=persist_runtime,
             persist_rules=rule_store.async_save_rules,
             initial_states=states,
             event_handler=event_handler,
@@ -234,6 +255,14 @@ class AlarmEngine:
                 runtime = self.states[rule.id]
                 runtime.pending_active_since = None
                 runtime.pending_clear_since = None
+        if self.sound_manager:
+            for rule in self.rules.values():
+                state = self.states[rule.id].lifecycle_state
+                if rule.audible and state in {AlarmLifecycleState.ACTIVE_UNACK, AlarmLifecycleState.CLEARED_UNACK}:
+                    if rule.id not in self.sound_manager.active_audible_alarms:
+                        await self.sound_manager.on_alarm_requires_sound(rule.id, rule.priority)
+                else:
+                    await self.sound_manager.on_alarm_acknowledged(rule.id)
         await self._persist()
         self._notify()
 
@@ -279,6 +308,10 @@ class AlarmEngine:
             elif runtime.last_state is not None:
                 await self.evaluate_rule(rule_id, runtime.last_state)
 
+        if self.sound_manager and await self.sound_manager.process_due():
+            await self._persist()
+            self._notify()
+
     def next_due_transition_at(self) -> datetime | None:
         """Return the next delayed transition timestamp, if any."""
 
@@ -290,6 +323,8 @@ class AlarmEngine:
             due_at = self._rule_due_transition_at(rule, runtime)
             if due_at is not None:
                 due_times.append(due_at)
+        if self.sound_manager and (sound_due := self.sound_manager.next_due_at()) is not None:
+            due_times.append(sound_due)
         return min(due_times) if due_times else None
 
     @_serialized
@@ -343,6 +378,8 @@ class AlarmEngine:
                 rule, new_state, previous_state, currently_active=runtime.is_active,
                 current_states=self._current_entity_states,
             )
+        old_source = runtime.last_state
+        old_lifecycle = runtime.lifecycle_state
         runtime.last_state = result.source_state
         runtime.last_value = result.source_value
         if result.evaluation_details is not None:
@@ -362,6 +399,14 @@ class AlarmEngine:
         else:
             await self._handle_cleared_evaluation(rule, runtime, result, now)
 
+        if (old_source is not None and old_source != result.source_state
+                and old_lifecycle == runtime.lifecycle_state
+                and self.options["store_status_changes"]
+                and (runtime.lifecycle_state not in {AlarmLifecycleState.NORMAL, AlarmLifecycleState.CLEARED_ACK}
+                     or self.options["store_normal_events"])):
+            await self._record_event(rule, AlarmEventType.STATUS_CHANGED,
+                                     previous_state=old_lifecycle,
+                                     new_state=runtime.lifecycle_state, result=result)
         await self._persist()
         self._notify()
         return result
@@ -457,7 +502,10 @@ class AlarmEngine:
             operator=operator,
         )
         await self._record_activation_protections(rule, runtime)
-        if rule.audible and self.sound_manager:
+        if rule.audible and self.sound_manager and runtime.lifecycle_state == AlarmLifecycleState.ACTIVE_UNACK:
+            if previous == AlarmLifecycleState.CLEARED_UNACK:
+                # A fresh activation must rearm a previously silenced/one-shot horn.
+                await self.sound_manager.on_alarm_acknowledged(rule.id)
             await self.sound_manager.on_alarm_requires_sound(rule.id, rule.priority)
 
     async def _handle_cleared(
@@ -477,7 +525,8 @@ class AlarmEngine:
         previous = runtime.lifecycle_state
         runtime.previous_lifecycle_state = previous
         runtime.clear_timestamp = self._now()
-        if previous == AlarmLifecycleState.ACTIVE_UNACK and not rule.auto_ack_on_clear:
+        if (previous == AlarmLifecycleState.ACTIVE_UNACK and not rule.auto_ack_on_clear
+                and self.options["require_acknowledgement_for_cleared"]):
             runtime.lifecycle_state = AlarmLifecycleState.CLEARED_UNACK
         else:
             runtime.lifecycle_state = AlarmLifecycleState.CLEARED_ACK
@@ -560,6 +609,7 @@ class AlarmEngine:
 
         if self.sound_manager:
             await self.sound_manager.silence(duration_seconds)
+        await self._persist()
         await self._record_system_event(AlarmEventType.SILENCED, operator=operator)
         self._notify()
 
@@ -569,6 +619,7 @@ class AlarmEngine:
 
         if self.sound_manager:
             await self.sound_manager.unsilence()
+        await self._persist()
         await self._record_system_event(AlarmEventType.UNSILENCED, operator=operator)
         self._notify()
 
@@ -695,7 +746,7 @@ class AlarmEngine:
     ) -> AlarmRule:
         """Create a new alarm rule."""
 
-        rule = AlarmRule.from_dict(data)
+        rule = AlarmRule.from_dict(apply_rule_defaults(data, self.options))
         if rule.id in self.rules:
             raise AlarmValidationError(f"rule already exists: {rule.id}")
         self.rules[rule.id] = rule
@@ -736,6 +787,8 @@ class AlarmEngine:
 
         rule = self.rules.pop(rule_id)
         self.states.pop(rule_id, None)
+        if self.sound_manager:
+            await self.sound_manager.on_alarm_acknowledged(rule_id)
         self._evaluation_details.pop(rule_id, None)
         self._rebuild_dependency_index()
         await self._record_event(rule, AlarmEventType.RULE_DELETED, operator=operator)

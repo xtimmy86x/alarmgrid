@@ -400,7 +400,7 @@ const SETTINGS_TEXT = {
     f_alarm_flood_threshold: "Flood threshold", h_alarm_flood_threshold: "New alarms within the window that count as an alarm flood.",
     f_alarm_flood_window_seconds: "Flood window", h_alarm_flood_window_seconds: "Time window used to count the flood threshold.",
     f_auto_shelve_flapping_alarms: "Auto-shelve flapping alarms", h_auto_shelve_flapping_alarms: "Shelve an alarm automatically when it keeps toggling.",
-    f_flapping_detection_threshold: "Flapping threshold", h_flapping_detection_threshold: "State changes within 5 minutes before an alarm counts as flapping.",
+    f_flapping_detection_threshold: "Flapping threshold", h_flapping_detection_threshold: "Activations within 5 minutes before an alarm counts as flapping.",
     f_telegram_enabled: "Enable Telegram notifications", h_telegram_enabled: "Uses the Telegram notify entities configured in Home Assistant.",
     f_telegram_targets: "Recipients", h_telegram_targets: "Telegram notify entities that receive the messages.",
     f_telegram_min_priority: "Minimum priority", h_telegram_min_priority: "Alarms below this priority are never sent.",
@@ -410,15 +410,63 @@ const SETTINGS_TEXT = {
     f_telegram_callback_event_entities: "Callback event entities", h_telegram_callback_event_entities: "Event entities that receive Telegram button presses.",
     f_telegram_interactive_ack: "Acknowledge", f_telegram_interactive_shelve: "Shelve", f_telegram_interactive_disable: "Disable",
     allowed_actions: "Allowed actions",
-    f_panel_title: "Sidebar title", h_panel_title: "Name of the AlarmGrid panel in the sidebar. Refresh the browser after saving to see it.",
+
     f_create_rule_buttons: "Create buttons for each rule", h_create_rule_buttons: "Acknowledge, shelve and disable buttons for every rule. Turning this off removes existing per-rule buttons; global buttons remain.",
     sound_mode_none: "Off", sound_mode_browser_only: "Browser only", sound_mode_media_player_only: "Media players only", sound_mode_browser_and_media_player: "Browser and media players",
     priority_critical: "Critical", priority_high: "High", priority_medium: "Medium", priority_low: "Low", priority_info: "Info", priority_status: "Status",
-    unit_seconds: "s", unit_alarms: "alarms", unit_changes: "changes",
+    unit_seconds: "s", unit_alarms: "alarms", unit_changes: "activations",
     e_telegram_targets_required: "Select at least one recipient.", e_telegram_required: "Enable Telegram notifications first.",
     e_telegram_callback_entities_required: "Select at least one callback event entity.", e_telegram_action_required: "Allow at least one action.",
-    e_invalid_number: "Enter a whole number.", e_out_of_range: "Allowed range: {min}–{max}.", e_invalid_entity: "Wrong entity type.", e_too_long: "Text is too long.",
+    e_out_of_range: "Allowed range: {min}–{max}.", e_invalid_entity: "Wrong entity type.", e_too_long: "Text is too long.",
     e_invalid_choice: "Invalid choice.", e_invalid_boolean: "Invalid value.", e_invalid_entities: "Invalid entity list.",
+    "f_repeat_until_silenced": "Repeat until silenced",
+    "h_repeat_until_silenced": "Repeat at the interval below. When off, play once per new alarm.",
+    "f_history_retention_days": "History retention (days)",
+    "h_history_retention_days": "Deletes older events at startup and every hour. Existing history older than this limit is deleted too.",
+    "f_max_history_rows": "History rows shown",
+    "h_max_history_rows": "Limits the panel history query; does not delete events or limit exports.",
+    "f_store_status_changes": "Record source value changes",
+    "h_store_status_changes": "Record source changes without an alarm lifecycle transition. Alarm transitions and operator actions are always recorded.",
+    "f_store_normal_events": "Include changes while normal",
+    "h_store_normal_events": "Also record source changes while the alarm remains normal. Requires source change recording.",
+    "f_default_delay_on_seconds": "Default activation delay (s)",
+    "h_default_delay_on_seconds": "Initial value for new rules only. Existing rules and explicit values are preserved.",
+    "f_default_delay_off_seconds": "Default clear delay (s)",
+    "h_default_delay_off_seconds": "Initial value for new rules only.",
+    "f_default_deadband": "Default deadband",
+    "h_default_deadband": "Initial value for new numeric rules; in the source measurement unit.",
+    "f_require_acknowledgement_for_cleared": "Require acknowledgement after clearing",
+    "h_require_acknowledgement_for_cleared": "When off, future clears are acknowledged automatically. Per-rule auto-ack still takes precedence when enabled.",
+    "f_max_active_alarms": "Maximum alarm rows shown",
+    "h_max_active_alarms": "Panel display limit only: every alarm is still monitored and counted.",
+    "f_auto_hide_cleared_acknowledged": "Hide cleared acknowledged alarms",
+    "h_auto_hide_cleared_acknowledged": "Hide these rows from the panel active view; history is retained.",
+    "f_show_cleared_unacknowledged": "Show cleared unacknowledged alarms",
+    "h_show_cleared_unacknowledged": "Include these rows in the panel active and unacknowledged views.",
+    "f_default_tab": "Initial panel tab",
+    "h_default_tab": "Used when opening a new panel session.",
+    "f_enable_flashing": "Enable alarm flashing",
+    "h_enable_flashing": "Applies to the panel and cards. Individual card flashing preferences still apply.",
+    "f_enable_compact_mode": "Compact panel rows",
+    "h_enable_compact_mode": "Reduce vertical spacing in the alarm table.",
+    "f_group_by": "Group panel alarms by",
+    "h_group_by": "Group the displayed rows by area, system or priority.",
+    "f_panel_title": "Panel title",
+    "h_panel_title": "Title in the sidebar and inside the panel. Refresh the page after saving.",
+    "s_history": "History",
+    "s_history_desc": "Storage and retention",
+    "s_rule_defaults": "Rule defaults and clearing",
+    "s_rule_defaults_desc": "Defaults for new rules and clear behaviour",
+    "s_display": "Panel display",
+    "s_display_desc": "Rows, grouping and appearance",
+    "group_area": "Area",
+    "group_system": "System",
+    "group_priority": "Priority",
+    "group_none": "None",
+    "display_limit": "Showing {shown} of {total} alarms. All alarms remain monitored.",
+    "unassigned": "Unassigned",
+    "e_invalid_number": "Enter a valid number (whole numbers where required).",
+
   },
   it: {
     intro: "Le modifiche vengono applicate al salvataggio. AlarmGrid si ricarica per qualche secondo; gli allarmi restano.",
@@ -441,7 +489,7 @@ const SETTINGS_TEXT = {
     f_alarm_flood_threshold: "Soglia flood", h_alarm_flood_threshold: "Nuovi allarmi nella finestra oltre i quali si parla di alarm flood.",
     f_alarm_flood_window_seconds: "Finestra flood", h_alarm_flood_window_seconds: "Intervallo di tempo in cui viene contata la soglia.",
     f_auto_shelve_flapping_alarms: "Sospendi automaticamente gli allarmi instabili", h_auto_shelve_flapping_alarms: "Sospende un allarme che continua a cambiare stato.",
-    f_flapping_detection_threshold: "Soglia flapping", h_flapping_detection_threshold: "Cambi di stato in 5 minuti oltre i quali un allarme è considerato instabile.",
+    f_flapping_detection_threshold: "Soglia flapping", h_flapping_detection_threshold: "Attivazioni in 5 minuti oltre le quali un allarme è considerato instabile.",
     f_telegram_enabled: "Abilita notifiche Telegram", h_telegram_enabled: "Usa le entità notify di Telegram configurate in Home Assistant.",
     f_telegram_targets: "Destinatari", h_telegram_targets: "Entità notify di Telegram che ricevono i messaggi.",
     f_telegram_min_priority: "Priorità minima", h_telegram_min_priority: "Gli allarmi sotto questa priorità non vengono mai inviati.",
@@ -451,15 +499,63 @@ const SETTINGS_TEXT = {
     f_telegram_callback_event_entities: "Event entity di callback", h_telegram_callback_event_entities: "Event entity che ricevono la pressione dei pulsanti Telegram.",
     f_telegram_interactive_ack: "Riconosci", f_telegram_interactive_shelve: "Sospendi", f_telegram_interactive_disable: "Disabilita",
     allowed_actions: "Azioni consentite",
-    f_panel_title: "Titolo nella barra laterale", h_panel_title: "Nome del pannello AlarmGrid nella barra laterale. Dopo il salvataggio aggiorna il browser per vederlo.",
+
     f_create_rule_buttons: "Crea pulsanti per ogni regola", h_create_rule_buttons: "Pulsanti di riconoscimento, sospensione e disabilitazione per ogni regola. Disattivando l'opzione vengono rimossi quelli già creati; i pulsanti globali restano.",
     sound_mode_none: "Disattivato", sound_mode_browser_only: "Solo browser", sound_mode_media_player_only: "Solo media player", sound_mode_browser_and_media_player: "Browser e media player",
     priority_critical: "Critica", priority_high: "Alta", priority_medium: "Media", priority_low: "Bassa", priority_info: "Info", priority_status: "Stato",
-    unit_seconds: "s", unit_alarms: "allarmi", unit_changes: "cambi",
+    unit_seconds: "s", unit_alarms: "allarmi", unit_changes: "attivazioni",
     e_telegram_targets_required: "Seleziona almeno un destinatario.", e_telegram_required: "Abilita prima le notifiche Telegram.",
     e_telegram_callback_entities_required: "Seleziona almeno una event entity di callback.", e_telegram_action_required: "Consenti almeno un'azione.",
-    e_invalid_number: "Inserisci un numero intero.", e_out_of_range: "Intervallo consentito: {min}–{max}.", e_invalid_entity: "Tipo di entità errato.", e_too_long: "Testo troppo lungo.",
+    e_out_of_range: "Intervallo consentito: {min}–{max}.", e_invalid_entity: "Tipo di entità errato.", e_too_long: "Testo troppo lungo.",
     e_invalid_choice: "Scelta non valida.", e_invalid_boolean: "Valore non valido.", e_invalid_entities: "Elenco entità non valido.",
+    "f_repeat_until_silenced": "Ripeti fino al silenziamento",
+    "h_repeat_until_silenced": "Ripete al seguente intervallo. Se disattivato, suona una volta per ogni nuovo allarme.",
+    "f_history_retention_days": "Conservazione storico (giorni)",
+    "h_history_retention_days": "Elimina gli eventi più vecchi all’avvio e ogni ora, compresi quelli già presenti nello storico.",
+    "f_max_history_rows": "Righe di storico mostrate",
+    "h_max_history_rows": "Limita le righe caricate dal pannello; non elimina eventi e non limita le esportazioni.",
+    "f_store_status_changes": "Registra variazioni della sorgente",
+    "h_store_status_changes": "Registra variazioni della sorgente senza cambio di stato dell’allarme. Transizioni e azioni operatore vengono sempre registrate.",
+    "f_store_normal_events": "Includi variazioni nello stato normale",
+    "h_store_normal_events": "Registra anche variazioni con allarme nello stato normale. Richiede la registrazione delle variazioni della sorgente.",
+    "f_default_delay_on_seconds": "Ritardo di attivazione predefinito (s)",
+    "h_default_delay_on_seconds": "Valore iniziale solo per nuove regole. Regole esistenti e valori espliciti restano invariati.",
+    "f_default_delay_off_seconds": "Ritardo di rientro predefinito (s)",
+    "h_default_delay_off_seconds": "Valore iniziale solo per nuove regole.",
+    "f_default_deadband": "Isteresi predefinita",
+    "h_default_deadband": "Valore iniziale per nuove regole numeriche, nell’unità della sorgente.",
+    "f_require_acknowledgement_for_cleared": "Richiedi riconoscimento dopo il rientro",
+    "h_require_acknowledgement_for_cleared": "Se disattivato, i futuri rientri vengono riconosciuti automaticamente. L’auto-riconoscimento della singola regola resta prioritario.",
+    "f_max_active_alarms": "Numero massimo di righe allarme",
+    "h_max_active_alarms": "Limita solo le righe del pannello: tutti gli allarmi restano monitorati e conteggiati.",
+    "f_auto_hide_cleared_acknowledged": "Nascondi rientrati riconosciuti",
+    "h_auto_hide_cleared_acknowledged": "Nasconde queste righe dalla vista attivi del pannello; lo storico rimane.",
+    "f_show_cleared_unacknowledged": "Mostra rientrati non riconosciuti",
+    "h_show_cleared_unacknowledged": "Include queste righe nelle viste attivi e da riconoscere del pannello.",
+    "f_default_tab": "Scheda iniziale del pannello",
+    "h_default_tab": "Usata all’apertura di una nuova sessione del pannello.",
+    "f_enable_flashing": "Abilita lampeggio allarmi",
+    "h_enable_flashing": "Si applica a pannello e card. Restano valide le preferenze di lampeggio di ogni card.",
+    "f_enable_compact_mode": "Righe compatte nel pannello",
+    "h_enable_compact_mode": "Riduce la spaziatura verticale della tabella allarmi.",
+    "f_group_by": "Raggruppa allarmi nel pannello per",
+    "h_group_by": "Raggruppa le righe mostrate per area, sistema o priorità.",
+    "f_panel_title": "Titolo del pannello",
+    "h_panel_title": "Titolo nella barra laterale e nel pannello. Aggiorna la pagina dopo il salvataggio.",
+    "s_history": "Storico",
+    "s_history_desc": "Registrazione e conservazione",
+    "s_rule_defaults": "Regole e rientro",
+    "s_rule_defaults_desc": "Valori iniziali e comportamento al rientro",
+    "s_display": "Visualizzazione pannello",
+    "s_display_desc": "Righe, raggruppamento e aspetto",
+    "group_area": "Area",
+    "group_system": "Sistema",
+    "group_priority": "Priorità",
+    "group_none": "Nessuno",
+    "display_limit": "Mostrati {shown} di {total} allarmi. Tutti gli allarmi restano monitorati.",
+    "unassigned": "Non assegnato",
+    "e_invalid_number": "Inserisci un numero valido (intero dove richiesto).",
+
   },
 };
 
@@ -483,7 +579,7 @@ class AlarmGrid extends HTMLElement {
       priority: "medium",
       telegram_notification_policy: "inherit",
       system: "", tag: "", instructions: "",
-      deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
+      deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, ...this._preferences?.rule_defaults, condition_expression: null,
     };
     this._selectedRuleIds = new Set();
     this._editingRuleId = null;
@@ -524,8 +620,8 @@ class AlarmGrid extends HTMLElement {
     this._alarmVisualDelayMs = 2000;
     this._alarmFirstSeenAt = {};
     this._alarmVisualRefreshTimer = undefined;
-    this._browserHornCooldownMs = 2000;
-    this._lastBrowserHornAt = 0;
+    this._preferences = {};
+    this._lastBrowserSound = null;
   }
 
   set hass(hass) {
@@ -547,6 +643,18 @@ class AlarmGrid extends HTMLElement {
 
   set panel(panel) {
     this._panel = panel;
+    this._title = panel?.config?.title;
+    if (this._rendered) this._render();
+  }
+
+  _applyPreferences(preferences) {
+    if (!preferences) return;
+    this._preferences = preferences;
+    this._title = preferences.panel_title || this._panel?.config?.title;
+    if (!this._preferencesInitialized) {
+      if (!this._tabSelected && preferences.default_tab) this._tab = preferences.default_tab;
+      this._preferencesInitialized = true;
+    }
   }
 
   connectedCallback() {
@@ -632,7 +740,8 @@ class AlarmGrid extends HTMLElement {
     this._refreshing = true;
     try {
       const alarms = await this._callWS({ type: "alarmgrid/list_alarms" });
-      const history = await this._callWS({ type: "alarmgrid/list_history", limit: 250 });
+      this._applyPreferences(alarms?.settings);
+      const history = await this._callWS({ type: "alarmgrid/list_history" });
       const rules = await this._callWS({ type: "alarmgrid/list_rules" });
       this._alarms = alarms?.alarms || [];
       this._sound = alarms?.sound || {};
@@ -740,15 +849,23 @@ class AlarmGrid extends HTMLElement {
 
   async _testSound() {
     this._audioEnabled = true;
-    await this._callWS({ type: "alarmgrid/test_sound", priority: "critical" });
-    await this._playBrowserHorn(true);
+    const result = await this._callWS({ type: "alarmgrid/test_sound", priority: "critical" });
+    if (result?.sound) this._sound = result.sound;
+    this._maybePlayBrowserHorn();
   }
 
   _maybePlayBrowserHorn() {
-    if (!this._sound?.horn_active || !this._audioEnabled) return;
-    const now = Date.now();
-    if (now - this._lastBrowserHornAt < this._browserHornCooldownMs) return;
-    this._lastBrowserHornAt = now;
+    if (!this._sound?.browser_enabled || !this._audioEnabled) return;
+    const test = this._sound.test_sound_at;
+    if (test && test !== this._lastBrowserTest) {
+      this._lastBrowserTest = test;
+      this._playBrowserHorn(true);
+      return;
+    }
+    if (!this._sound.horn_active) return;
+    const pulse = this._sound.last_sound_at;
+    if (!pulse || pulse === this._lastBrowserSound) return;
+    this._lastBrowserSound = pulse;
     this._playBrowserHorn();
   }
 
@@ -778,9 +895,11 @@ class AlarmGrid extends HTMLElement {
   }
 
   _tabStates(tab = this._tab) {
+    const cleared = this._preferences?.show_cleared_unacknowledged !== false ? ["CLEARED_UNACK"] : [];
+    const acknowledged = this._preferences?.auto_hide_cleared_acknowledged === false ? ["CLEARED_ACK"] : [];
     return {
-      active: ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK"],
-      unacknowledged: ["ACTIVE_UNACK", "CLEARED_UNACK"],
+      active: ["ACTIVE_UNACK", "ACTIVE_ACK", ...cleared, ...acknowledged],
+      unacknowledged: ["ACTIVE_UNACK", ...cleared],
       shelved: ["SHELVED"],
       disabled: ["DISABLED"],
     }[tab] || [];
@@ -827,7 +946,7 @@ class AlarmGrid extends HTMLElement {
     }
     panelRoot.innerHTML = `
       <style>${this._styles()}</style>
-      <div class="panel theme-${this._effectiveTheme}">
+      <div class="panel theme-${this._effectiveTheme} ${this._preferences?.enable_compact_mode ? "compact" : ""}">
         ${this._headerView()}
         <div class="layout">
           ${this._tabsView()}
@@ -941,11 +1060,13 @@ class AlarmGrid extends HTMLElement {
   }
 
   _audioNotice() {
-    if (this._audioEnabled) return "";
+    if (this._audioEnabled || !this._sound.browser_enabled) return "";
     return `<div class="notice-bar" role="status"><span><ha-icon icon="mdi:information-outline" aria-hidden="true"></ha-icon>${this._t("audio_notice")}</span><button data-action="enable-audio">${this._t("enable_sound_short")}</button></div>`;
   }
 
   _alarmView(alarms) {
+    const total = alarms.length;
+    alarms = alarms.slice(0, this._preferences?.max_active_alarms ?? 250);
     const unfiltered = this._filteredAlarms(true);
     const tabLabel = { active: "tab_active", unacknowledged: "tab_unacknowledged", shelved: "tab_shelved", disabled: "tab_disabled" }[this._tab];
     const chips = ["all", ...CARD_PRIORITIES].map((priority) => {
@@ -976,12 +1097,28 @@ class AlarmGrid extends HTMLElement {
             </tr>
           </thead>
           <tbody>
-            ${alarms.length ? alarms.map((alarm) => this._alarmRow(alarm)).join("") : `<tr><td colspan="7" class="empty">${this._t("no_alarms")}</td></tr>`}
+            ${alarms.length ? this._alarmRows(alarms) : `<tr><td colspan="7" class="empty">${this._t("no_alarms")}</td></tr>`}
           </tbody>
         </table>
       </section>
+      ${total > alarms.length ? `<p class="display-limit">${this._st("display_limit", { shown: alarms.length, total })}</p>` : ""}
       ${["active", "unacknowledged"].includes(this._tab) ? `<p class="legend"><span><span class="legend-swatch swatch-unack"></span>${this._t("legend_unack")}</span><span><span class="legend-swatch swatch-cleared"></span>${this._t("legend_cleared")}</span><span><span class="legend-swatch swatch-ack"></span>${this._t("legend_ack")}</span></p>` : ""}
     `;
+  }
+
+  _alarmRows(alarms) {
+    const key = this._preferences?.group_by || "none";
+    if (key === "none") return alarms.map((alarm) => this._alarmRow(alarm)).join("");
+    const groups = new Map();
+    for (const alarm of alarms) {
+      const group = alarm[key] || "";
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(alarm);
+    }
+    return [...groups].map(([group, rows]) => {
+      const label = key === "priority" ? this._t(`priority_${group}`) : (group || this._st("unassigned"));
+      return `<tr class="alarm-group"><th colspan="7">${this._escape(label)} · ${rows.length}</th></tr>${rows.map((alarm) => this._alarmRow(alarm)).join("")}`;
+    }).join("");
   }
 
   _alarmStateText(alarm) {
@@ -1004,7 +1141,7 @@ class AlarmGrid extends HTMLElement {
 
   _alarmRow(alarm) {
     const stateClass = this._alarmStateClass(alarm);
-    const flash = stateClass !== "state-pending-color" && (alarm.lifecycle_state === "ACTIVE_UNACK" || alarm.lifecycle_state === "CLEARED_UNACK");
+    const flash = this._preferences?.enable_flashing !== false && stateClass !== "state-pending-color" && (alarm.lifecycle_state === "ACTIVE_UNACK" || alarm.lifecycle_state === "CLEARED_UNACK");
     const expanded = this._expandedAlarmIds.has(alarm.id);
     const context = [alarm.area, alarm.system].filter(Boolean).map((item) => this._escape(item)).join(" · ");
     const instructionsToggle = alarm.instructions
@@ -1408,7 +1545,7 @@ class AlarmGrid extends HTMLElement {
     this._promoteSimple();
     const group = this._expressionGroup(path === "simple" ? "root" : path);
     if (!group) return;
-    group.conditions.push(addGroup ? {type:"group",operator:"and",conditions:[{type:"condition",entity_id:"",operator:"above",value:"",deadband:0}]} : {type:"condition",entity_id:"",operator:"above",value:"",deadband:0});
+    group.conditions.push(addGroup ? {type:"group",operator:"and",conditions:[{type:"condition",entity_id:"",operator:"above",value:"",deadband:this._preferences?.rule_defaults?.deadband ?? 0}]} : {type:"condition",entity_id:"",operator:"above",value:"",deadband:this._preferences?.rule_defaults?.deadband ?? 0});
     this._render();
   }
 
@@ -1513,7 +1650,8 @@ class AlarmGrid extends HTMLElement {
         ${this._settingsCard("sound", "mdi:volume-high", `
           ${this._settingsRow("sound_mode")}
           ${this._settingsRow("media_players", { disabled: !["media_player_only", "browser_and_media_player"].includes(draft.sound_mode) })}
-          ${this._settingsRow("repeat_interval_seconds", { unit: this._st("unit_seconds"), disabled: draft.sound_mode === "none" })}
+          ${this._settingsRow("repeat_until_silenced", { disabled: draft.sound_mode === "none" })}
+          ${this._settingsRow("repeat_interval_seconds", { unit: this._st("unit_seconds"), disabled: draft.sound_mode === "none" || !draft.repeat_until_silenced })}
           <div class="settings-status">
             <span class="status-label">${this._st("sound_status")}</span>
             <span class="status-pill ${this._sound.horn_active ? "on" : ""}"><ha-icon icon="${this._sound.horn_active ? "mdi:bullhorn" : "mdi:bullhorn-outline"}" aria-hidden="true"></ha-icon>${this._st("horn")}: ${this._st(this._sound.horn_active ? "horn_on" : "horn_off")}</span>
@@ -1525,6 +1663,24 @@ class AlarmGrid extends HTMLElement {
           ${this._settingsRow("alarm_flood_window_seconds", { unit: this._st("unit_seconds") })}
           ${this._settingsRow("auto_shelve_flapping_alarms")}
           ${this._settingsRow("flapping_detection_threshold", { unit: this._st("unit_changes") })}`)}
+        ${this._settingsCard("history", "mdi:history", `
+          ${this._settingsRow("history_retention_days")}
+          ${this._settingsRow("max_history_rows")}
+          ${this._settingsRow("store_status_changes")}
+          ${this._settingsRow("store_normal_events", { disabled: !draft.store_status_changes })}`)}
+        ${this._settingsCard("rule_defaults", "mdi:tune", `
+          ${this._settingsRow("default_delay_on_seconds")}
+          ${this._settingsRow("default_delay_off_seconds")}
+          ${this._settingsRow("default_deadband")}
+          ${this._settingsRow("require_acknowledgement_for_cleared")}`)}
+        ${this._settingsCard("display", "mdi:table", `
+          ${this._settingsRow("max_active_alarms")}
+          ${this._settingsRow("auto_hide_cleared_acknowledged")}
+          ${this._settingsRow("show_cleared_unacknowledged")}
+          ${this._settingsRow("default_tab")}
+          ${this._settingsRow("enable_flashing")}
+          ${this._settingsRow("enable_compact_mode")}
+          ${this._settingsRow("group_by")}`)}
         ${this._settingsCard("telegram", "mdi:send-outline", `
           ${this._settingsRow("telegram_enabled")}
           ${this._settingsRow("telegram_targets", { disabled: !telegramOn })}
@@ -1575,10 +1731,10 @@ class AlarmGrid extends HTMLElement {
     let control = "";
     if (field.kind === "bool") {
       control = `<input class="switch" type="checkbox" role="switch" id="set-${key}" data-setting="${key}" ${value ? "checked" : ""} ${dis} ${errorAttr}>`;
-    } else if (field.kind === "int") {
-      control = `<span class="number-input"><input type="number" inputmode="numeric" id="set-${key}" data-setting="${key}" value="${this._escape(value)}" min="${field.min ?? ""}" max="${field.max ?? ""}" step="1" ${dis} ${errorAttr}>${unit ? `<span class="unit">${this._escape(unit)}</span>` : ""}</span>`;
+    } else if (["int", "float"].includes(field.kind)) {
+      control = `<span class="number-input"><input type="number" inputmode="${field.kind === "float" ? "decimal" : "numeric"}" id="set-${key}" data-setting="${key}" value="${this._escape(value)}" min="${field.min ?? ""}" max="${field.max ?? ""}" step="${field.kind === "int" ? "1" : "any"}" ${dis} ${errorAttr}>${unit ? `<span class="unit">${this._escape(unit)}</span>` : ""}</span>`;
     } else if (field.kind === "select") {
-      const label = (choice) => this._st(key === "sound_mode" ? `sound_mode_${choice}` : `priority_${choice}`);
+      const label = (choice) => key === "default_tab" ? this._t(`tab_${choice}`) : this._st(key === "sound_mode" ? `sound_mode_${choice}` : key === "group_by" ? `group_${choice}` : `priority_${choice}`);
       control = `<select id="set-${key}" data-setting="${key}" ${dis} ${errorAttr}>${(field.choices || []).map((choice) => `<option value="${choice}" ${choice === value ? "selected" : ""}>${this._escape(label(choice))}</option>`).join("")}</select>`;
     } else if (field.kind === "text") {
       control = `<input type="text" id="set-${key}" data-setting="${key}" value="${this._escape(value)}" maxlength="64" ${dis} ${errorAttr}>`;
@@ -1697,7 +1853,7 @@ class AlarmGrid extends HTMLElement {
         control.addEventListener("change", () => this._setSettingValue(key, control.checked, { focus: `[data-setting="${key}"]` }));
       } else if (control.tagName === "SELECT") {
         control.addEventListener("change", () => this._setSettingValue(key, control.value, { focus: `[data-setting="${key}"]` }));
-      } else if (field.kind === "int") {
+      } else if (["int", "float"].includes(field.kind)) {
         control.addEventListener("input", () => this._setSettingValue(key, control.value === "" ? "" : Number(control.value), { rerender: false }));
       } else {
         control.addEventListener("input", () => this._setSettingValue(key, control.value, { rerender: false }));
@@ -1721,6 +1877,7 @@ class AlarmGrid extends HTMLElement {
     const onAll = (selector, handler) => this.shadowRoot.querySelectorAll(selector).forEach((element) => element.addEventListener("click", () => handler(element)));
     this.shadowRoot.querySelectorAll("[data-tab]").forEach((button) => {
       button.addEventListener("click", () => {
+        this._tabSelected = true;
         this._tab = button.dataset.tab;
         this._openRowMenu = null;
         if (this._tab === "settings" && !this._settingsDirty()) this._settingsData = undefined;
@@ -1926,7 +2083,7 @@ class AlarmGrid extends HTMLElement {
       priority: "medium",
       telegram_notification_policy: "inherit",
       system: "", tag: "", instructions: "",
-      deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, condition_expression: null,
+      deadband: 0, delay_on_seconds: 0, delay_off_seconds: 0, ...this._preferences?.rule_defaults, condition_expression: null,
     };
     this._ruleIdTouched = false;
   }
@@ -2390,6 +2547,8 @@ class AlarmGrid extends HTMLElement {
       .alarm-row.state-shelved button, .alarm-row.state-disabled button { color: var(--ag-text); border-color: var(--ag-border); background: var(--ag-control); }
       .priority-label { text-transform: capitalize; }
       .badge { text-transform: uppercase; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+      .compact .alarm-row td { padding-top: 4px; padding-bottom: 4px; }
+      .alarm-group th { text-align: left; background: var(--ag-surface-alt); }
       .flash { animation: flashRow 1s step-end infinite; }
       @keyframes flashRow { 50% { filter: brightness(1.25); } }
       @media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
@@ -3035,6 +3194,7 @@ class AlarmGridCard extends HTMLElement {
       const result = await this._hass.callWS({ type: "alarmgrid/list_alarms" });
       this._alarms = result?.alarms || [];
       this._sound = result?.sound || {};
+      this._globalFlashing = result?.settings?.enable_flashing !== false;
       this._error = undefined;
       this._render();
     } catch (err) {
@@ -3183,7 +3343,7 @@ class AlarmGridCard extends HTMLElement {
       dialogRoot.dataset.dialogRoot = "";
       this.shadowRoot.replaceChildren(cardRoot, dialogRoot);
     }
-    cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass} scheme-${this._config.color_scheme} flash-${this._config.flash_style}">
+    cardRoot.innerHTML = `<style>${this._styles()}</style><ha-card class="alarm-card${themeClass} scheme-${this._config.color_scheme} flash-${this._globalFlashing === false ? "none" : this._config.flash_style}">
       ${this._config.hide_header ? "" : `<header><div class="heading">${this._config.show_header_icon ? `<ha-icon icon="${this._escape(this._config.header_icon)}" aria-hidden="true"></ha-icon>` : ""}<div><h2>${this._escape(this._config.title)}</h2>${this._config.show_header_status ? `<p>${this._t("metric_active", { count: active })} · ${this._t("metric_unack", { count: unack })}${this._sound.horn_active ? ` · <span class="horn-on">${this._t("horn_active")}</span>` : ""}</p>` : ""}</div></div>${this._config.show_header_actions ? `<div class="header-actions"><button class="icon-button" data-action="silence" title="${this._t("silence")}" aria-label="${this._t("silence")}"><ha-icon icon="mdi:volume-off"></ha-icon></button><button class="icon-button" data-action="ack-all" title="${this._t("ack_all")}" aria-label="${this._t("ack_all")}"><ha-icon icon="mdi:check-all"></ha-icon></button></div>` : ""}</header>`}
       ${this._config.show_summary ? `<section class="summary" aria-label="${this._t("alarm_summary")}">${chip("critical", count("critical"), this._t("priority_critical"))}${chip("high", count("high"), this._t("priority_high"))}${chip("unack", unack, this._t("metric_unack", { count: "" }).trim())}${chip("", shelved, this._t("chip_shelved"))}${chip("", disabled, this._t("chip_disabled"))}</section>` : ""}
       ${this._error ? `<div class="error" role="alert">${this._escape(this._error)}</div>` : ""}

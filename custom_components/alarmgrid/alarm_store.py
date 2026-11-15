@@ -287,6 +287,7 @@ class MemoryRuleStore:
         rules: Iterable[AlarmRule] | None = None,
         states: Iterable[AlarmRuntimeState] | None = None,
     ) -> None:
+        self._sound_state: dict[str, Any] | None = None
         self._rules = {rule.id: rule for rule in rules or []}
         self._states = {state.rule_id: state for state in states or []}
 
@@ -305,12 +306,18 @@ class MemoryRuleStore:
 
         return dict(self._states)
 
+    async def async_load_sound(self) -> dict[str, Any] | None:
+        """Return horn state from the last loaded alarm-state snapshot."""
+        return dict(self._sound_state) if self._sound_state is not None else None
+
     async def async_save_states(
-        self, states: dict[str, AlarmRuntimeState]
+        self, states: dict[str, AlarmRuntimeState], *, sound: dict[str, Any] | None = None
     ) -> None:
         """Persist runtime states."""
 
         self._states = dict(states)
+        if sound is not None:
+            self._sound_state = dict(sound)
 
 
 class HomeAssistantRuleStore:
@@ -321,6 +328,7 @@ class HomeAssistantRuleStore:
 
         self._rules_store = Store(hass, 1, rules_key, minor_version=0)
         self._state_store = Store(hass, 1, state_key, minor_version=0)
+        self._sound_state: dict[str, Any] | None = None
 
     async def async_load_rules(self) -> list[AlarmRule]:
         """Load rule definitions from Home Assistant storage."""
@@ -339,20 +347,28 @@ class HomeAssistantRuleStore:
         """Load runtime state from Home Assistant storage."""
 
         data = await self._state_store.async_load() or {"states": {}}
+        self._sound_state = data.get("sound")
         return {
             rule_id: AlarmRuntimeState.from_dict({"rule_id": rule_id, **state})
             for rule_id, state in data.get("states", {}).items()
         }
 
+    async def async_load_sound(self) -> dict[str, Any] | None:
+        """Return horn state from the last loaded alarm-state snapshot."""
+        return dict(self._sound_state) if self._sound_state is not None else None
+
     async def async_save_states(
-        self, states: dict[str, AlarmRuntimeState]
+        self, states: dict[str, AlarmRuntimeState], *, sound: dict[str, Any] | None = None
     ) -> None:
         """Persist runtime state to Home Assistant storage."""
 
+        if sound is not None:
+            self._sound_state = dict(sound)
         await self._state_store.async_save(
             {
                 "version": 1,
                 "minor_version": 0,
+                "sound": self._sound_state,
                 "states": {
                     rule_id: state.to_dict()
                     for rule_id, state in states.items()

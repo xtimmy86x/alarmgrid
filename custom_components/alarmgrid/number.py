@@ -51,7 +51,6 @@ class RetentionDaysNumber(AlarmGridEntity, NumberEntity):
         options = dict(self.entry.options)
         options[CONF_HISTORY_RETENTION_DAYS] = int(value)
         self.hass.config_entries.async_update_entry(self.entry, options=options)
-        await self.hass.config_entries.async_reload(self.entry.entry_id)
 
 
 async def async_setup_entry(

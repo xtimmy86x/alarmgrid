@@ -8,10 +8,10 @@ import unittest
 from pathlib import Path
 from datetime import UTC, datetime, timedelta
 from types import ModuleType, SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from custom_components.alarmgrid import async_setup_entry, async_unload_entry
-from custom_components.alarmgrid.alarm_models import AlarmLifecycleState
+from custom_components.alarmgrid.alarm_models import AlarmLifecycleState, AlarmEvent
 from custom_components.alarmgrid.alarm_store import SQLiteHistoryStore
 from tests.test_alarm_delivery_reliability import make_rule
 from tests.test_notifications import options
@@ -42,7 +42,7 @@ class SetupTests(unittest.IsolatedAsyncioTestCase):
             return True
 
         async def send(*args, **kwargs):
-            self.sent.append(kwargs)
+            self.sent.append({**kwargs, "service": args[1] if len(args) > 1 else kwargs.get("service")})
             self.delivered.set()
             return {"chats": [{"chat_id": 1, "message_id": len(self.sent)}]}
 
@@ -176,8 +176,9 @@ class SetupTests(unittest.IsolatedAsyncioTestCase):
     async def test_shelving_action_reschedules_timer_without_source_update(self):
         await async_setup_entry(self.hass, self.entry)
         await self.entry.runtime_data.engine.shelve_alarm("fault", duration_minutes=1)
-        self.assertEqual(len(self.timers), 1)
-        self.assertGreater(self.timers[0][0], 59)
+        alarm_timers = [timer for timer in self.timers if timer[0] < 3600]
+        self.assertEqual(len(alarm_timers), 1)
+        self.assertGreater(alarm_timers[0][0], 59)
 
     async def test_rule_refresh_evaluates_new_rule_against_current_ha_state(self):
         await async_setup_entry(self.hass, self.entry)
@@ -205,9 +206,92 @@ class SetupTests(unittest.IsolatedAsyncioTestCase):
             with self.assertLogs("custom_components.alarmgrid", level="ERROR") as logs:
                 self.timers.pop()[1](datetime.now(UTC))
                 await asyncio.gather(*list(runtime.tasks))
-        self.assertEqual(len(self.timers), 1)
-        self.assertGreater(self.timers[0][0], 4)
+        alarm_timers = [timer for timer in self.timers if timer[0] < 3600]
+        self.assertEqual(len(alarm_timers), 1)
+        self.assertGreater(alarm_timers[0][0], 4)
         self.assertIn("retry_in=5s", str(logs.output))
+
+    async def test_retention_runs_at_start_and_hourly_and_stops_on_unload(self):
+        self.entry.options["history_retention_days"] = 7
+        store = SQLiteHistoryStore(Path(self.temp.name) / "alarmgrid_history.db")
+        await store.async_setup()
+        for days, label in ((8, "old"), (6, "recent")):
+            await store.add_event(AlarmEvent(rule_id=label, entity_id=None, event_type="activated", timestamp=datetime.now(UTC) - timedelta(days=days)))
+        await async_setup_entry(self.hass, self.entry)
+        runtime = self.entry.runtime_data
+        await asyncio.gather(*list(runtime.tasks))
+        events = await store.query_events()
+        self.assertNotIn("old", [event.rule_id for event in events])
+        self.assertIn("recent", [event.rule_id for event in events])
+        with patch.object(runtime.history_store, "cleanup_retention", AsyncMock()) as cleanup:
+            timer = next(timer for timer in self.timers if timer[0] == 3600)
+            self.timers.remove(timer)
+            timer[1](datetime.now(UTC))
+            await asyncio.gather(*list(runtime.tasks))
+            cleanup.assert_awaited_once_with(7)
+        self.assertEqual(sum(timer[0] == 3600 for timer in self.timers), 1)
+        runtime.remove_panel = None
+        await async_unload_entry(self.hass, self.entry)
+        self.entry.runtime_data = None
+        self.assertEqual(self.timers, [])
+
+    async def test_retention_failure_is_logged_and_retried_hourly(self):
+        with patch.object(SQLiteHistoryStore, "cleanup_retention", AsyncMock(side_effect=OSError("locked"))):
+            with self.assertLogs("custom_components.alarmgrid", level="ERROR"):
+                await async_setup_entry(self.hass, self.entry)
+                await asyncio.gather(*list(self.entry.runtime_data.tasks))
+        self.assertTrue(self.entry.runtime_data.engine.states["fault"].is_active)
+        self.assertEqual(sum(timer[0] == 3600 for timer in self.timers), 1)
+
+    async def test_slow_retention_does_not_block_setup(self):
+        started, release = asyncio.Event(), asyncio.Event()
+
+        async def cleanup(_days):
+            started.set()
+            await release.wait()
+
+        async def slow_cleanup(_store, days):
+            await cleanup(days)
+
+        with patch.object(SQLiteHistoryStore, "cleanup_retention", slow_cleanup):
+            try:
+                await asyncio.wait_for(async_setup_entry(self.hass, self.entry), 1)
+                await asyncio.wait_for(started.wait(), 1)
+                self.assertTrue(self.entry.runtime_data.engine.states["fault"].is_active)
+            finally:
+                release.set()
+                if getattr(self.entry, "runtime_data", None):
+                    await asyncio.gather(*list(self.entry.runtime_data.tasks))
+
+    async def test_settings_reload_preserves_silenced_horn_snapshot(self):
+        self.entry.options["sound_mode"] = "browser_and_media_player"
+        self.entry.options["media_players"] = ["media_player.test"]
+        await async_setup_entry(self.hass, self.entry)
+        runtime = self.entry.runtime_data
+        self.assertTrue(any(call.get("service") == "play_media" for call in self.sent))
+        await runtime.engine.silence_horn()
+        self.assertTrue(self.stored["alarmgrid.state"]["sound"]["silenced"])
+        runtime.remove_panel = None
+        await async_unload_entry(self.hass, self.entry)
+        self.entry.runtime_data = None
+        self.sent.clear()
+        self.entry.options["history_retention_days"] = 10
+        await async_setup_entry(self.hass, self.entry)
+        restored = self.entry.runtime_data
+        self.assertTrue(restored.sound_manager.silenced)
+        self.assertFalse(restored.sound_manager.horn_active)
+        self.assertIsNone(restored.sound_manager.next_due_at())
+        self.assertFalse(any(call.get("service") == "play_media" for call in self.sent))
+
+    async def test_options_reach_sound_engine_and_flapping(self):
+        self.entry.options.update(repeat_until_silenced=False, repeat_interval_seconds=45,
+                                  flapping_detection_threshold=3, default_deadband=1.5)
+        await async_setup_entry(self.hass, self.entry)
+        runtime = self.entry.runtime_data
+        self.assertFalse(runtime.sound_manager.repeat_until_silenced)
+        self.assertEqual(runtime.sound_manager.repeat_interval_seconds, 45)
+        self.assertEqual(runtime.engine.flapping_threshold, 3)
+        self.assertEqual(runtime.engine.options["default_deadband"], 1.5)
 
     async def test_unload_removes_start_listener_and_all_timers(self):
         self.hass.is_running = False

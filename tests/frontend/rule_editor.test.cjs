@@ -244,3 +244,106 @@ test("visual card editor emits and restores the new preferences", () => {
   editor._setStringOption("open_panel_text", "");
   assert.equal(Object.hasOwn(emitted, "open_panel_text"), false);
 });
+
+test("panel applies title and initial tab once without overriding navigation", () => {
+  const { panel } = fixture();
+  panel._applyPreferences({ panel_title: "Impianto", default_tab: "history" });
+  assert.equal(panel._title, "Impianto");
+  assert.equal(panel._tab, "history");
+  panel._tab = "rules";
+  panel._applyPreferences({ panel_title: "Nuovo", default_tab: "active" });
+  assert.equal(panel._title, "Nuovo");
+  assert.equal(panel._tab, "rules");
+});
+
+test("new drafts use defaults while existing rules keep their values", () => {
+  const { panel, rule } = fixture();
+  panel._applyPreferences({ rule_defaults: { deadband: 1.5, delay_on_seconds: 8, delay_off_seconds: 4 } });
+  panel._resetRuleDraft();
+  assert.equal(panel._ruleDraft.deadband, 1.5);
+  assert.equal(panel._ruleDraft.delay_on_seconds, 8);
+  panel._rules = [rule];
+  panel._startEditRule(rule.id);
+  assert.equal(panel._ruleDraft.deadband, 0);
+  assert.equal(panel._ruleDraft.delay_on_seconds, 0);
+});
+
+test("panel clear filters affect rows without changing the alarm data", () => {
+  const { panel } = fixture();
+  panel._tab = "active";
+  panel._alarms = ["ACTIVE_UNACK", "ACTIVE_ACK", "CLEARED_UNACK", "CLEARED_ACK"].map((lifecycle_state, i) => ({ id: `${i}`, lifecycle_state, severity: i }));
+  panel._applyPreferences({ show_cleared_unacknowledged: false, auto_hide_cleared_acknowledged: false });
+  let states = Array.from(panel._filteredAlarms(), a => a.lifecycle_state);
+  assert(!states.includes("CLEARED_UNACK"));
+  assert(states.includes("CLEARED_ACK"));
+  panel._applyPreferences({ show_cleared_unacknowledged: true, auto_hide_cleared_acknowledged: true });
+  states = Array.from(panel._filteredAlarms(), a => a.lifecycle_state);
+  assert(states.includes("CLEARED_UNACK"));
+  assert(!states.includes("CLEARED_ACK"));
+  assert.equal(panel._alarms.length, 4);
+});
+
+test("panel groups and limits displayed rows and escapes group names", () => {
+  const { panel } = fixture();
+  panel._tab = "active";
+  panel._preferences = { group_by: "area", max_active_alarms: 2 };
+  panel._alarms = [0, 1, 2].map(i => ({ id: `${i}`, area: i === 1 ? "Other" : "<unsafe>", lifecycle_state: "ACTIVE_UNACK", priority: "high", severity: 80 }));
+  panel._alarmRow = alarm => `<tr data-alarm="${alarm.id}"></tr>`;
+  const grouped = panel._alarmRows(panel._alarms);
+  assert.equal((grouped.match(/class="alarm-group"/g) || []).length, 2);
+  assert(grouped.includes("&lt;unsafe&gt;"));
+  const view = panel._alarmView(panel._filteredAlarms());
+  assert.equal((view.match(/data-alarm=/g) || []).length, 2);
+  assert(view.includes("2 of 3"));
+  assert.equal(panel._alarms.length, 3);
+  panel._preferences.group_by = "none";
+  assert(!panel._alarmRows(panel._alarms).includes("alarm-group"));
+});
+
+test("global flashing toggle disables panel row flashing", () => {
+  const { panel } = fixture();
+  panel._alarmStateClass = () => "state-active-unack";
+  const alarm = { id: "a", name: "Alarm", priority: "high", lifecycle_state: "ACTIVE_UNACK" };
+  panel._preferences = { enable_flashing: false };
+  assert(!panel._alarmRow(alarm).includes("state-active-unack flash"));
+  panel._preferences.enable_flashing = true;
+  assert(panel._alarmRow(alarm).includes("state-active-unack flash"));
+});
+
+test("browser follows backend sound pulses and respects output selection", () => {
+  const { panel } = fixture();
+  let played = 0;
+  panel._playBrowserHorn = () => { played++; };
+  panel._audioEnabled = true;
+  panel._sound = { browser_enabled: false, horn_active: true, last_sound_at: "first" };
+  panel._maybePlayBrowserHorn();
+  assert.equal(played, 0);
+  panel._sound.browser_enabled = true;
+  panel._maybePlayBrowserHorn();
+  panel._maybePlayBrowserHorn();
+  assert.equal(played, 1);
+  panel._sound.last_sound_at = "second";
+  panel._maybePlayBrowserHorn();
+  assert.equal(played, 2);
+  panel._sound.horn_active = false;
+  panel._sound.last_sound_at = "third";
+  panel._maybePlayBrowserHorn();
+  assert.equal(played, 2);
+  panel._sound.test_sound_at = "test";
+  panel._maybePlayBrowserHorn();
+  panel._maybePlayBrowserHorn();
+  assert.equal(played, 3, "test sound is a one-shot even with horn idle");
+});
+
+test("panel settings expose all restored controls and decimal deadband", () => {
+  const { panel } = fixture();
+  const values = { sound_mode: "browser_only", repeat_until_silenced: true, media_players: [], telegram_targets: [], telegram_callback_event_entities: [], default_deadband: 1.5 };
+  panel._settingsData = { can_edit: true, sections: [{fields: [{key:"default_deadband",kind:"float",min:0}]}], values };
+  panel._settingsDraft = { ...values };
+  const html = panel._settingsView();
+  for (const key of ["repeat_until_silenced", "history_retention_days", "max_history_rows", "store_status_changes", "store_normal_events", "default_delay_on_seconds", "default_delay_off_seconds", "default_deadband", "require_acknowledgement_for_cleared", "max_active_alarms", "auto_hide_cleared_acknowledged", "show_cleared_unacknowledged", "default_tab", "enable_flashing", "enable_compact_mode", "group_by"]) {
+    assert(html.includes(`data-setting="${key}"`), key);
+  }
+  assert(html.includes('value="1.5"'));
+  assert(html.includes('step="any"'));
+});
